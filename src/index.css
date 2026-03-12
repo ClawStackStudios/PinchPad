@@ -1,0 +1,28 @@
+@import "tailwindcss";
+
+/* Enable class-based dark mode in Tailwind v4 */
+@variant dark (&:where(.dark, .dark *));
+
+::view-transition-old(root),
+::view-transition-new(root) {
+  animation: none;
+  mix-blend-mode: normal;
+}
+
+::view-transition-old(root) {
+  z-index: 1;
+}
+
+::view-transition-new(root) {
+  z-index: 2;
+}
+
+html, body {
+  background-color: theme('colors.slate.50');
+  color: theme('colors.slate.900');
+}
+
+html.dark, html.dark body {
+  background-color: #0f1419;
+  color: #faf8f6;
+}
