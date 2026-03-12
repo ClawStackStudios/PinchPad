@@ -8,7 +8,7 @@
                                          |
           +------------------------------+------------------------------+
           |                              |                              |
-    [ AUTH SYSTEM ]               [ VAULT SYSTEM ]               [ AGENT SYSTEM ]
+    [ AUTH SYSTEM ]                [ POT SYSTEM ]                [ AGENT SYSTEM ]
    (ClawKeys©™ hu-)              (ShellCryption©™)              (LobsterKeys©™ lb-)
           |                              |                              |
           V                              V                              V

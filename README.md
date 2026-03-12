@@ -16,22 +16,20 @@
 
 ## 🌊 The Reef Ecosystem
 
-PinchPad is a sovereign data vault designed for the modern web. It protects your ideas with client-side encryption while allowing you to delegate granular access to autonomous agents. No passwords, no emails—just your claws and your keys.
+PinchPad is a sovereign lobster pot designed for the modern web. It protects your ideas with client-side encryption while allowing you to delegate granular access to autonomous agents. No passwords, no emails—just your claws and your keys.
 
 ### 🏗️ Architecture Flow
 
 ```mermaid
 graph TD
     A[Human / Agent] -->|hu- / lb- Key| B(Auth Middleware)
-    B -->|Verified| C{Secure Vault}
+    B -->|Verified| C{Lobster Pot}
     C -->|AES-256-GCM| D[ShellCryption Service]
     D -->|Encrypted Pearl| E[(ClawStack DB)]
     C -->|Lobsterized Logic| F[Agent Service]
     F -->|lb- Keys| G[Delegated Agents]
 ```
-
----
-
+...
 ## 🦞 Feature Exoskeleton
 
 ```ascii
@@ -45,6 +43,9 @@ graph TD
        |
        +--- [ 🗄️ Secure Reef ] : Persistent SQLite storage with Volume binding.
        |
+       +--- [ 🌓 MoltTheme ] : High-performance View Transition theme engine.
+```
+
        +--- [ 🌓 MoltTheme ] : High-performance View Transition theme engine.
 ```
 

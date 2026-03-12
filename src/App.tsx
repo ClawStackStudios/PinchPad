@@ -5,7 +5,7 @@ import { Navbar } from './components/Layout/Navbar';
 import { Landing } from './pages/Landing/Landing';
 import { Register } from './pages/Auth/Register';
 import { Login } from './pages/Auth/Login';
-import { Notes } from './pages/Vault/Notes';
+import { Notes } from './pages/Pot/Notes';
 import { Agents } from './pages/Agents/Agents';
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {

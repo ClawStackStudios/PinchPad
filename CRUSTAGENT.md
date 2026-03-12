@@ -6,12 +6,12 @@
 - **Active Features:**
   - ClawKeys©™ Auth System (Implemented)
   - ShellCryption©™ (Implemented)
-  - Secure Vault (Implemented)
+  - Lobster Pot (Implemented)
   - Lobster Keys Agent Management (Implemented)
 
 ## Active Feature Map
 - **Auth:** Complete. `hu-` keys generated client-side, hashed via SHA-256, verified constant-time.
-- **Notes/Vault:** Complete. Uses ShellCryption to encrypt `title` and `content` fields.
+- **Notes/Pot:** Complete. Uses ShellCryption to encrypt `title` and `content` fields.
 - **Agents:** Complete. Generates `lb-` keys and stores permissions.
 
 ## Known Pitfalls

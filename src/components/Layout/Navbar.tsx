@@ -25,7 +25,7 @@ export function Navbar() {
             <ThemeToggle />
             {isClawSigned ? (
               <>
-                <button onClick={() => navigate('/notes')} className="text-sm font-medium text-slate-600 dark:text-slate-300 hover:text-cyan-500">Vault</button>
+                <button onClick={() => navigate('/notes')} className="text-sm font-medium text-slate-600 dark:text-slate-300 hover:text-cyan-500">Pot</button>
                 <button onClick={() => navigate('/agents')} className="text-sm font-medium text-slate-600 dark:text-slate-300 hover:text-cyan-500">Lobsters</button>
                 <button onClick={clawOut} className="flex items-center gap-2 px-3 py-1.5 text-sm font-medium text-red-500 hover:bg-red-500/10 rounded-lg transition-colors">
                   <LogOut className="w-4 h-4" />

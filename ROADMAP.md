@@ -11,9 +11,9 @@
 - [ ] **State Management:** Formalize Auth Context and Note Context.
 - [ ] **Enhanced UI:** Move to specialized component files for better maintenance.
 
-## 🔒 Phase 2: Strengthening the Vault (Q2 2026)
+## 🔒 Phase 2: Strengthening the Pot (Q2 2026)
 - [ ] **Multi-Device Sync:** Secure syncing of `hu-` keys across browsers.
-- [ ] **Rich-Text Support:** Implement secure rich-text editing in the vault.
+- [ ] **Rich-Text Support:** Implement secure rich-text editing in the pot.
 - [ ] **Attachment Support:** Encrypted file attachments.
 
 ## 🤖 Phase 3: Agent Evolution (Q3 2026)
