@@ -5,7 +5,7 @@
   "description": "Secure Agent Management and Note-taking platform with ClawKeys©™ and ShellCryption©™.",
   "type": "module",
   "scripts": {
-    "dev": "tsx server.ts",
+    "dev": "tsx --watch --ignore data/** server.ts",
     "build": "vite build",
     "preview": "vite preview",
     "clean": "rm -rf dist",

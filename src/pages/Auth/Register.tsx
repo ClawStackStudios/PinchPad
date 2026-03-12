@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { authService } from '../../services/authService';
 import { downloadIdentityFile } from '../../lib/crypto';
+import { useAuth } from '../../context/AuthContext';
 
 export function Register() {
   const [username, setUsername] = useState('');
@@ -12,6 +13,7 @@ export function Register() {
   const [copied, setCopied] = useState(false);
   const [hasDownloaded, setHasDownloaded] = useState(false);
   const navigate = useNavigate();
+  const { pinchWithKey } = useAuth();
 
   const handleMoltRegister = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -43,8 +45,19 @@ export function Register() {
     }
   };
 
-  const onComplete = () => {
-    navigate('/login');
+  const onComplete = async () => {
+    if (lobster) {
+      setIsMolting(true);
+      try {
+        await pinchWithKey(lobster.huKey, lobster.uuid, username);
+        navigate('/notes');
+      } catch (err: any) {
+        setIsCracked(err.message);
+        setShellHardened(false); // Go back to register form if login fails
+      } finally {
+        setIsMolting(false);
+      }
+    }
   };
 
   const handleBackToReef = () => {
