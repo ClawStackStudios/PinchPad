@@ -39,7 +39,9 @@ export function Landing() {
             PinchPad isn't just a notepad. It's a sovereign lobster pot built for the modern web, designed to protect your ideas from prying eyes while allowing you to delegate access to autonomous agents.
           </p>
         </div>
-        ...
+
+        <div className="grid md:grid-cols-3 gap-8">
+          {/* Feature 1: ClawKeys */}
           <div className="bg-white dark:bg-[#151b23] p-8 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-xl hover:shadow-2xl transition-shadow">
             <div className="w-14 h-14 bg-red-500/10 text-red-500 rounded-2xl flex items-center justify-center mb-6">
               <Key className="w-8 h-8" />
@@ -47,9 +49,6 @@ export function Landing() {
             <h3 className="text-2xl font-bold text-slate-900 dark:text-white mb-4">ClawKeys©™</h3>
             <p className="text-slate-600 dark:text-slate-400 leading-relaxed">
               No passwords. No emails. Your identity is a cryptographic <code className="text-cyan-500 bg-cyan-500/10 px-1.5 py-0.5 rounded font-mono text-sm">hu-</code> key generated entirely on your device. Your claws hold the only keys to your pot.
-            </p>
-          </div>
-
             </p>
           </div>
 

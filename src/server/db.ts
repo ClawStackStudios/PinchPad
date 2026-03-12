@@ -74,4 +74,24 @@ if (!hasUniqueKeyHash) {
   }
 }
 
+/**
+ * Delete all expired API tokens from the database
+ * Called on server startup and periodically to prevent table bloat
+ * @returns {number} Number of rows deleted
+ */
+export function purgeExpiredTokens() {
+  try {
+    const result = db
+      .prepare(`DELETE FROM api_tokens WHERE datetime(expires_at) <= datetime('now')`)
+      .run();
+    if (result.changes > 0) {
+      console.log(`[Database] Purged ${result.changes} expired token(s)`);
+    }
+    return result.changes;
+  } catch (err) {
+    console.error('[Database] Error purging expired tokens:', err);
+    return 0;
+  }
+}
+
 export default db;

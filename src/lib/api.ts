@@ -1,3 +1,5 @@
+import { apiFetch } from './apiFetch';
+
 export function getApiBaseUrl(): string {
   // @ts-ignore
   return import.meta.env.VITE_API_URL || '';
@@ -6,7 +8,7 @@ export function getApiBaseUrl(): string {
 export const restAdapter = {
   async GET(endpoint: string): Promise<any> {
     const token = sessionStorage.getItem('cc_api_token');
-    const response = await fetch(`${getApiBaseUrl()}${endpoint}`, {
+    const response = await apiFetch(`${getApiBaseUrl()}${endpoint}`, {
       headers: { 'Authorization': `Bearer ${token}` }
     });
     if (!response.ok) throw new Error(`GET ${endpoint} failed: ${response.statusText}`);
@@ -15,7 +17,7 @@ export const restAdapter = {
 
   async POST(endpoint: string, body: any): Promise<any> {
     const token = sessionStorage.getItem('cc_api_token');
-    const response = await fetch(`${getApiBaseUrl()}${endpoint}`, {
+    const response = await apiFetch(`${getApiBaseUrl()}${endpoint}`, {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${token}`,
@@ -32,7 +34,7 @@ export const restAdapter = {
 
   async PUT(endpoint: string, body: any): Promise<any> {
     const token = sessionStorage.getItem('cc_api_token');
-    const response = await fetch(`${getApiBaseUrl()}${endpoint}`, {
+    const response = await apiFetch(`${getApiBaseUrl()}${endpoint}`, {
       method: 'PUT',
       headers: {
         'Authorization': `Bearer ${token}`,
@@ -46,7 +48,7 @@ export const restAdapter = {
 
   async DELETE(endpoint: string): Promise<any> {
     const token = sessionStorage.getItem('cc_api_token');
-    const response = await fetch(`${getApiBaseUrl()}${endpoint}`, {
+    const response = await apiFetch(`${getApiBaseUrl()}${endpoint}`, {
       method: 'DELETE',
       headers: { 'Authorization': `Bearer ${token}` }
     });

@@ -8,10 +8,16 @@ import { createServer as createViteServer } from 'vite';
 import authRoutes from './src/server/routes/auth';
 import notesRoutes from './src/server/routes/notes';
 import agentsRoutes from './src/server/routes/agents';
+import { purgeExpiredTokens } from './src/server/db';
 
 async function startServer() {
   const app = express();
   const PORT = 3000;
+
+  // Initialize Reef: Purge expired tokens on startup
+  purgeExpiredTokens();
+  // Set interval to purge every hour
+  setInterval(purgeExpiredTokens, 60 * 60 * 1000);
 
   // Security Middlewares
   app.use(helmet({

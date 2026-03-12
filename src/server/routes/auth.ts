@@ -116,7 +116,10 @@ router.post('/token', (req, res) => {
     }
 
     const token = `api-${generateBase62(32)}`;
-    const expiresAt = new Date(Date.now() + 30 * 60 * 1000).toISOString(); // 30 mins
+    const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(); // 24 hours per skill
+
+    // Invalidate old tokens for this user to keep the reef clean
+    db.prepare('DELETE FROM api_tokens WHERE owner_uuid = ? AND owner_type = ?').run(user.uuid, type);
 
     db.prepare('INSERT INTO api_tokens (key, owner_uuid, owner_type, lobster_key_id, expires_at, created_at) VALUES (?, ?, ?, ?, ?, ?)').run(
       token,
@@ -129,7 +132,58 @@ router.post('/token', (req, res) => {
 
     res.json({ token, type, uuid: user.uuid, username: user.username });
   } catch (error) {
+    console.error('[Auth] Token generation failed:', error);
     res.status(500).json({ error: 'Failed to authenticate' });
+  }
+});
+
+/**
+ * GET /api/auth/verify
+ * Check if the provided Bearer token is still valid.
+ */
+router.get('/verify', (req, res) => {
+  const authHeader = req.headers.authorization;
+  if (!authHeader || !authHeader.startsWith('Bearer ')) {
+    return res.status(401).json({ error: 'Missing token' });
+  }
+
+  const token = authHeader.slice(7);
+
+  try {
+    const row = db.prepare(`
+      SELECT owner_uuid as uuid, username, owner_type as type 
+      FROM api_tokens t
+      JOIN users u ON t.owner_uuid = u.uuid
+      WHERE t.key = ? AND datetime(t.expires_at) > datetime('now')
+    `).get(token) as any;
+
+    if (!row) {
+      return res.status(401).json({ error: 'Token expired or invalid' });
+    }
+
+    res.json(row);
+  } catch (error) {
+    res.status(500).json({ error: 'Verification failed' });
+  }
+});
+
+/**
+ * POST /api/auth/logout
+ * Manually revoke a session token.
+ */
+router.post('/logout', (req, res) => {
+  const authHeader = req.headers.authorization;
+  if (!authHeader || !authHeader.startsWith('Bearer ')) {
+    return res.status(401).json({ error: 'Missing token' });
+  }
+
+  const token = authHeader.slice(7);
+
+  try {
+    db.prepare('DELETE FROM api_tokens WHERE key = ?').run(token);
+    res.json({ success: true });
+  } catch (error) {
+    res.status(500).json({ error: 'Logout failed' });
   }
 });
 
