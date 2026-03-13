@@ -1,23 +1,39 @@
-# CRUSTAGENT.md
+---
+brand: ClawStack Studios©™
+project: PinchPad©™
+agent_persona: CrustAgent©™
+user: Lucas
+---
 
-## Project State
-- **Version:** 1.0.0
-- **Docker Status:** Ready
-- **Active Features:**
-  - ClawKeys©™ Auth System (Implemented)
-  - ShellCryption©™ (Implemented)
-  - Lobster Pot (Implemented)
-  - Lobster Keys Agent Management (Implemented)
+# 🦞 PinchPad©™ - CRUSTAGENT.md (Root)
 
-## Active Feature Map
-- **Auth:** Complete. `hu-` keys generated client-side, hashed via SHA-256, verified constant-time.
-- **Notes/Pot:** Complete. Uses ShellCryption to encrypt `title` and `content` fields.
-- **Agents:** Complete. Generates `lb-` keys and stores permissions.
+Welcome to the **ClawStack Studios©™** project root for **PinchPad©™**. This document serves as the high-level brand and project alignment interface for **CrustAgent©™**.
 
-## Known Pitfalls
-- `better-sqlite3` must be built for the correct architecture.
-- Web Crypto API requires a secure context (HTTPS or localhost).
-- `sessionStorage` is used for `api-` tokens, so tokens are cleared on tab close.
+## 🌊 Ecosystem Overview
+PinchPad is a sovereign lobster pot designed for the modern web. It protects ideas with client-side encryption while allowing delegated, granular access to autonomous agents. No passwords, no emails—just your claws and your keys.
 
-## Session Log
-- 2026-03-12 | gemini-3.1-pro-preview | Initialized Full-Stack App with ClawKeys and ShellCryption | Success
+### 🦞 Feature Exoskeleton
+- **🔒 ClawKeys©™**: Decentralized identity keys (`hu-`) generated client-side.
+- **🐚 ShellCryption©™**: Zero-knowledge AES-256-GCM encryption for notes.
+- **🦞 LobsterKeys©™**: Granular, revocable API keys (`lb-`) for Agent access.
+- **🗄️ Secure Reef**: Persistent SQLite storage with Docker volume binding (`./data/clawstack.db`).
+- **🌓 MoltTheme**: High-performance View Transition theme engine.
+
+### 🏗️ Architecture Stack
+- **Frontend**: React 19, Vite, TailwindCSS 4, Framer Motion
+- **Backend**: Express, Node.js + TSX
+- **Database**: Better-SQLite3
+- **Containerization**: Docker & Docker Compose
+
+## 🦀 Agent Operational Directives
+- Always adhere to the **CrustCode©™ Rules** defined in `.crustagent/skills/crust-code/SKILL.md`.
+- Maintain a highly modular code structure with a clean separation of concerns by feature.
+- Plan thoroughly before implementation. Code must be robust, properly tested, and well-documented.
+- Direct answers, practical solutions. Tell Lucas what he needs to hear.
+
+## 📂 Navigation & Knowledge
+- For high-level CrustCode©™ patterns and source-level stability locks, consult `src/CRUSTAGENT.md`.
+- For deeply detailed project knowledge, workflows, and skills, explore the `.crustagent/` directory.
+
+---
+*Stay Grounded. Stay Crusty.*
