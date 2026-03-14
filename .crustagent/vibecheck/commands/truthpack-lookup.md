@@ -1,0 +1,27 @@
+# Truthpack Lookup
+
+# Truthpack Lookup Skill
+
+## When to Use
+Activate this skill BEFORE generating any code that:
+- Creates or modifies API routes
+- References environment variables
+- Touches authentication/authorization
+- Modifies API request/response shapes
+
+## Instructions
+1. Read `.vibecheck/truthpack/routes.json` for verified API routes
+2. Read `.vibecheck/truthpack/env.json` for verified environment variables
+3. Read `.vibecheck/truthpack/auth.json` for verified auth rules
+4. Read `.vibecheck/truthpack/contracts.json` for verified API contracts
+5. Cross-reference your planned changes against these files
+6. If your change conflicts with the truthpack, STOP and ask the user
+
+## Quick Reference
+- Routes: 6 verified
+- Env vars: 3 verified
+- Auth rules: 0 verified
+- Contracts: 0 verified
+
+---
+<!-- vibecheck:context-engine:v2 -->

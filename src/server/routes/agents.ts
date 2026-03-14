@@ -9,9 +9,8 @@ const router = Router();
 function generateBase62(length: number): string {
   const charset = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
   let result = '';
-  const randomBytes = crypto.randomBytes(length);
   for (let i = 0; i < length; i++) {
-    result += charset[randomBytes[i] % 62];
+    result += charset[crypto.randomInt(62)];
   }
   return result;
 }

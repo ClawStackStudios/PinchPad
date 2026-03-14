@@ -1,0 +1,17 @@
+[
+  { "method": "POST", "path": "/api/auth/register", "auth": false },
+  { "method": "POST", "path": "/api/auth/token", "auth": false },
+  { "method": "GET", "path": "/api/auth/verify", "auth": true },
+  { "method": "POST", "path": "/api/auth/logout", "auth": true },
+  { "method": "POST", "path": "/api/auth/lookup", "auth": false },
+  { "method": "GET", "path": "/api/agents/keys", "auth": true },
+  { "method": "POST", "path": "/api/agents/keys", "auth": true },
+  { "method": "POST", "path": "/api/agents/keys/:id/revoke", "auth": true },
+  { "method": "DELETE", "path": "/api/agents/keys/:id", "auth": true },
+  { "method": "GET", "path": "/api/settings/profile", "auth": true },
+  { "method": "POST", "path": "/api/settings/profile", "auth": true },
+  { "method": "GET", "path": "/api/settings/appearance", "auth": true },
+  { "method": "POST", "path": "/api/settings/appearance", "auth": true },
+  { "method": "GET", "path": "/api/settings/export", "auth": true },
+  { "method": "GET", "path": "/health", "auth": false }
+]

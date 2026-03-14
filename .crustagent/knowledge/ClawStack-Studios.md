@@ -541,6 +541,21 @@ That's the ClawStack Studios©™ way.
 
 ---
 
+## XI. BRANDING BEST PRACTICES — The "First Mention" Rule
+
+To maintain a premium, official, and professional aesthetic while asserting brand authority, all documentation must follow the **DEEPSEAL©™** branding logic:
+
+### 💡 The Protocol
+1. **First Mention Priority**: Use © and ™ symbols **ONLY** on the first, most prominent mention of a branded term (e.g., in a header, title, or the first paragraph of a section).
+2. **Subsequent Cleanliness**: Drop the symbols in all subsequent references within the same document. Use the brand name as a proper noun (e.g., DEEPSEAL, ClawStack, CrustAgent).
+3. **Why?**: This asserts ownership immediately without cluttering the text with visual "spam," maintaining that "official" mock-legal tone favored by high-tier institutions.
+
+> ✅ **Example**:
+> `# 🦞 THE DEEPSEAL©™ SOVEREIGN LICENSE`
+> "This license, the DEEPSEAL, ensures your code remains free..."
+
+---
+
 ## 🦞 Final Words
 
 > "A lobster owns its shell. It doesn't apologize for its claws.

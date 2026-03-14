@@ -1,0 +1,12 @@
+[
+  {
+    "endpoint": "POST /api/agents/keys",
+    "payload": {
+      "name": "string",
+      "permissions": "object",
+      "expirationType": "string",
+      "expirationDate": "string (optional)"
+    },
+    "verified": true
+  }
+]

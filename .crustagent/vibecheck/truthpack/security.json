@@ -1,0 +1,20 @@
+{
+  "key_identifiers": {
+    "agent_keys": { "prefix": "lb-", "length": 64, "encoding": "base62" },
+    "session_tokens": { "prefix": "api-", "length": 32, "encoding": "base62" }
+  },
+  "cryptographic_standards": {
+    "hashing": "SHA-256",
+    "encryption": "AES-256 (ShellCryption)",
+    "comparison": "Timing-safe (timingSafeHashCompare)"
+  },
+  "access_control": {
+    "middleware": "requireAuth",
+    "permission_model": "RBAC ( Lobster Permissions )",
+    "default_policy": "Deny all without valid Bearer token"
+  },
+  "compliance": {
+    "standards": ["OWASP Top 10", "ClawKeys Protocol"],
+    "verified": true
+  }
+}

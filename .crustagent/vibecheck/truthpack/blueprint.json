@@ -1,0 +1,20 @@
+{
+  "project_name": "ShellPlate",
+  "architecture": "Feature-based / Sovereign Cluster Cluster",
+  "root_structure": {
+    ".crustagent/": "Project intelligence, skills, and memory home",
+    "server/": "Express backend core and service layers",
+    "src/": "React frontend built in feature clusters",
+    "data/": "Persistent SQLite database and backups",
+    "scripts/": "One-off maintenance and scuttle-scripts",
+    "public/": "Static assets and browser entry"
+  },
+  "technical_stack": {
+    "frontend": "Vite + React + TSX + Tailwind CSS",
+    "backend": "Node.js + Express + better-sqlite3",
+    "infrastructure": "Docker + Docker Compose (optional)",
+    "testing": "Vitest + Supertest"
+  },
+  "verified_by": "antigravity",
+  "last_audit": "2026-03-13"
+}

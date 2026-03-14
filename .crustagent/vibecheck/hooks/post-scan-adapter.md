@@ -1,0 +1,24 @@
+# Post-Scan Adapter Hook
+
+## Trigger
+Fires after every `vibecheck scan` completes.
+
+## Actions
+1. Read scan results and parse by category/severity
+2. Feed findings to the Context Engine adaptive learning system
+3. Evolve rules with new patterns from findings
+4. Give agents new threat intel
+5. Recalculate drift score
+6. Re-write context to all configured IDEs
+
+## Adaptation Logic
+- 3+ hallucinations → tighten anti-hallucination rule
+- 3+ drift events → add specific drift patterns to watcher
+- Any critical security → escalate security sentinel
+- Recurring pattern → create new targeted rule
+
+## IDE Targets
+Currently writing to: claude, copilot, cline
+
+---
+<!-- vibecheck:context-engine:v2 -->
