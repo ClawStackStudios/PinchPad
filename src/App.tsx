@@ -7,10 +7,11 @@ import { Register } from './pages/Auth/Register';
 import { Login } from './pages/Auth/Login';
 import { Notes } from './pages/Pot/Notes';
 import { Agents } from './pages/Agents/Agents';
+import { Settings } from './pages/Settings/Settings';
 import { Loader2 } from 'lucide-react';
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
-  const { isClawSigned, isMolting } = useAuth();
+  const { isClawSigned, isMolting, shellKey } = useAuth();
   
   if (isMolting) {
     return (
@@ -21,7 +22,7 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
     );
   }
 
-  if (!isClawSigned) return <Navigate to="/login" />;
+  if (!isClawSigned || !shellKey) return <Navigate to="/login" />;
   return <>{children}</>;
 }
 
@@ -48,7 +49,7 @@ function AppContent() {
     );
   }
 
-  const hideNavbar = ['/login', '/register'].includes(location.pathname);
+  const hideNavbar = ['/login', '/register', '/settings'].includes(location.pathname);
 
   return (
     <div className="min-h-screen bg-slate-50 dark:bg-[#0f1419] text-slate-900 dark:text-[#faf8f6] font-sans transition-colors duration-500">
@@ -59,6 +60,7 @@ function AppContent() {
         <Route path="/login" element={<Login />} />
         <Route path="/notes" element={<ProtectedRoute><Notes /></ProtectedRoute>} />
         <Route path="/agents" element={<ProtectedRoute><Agents /></ProtectedRoute>} />
+        <Route path="/settings" element={<ProtectedRoute><Settings /></ProtectedRoute>} />
       </Routes>
     </div>
   );

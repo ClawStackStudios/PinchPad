@@ -1,5 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useAuth } from '../../context/AuthContext';
+import { InteractiveBrand } from '../../components/Branding/InteractiveBrand';
 import {
   Zap,
   ArrowRight,
@@ -23,6 +25,14 @@ import {
 
 export function Landing() {
   const navigate = useNavigate();
+  const { isClawSigned, shellKey } = useAuth();
+
+  // Redirect if fully signed in (token + encryption key)
+  React.useEffect(() => {
+    if (isClawSigned && shellKey) {
+      navigate('/notes');
+    }
+  }, [isClawSigned, shellKey, navigate]);
 
   // ── States ────────────────────────────────────────────────────────────────
   const [keyInfoVisible, setKeyInfoVisible] = useState(false);
@@ -63,7 +73,7 @@ export function Landing() {
               </div>
 
               <h1 className="text-5xl sm:text-6xl lg:text-7xl font-bold mb-6 tracking-tight">
-                <span className="text-amber-500">Pinch</span><span className="text-red-600">Pad</span>
+                <InteractiveBrand variant="prominent" showCopyright={false} />
               </h1>
 
               <p className="text-xl text-slate-600 dark:text-slate-400 font-medium mb-4 max-w-2xl mx-auto">
@@ -376,9 +386,7 @@ export function Landing() {
           <div className="max-w-7xl mx-auto flex flex-col md:flex-row items-center justify-between gap-6">
             <div className="flex items-center gap-3">
               <div className="w-8 h-8 bg-gradient-to-br from-amber-500 to-amber-600 rounded-lg flex items-center justify-center text-white text-sm select-none">🦞</div>
-              <span className="text-lg font-bold">
-                <span className="text-amber-500">Pinch</span><span className="text-red-500">Pad</span>
-              </span>
+              <InteractiveBrand className="text-lg font-bold" showCopyright={false} />
             </div>
             <p className="text-sm">© {new Date().getFullYear()} PinchPad. Your Sovereign <span className="text-red-400 font-semibold">Pearl</span> Library.</p>
           </div>

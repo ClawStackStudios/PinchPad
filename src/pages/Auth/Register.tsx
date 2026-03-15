@@ -16,6 +16,7 @@ import {
 import { authService } from '../../services/authService';
 import { downloadIdentityFile } from '../../lib/crypto';
 import { useAuth } from '../../context/AuthContext';
+import { InteractiveBrand } from '../../components/Branding/InteractiveBrand';
 
 export function Register() {
   const [step, setStep] = useState(1);
@@ -80,11 +81,11 @@ export function Register() {
         {/* Header */}
         <div className="p-6 text-center pb-4 border-b border-slate-100 dark:border-slate-800">
           <div className="flex justify-center mb-4">
-            <div className="w-16 h-16 bg-gradient-to-br from-amber-500 to-amber-600 rounded-2xl flex items-center justify-center shadow-lg shadow-amber-200 dark:shadow-amber-900/20">
-              <span className="text-3xl select-none">🦞</span>
-            </div>
+            <InteractiveBrand showCopyright={false} showIcon={true} onClick={() => navigate('/')} />
           </div>
-          <h2 className="text-2xl font-bold text-slate-900 dark:text-slate-50 font-sans tracking-tight">ClawKey Wizard©™</h2>
+          <h2 className="text-2xl font-bold text-slate-900 dark:text-slate-50 font-sans tracking-tight">
+            <InteractiveBrand showCopyright={false} /> Wizard©™
+          </h2>
           <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-amber-600 dark:text-amber-500 mt-1">Hatch Your Sovereign Identity</p>
         </div>
 

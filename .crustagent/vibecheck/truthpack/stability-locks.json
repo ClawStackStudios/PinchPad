@@ -1,0 +1,48 @@
+{
+  "version": "2.0",
+  "project": "ClawChives-v2",
+  "locks": {
+    "network": {
+      "ui_port": 4545,
+      "api_port": 4646,
+      "env_config_source": "src/config/apiConfig.ts"
+    },
+    "crypto": {
+      "char_set_size": 62,
+      "key_length": 64,
+      "unbiased_generation": true,
+      "rejection_sampling_limit": 248,
+      "hash_algorithm": "SHA-256"
+    },
+    "auth": {
+      "one_field_login": true,
+      "session_storage_only": true,
+      "namespaced_keys": "cc_*",
+      "required_middleware": [
+        "requireAuth",
+        "requireHuman",
+        "requirePermission"
+      ]
+    },
+    "database": {
+      "engine": "better-sqlite3",
+      "journal_mode": "WAL",
+      "foreign_keys": "ON",
+      "constraints": {
+        "key_hash": "UNIQUE",
+        "user_uuid": "REQUIRED"
+      }
+    },
+    "runtime": {
+      "node_version_target": "22",
+      "tsx_watch_no_ignore": true
+    },
+    "ui": {
+      "sync_theme_initialization": true,
+      "visual_hierarchy_lock": true
+    }
+  },
+  "status": "STABLE_LOCKED",
+  "last_lock_update": "2026-03-14T20:47:00Z",
+  "maintained_by": "CrustAgent©™"
+}

@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Shield, Plus, Trash2, Loader2, AlertCircle, Calendar, ChevronRight } from 'lucide-react';
+import { Shield, Plus, Trash2, Loader2, AlertCircle, Calendar, ChevronRight, Settings } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAuth } from '../../context/AuthContext';
+import { InteractiveBrand } from '../../components/Branding/InteractiveBrand';
 import { noteService, Note } from '../../services/noteService';
 import { clsx, type ClassValue } from 'clsx';
 import { twMerge } from 'tailwind-merge';
@@ -23,16 +24,10 @@ export function Notes() {
   const navigate = useNavigate();
 
   useEffect(() => {
-    if (isClawSigned && !shellKey) {
-      console.warn('[Pot] ShellKey missing. Session is declawed. Redirecting to login.');
-      navigate('/login');
-      return;
-    }
-
     if (shellKey) {
       scuttleNotes();
     }
-  }, [shellKey, isClawSigned, navigate]);
+  }, [shellKey]);
 
   const scuttleNotes = async () => {
     setIsMolting(true);
@@ -106,16 +101,30 @@ export function Notes() {
   return (
     <div className="max-w-5xl mx-auto p-4 sm:p-8">
       <div className="flex justify-between items-center mb-8">
-        <h1 className="text-3xl font-black text-slate-900 dark:text-white flex items-center gap-3">
-          <Shield className="text-amber-500" /> Pearl Pot©™
+        <h1 className="text-3xl font-black text-slate-900 dark:text-white flex items-center">
+          <InteractiveBrand 
+            showCopyright={false} 
+            showIcon={true} 
+            onClick={() => navigate('/notes')}
+          /> 
+          <span className="text-slate-400 font-normal ml-3">Pot©™</span>
         </h1>
-        <button 
-          onClick={clearClaw}
-          disabled={isPinchedByProcess}
-          className="flex items-center gap-2 px-4 py-2 bg-amber-600 hover:bg-amber-700 text-white rounded-lg font-medium transition-all disabled:opacity-50 shadow-lg shadow-amber-500/10"
-        >
-          <Plus className="w-4 h-4" /> New Pearl
-        </button>
+        <div className="flex items-center gap-2">
+          <button 
+            onClick={() => navigate('/settings')}
+            className="flex items-center gap-2 px-3 py-2 text-amber-600 dark:text-amber-400 border border-amber-500 dark:border-amber-500/60 hover:bg-amber-50 dark:hover:bg-amber-900/20 rounded-lg font-medium transition-all"
+          >
+            <Settings className="w-4 h-4" />
+            <span className="hidden sm:inline">Settings</span>
+          </button>
+          <button 
+            onClick={clearClaw}
+            disabled={isPinchedByProcess}
+            className="flex items-center gap-2 px-4 py-2 bg-amber-600 hover:bg-amber-700 text-white rounded-lg font-medium transition-all disabled:opacity-50 shadow-lg shadow-amber-500/10"
+          >
+            <Plus className="w-4 h-4" /> New Pearl
+          </button>
+        </div>
       </div>
 
       <div className="grid md:grid-cols-3 gap-8">

@@ -1,7 +1,8 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
-import { LogOut, Key, Zap } from 'lucide-react';
+import { LogOut, Settings, User, Key } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
+import { InteractiveBrand } from '../Branding/InteractiveBrand';
 import { ThemeToggle } from '../Theme/ThemeToggle';
 import { clsx, type ClassValue } from 'clsx';
 import { twMerge } from 'tailwind-merge';
@@ -11,7 +12,7 @@ function cn(...inputs: ClassValue[]) {
 }
 
 export function Navbar() {
-  const { isClawSigned, clawOut } = useAuth();
+  const { isClawSigned, shellKey, clawOut } = useAuth();
   const navigate = useNavigate();
 
   return (
@@ -21,20 +22,12 @@ export function Navbar() {
           
           {/* ── Left Side: Logo & Theme Toggle ──────────────────────────────── */}
           <div className="flex items-center gap-3">
-            <div 
-              className="w-10 h-10 bg-gradient-to-br from-amber-500 to-amber-600 rounded-xl flex items-center justify-center shadow-lg shadow-amber-200 dark:shadow-amber-900/20 cursor-pointer transition-transform hover:scale-105 active:scale-95"
-              onClick={() => navigate('/')}
-            >
-              <span className="text-2xl select-none">🦞</span>
-            </div>
-            <span 
-              className="text-xl font-bold mr-4 hidden sm:inline-block cursor-pointer"
-              onClick={() => navigate('/')}
-            >
-              <span className="text-amber-500">Pinch</span>
-              <span className="text-red-600 dark:text-red-500">Pad</span>
-              <span className="text-slate-500 text-xs font-normal ml-0.5">©™</span>
-            </span>
+            <InteractiveBrand 
+              className="text-xl font-bold"
+              onClick={() => navigate(isClawSigned && shellKey ? '/notes' : '/')}
+              showCopyright={true}
+              showIcon={true}
+            />
             
             <ThemeToggle />
           </div>
@@ -51,12 +44,19 @@ export function Navbar() {
                 </button>
                 <button 
                   onClick={() => navigate('/agents')} 
-                  className="text-sm font-medium text-slate-600 dark:text-slate-400 hover:text-amber-500 transition-colors px-2 mr-2"
+                  className="text-sm font-medium text-slate-600 dark:text-slate-400 hover:text-amber-500 transition-colors px-2"
                 >
                   Lobsters
                 </button>
                 <button 
-                  onClick={clawOut} 
+                  onClick={() => navigate('/settings')} 
+                  className="text-sm font-medium text-slate-600 dark:text-slate-400 hover:text-amber-500 transition-colors px-2 mr-2"
+                >
+                  <Settings className="w-4 h-4 inline-block mr-1" />
+                  Settings
+                </button>
+                <button 
+                  onClick={() => { clawOut(); navigate('/'); }} 
                   className="inline-flex items-center justify-center gap-2 rounded-lg px-4 py-2 text-sm font-medium text-red-500 hover:bg-red-500/10 transition-colors border border-transparent hover:border-red-500/20"
                 >
                   <LogOut className="w-4 h-4" />

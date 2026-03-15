@@ -11,6 +11,7 @@ import {
   Loader2 
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
+import { InteractiveBrand } from '../../components/Branding/InteractiveBrand';
 import { clsx, type ClassValue } from 'clsx';
 import { twMerge } from 'tailwind-merge';
 
@@ -105,11 +106,11 @@ export function Login() {
         </button>
 
         <div className="text-center mb-8">
-          <div className="w-16 h-16 bg-gradient-to-br from-amber-500 to-amber-600 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-lg shadow-amber-200 dark:shadow-amber-900/20">
-            <span className="text-3xl select-none">🦞</span>
+          <div className="flex justify-center mb-4">
+            <InteractiveBrand showCopyright={false} showIcon={true} onClick={() => navigate('/')} />
           </div>
           <h1 className="text-2xl font-bold text-slate-900 dark:text-slate-50 mb-2">Welcome Back</h1>
-          <p className="text-sm text-slate-600 dark:text-slate-400">Login with your <span className="font-semibold text-amber-500 uppercase">PinchPad©™</span> identity</p>
+          <p className="text-sm text-slate-600 dark:text-slate-400">Login with your <InteractiveBrand className="font-semibold inline-flex" showCopyright={true} /> identity</p>
         </div>
 
         {/* ── Mode toggle tabs ─────────────────────────────────────────────── */}
