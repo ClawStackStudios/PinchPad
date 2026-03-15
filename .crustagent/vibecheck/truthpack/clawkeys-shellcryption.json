@@ -1,0 +1,170 @@
+{
+  "clawkeys_protocol": {
+    "standard_name": "ClawKeys©™ Protocol",
+    "specification": "OWASP-compliant key identification and access control framework",
+    "key_types": {
+      "human_keys": {
+        "name": "ClawKeys©™ (Human User Keys)",
+        "prefix": "hu-",
+        "length": 64,
+        "encoding": "base62 (0-9, a-z, A-Z)",
+        "purpose": "User identity verification (one key per user, unchanged)",
+        "storage": "Hashed with SHA-256 in users.key_hash (database column)",
+        "comparison": "Query-based matching (SELECT * FROM users WHERE key_hash = ?) — no timing oracle",
+        "ttl": "permanent (never expires)",
+        "revocation": "Only via account deletion or manual admin action"
+      },
+      "lobster_keys": {
+        "name": "LobsterKeys©™ (API Service Keys)",
+        "prefix": "lb-",
+        "length": 64,
+        "encoding": "base62 (0-9, a-z, A-Z)",
+        "purpose": "Machine identity for external integrations and agents",
+        "storage": "Hash (api_key_hash) + ShellCrypted value (api_key) in lobster_keys table",
+        "permissions": {
+          "type": "JSON object stored as TEXT",
+          "fields": ["canRead (bool)", "canWrite (bool)", "canEdit (bool)", "canDelete (bool)"],
+          "enforcement": "requirePermission(permission_name) middleware gate"
+        },
+        "ttl": "configurable (can be permanent or expiring)",
+        "expiration_date": "ISO 8601 timestamp or null (never expires)",
+        "revocation": "Set is_active = 0 (soft delete, subsequent auth attempts fail)"
+      },
+      "session_tokens": {
+        "name": "Session Tokens (API Token)",
+        "prefix": "api-",
+        "length": 32,
+        "encoding": "base62 (0-9, a-z, A-Z)",
+        "purpose": "Ephemeral authentication tokens for HTTP Bearer auth",
+        "storage": "Plain text key in api_tokens table (short TTL justifies no hashing)",
+        "owner_type": "human | lobster (key can be issued on behalf of human or lobster key)",
+        "ttl": "24 hours (TOKEN_TTL_DEFAULT = 86400000 ms)",
+        "expires_at": "ISO 8601 timestamp, auto-delete on lookup if past expiry",
+        "created_at": "ISO 8601 timestamp of token creation",
+        "revocation": "DELETE from api_tokens (logout action or session expiry cleanup)"
+      }
+    },
+    "generation_standards": {
+      "rng_algorithm": "crypto.randomInt(charset_size) — unbiased rejection sampling",
+      "charset": "base62 = '0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ' (62 chars)",
+      "rejection_sampling": {
+        "char_set_size": 62,
+        "max_rejection_limit": 248,
+        "unbiased_generation": "Ensures no modulo bias in random character selection",
+        "sentinel_fix": "Modulo bias eliminated 2026-03-14 per CRUSTAUDIT_PINCHPAD_CRYPTO_FIX.md"
+      },
+      "reference_implementation": "src/lib/crypto.ts::generateBase62()"
+    }
+  },
+  "shellcryption_protocol": {
+    "standard_name": "ShellCryption©™ Protocol",
+    "specification": "AES-256-GCM encryption with HKDF key derivation and authenticated data",
+    "algorithm": {
+      "cipher": "AES-256-GCM",
+      "key_size": 256,
+      "key_derivation": "HKDF-SHA256 from master passphrase",
+      "nonce": "16 random bytes (96 bits for GCM)",
+      "auth_tag": "16 bytes (128 bits)",
+      "encoding": "base64-encoded ciphertext + nonce + auth_tag concatenation"
+    },
+    "key_derivation": {
+      "function": "HKDF (HMAC-based Key Derivation Function)",
+      "hash_algorithm": "SHA-256",
+      "master_secret": "SHELL_ENCRYPTION_PASSWORD environment variable",
+      "use_case_separation": "Different salt per field type (notes, lobster_keys, api_tokens)",
+      "salt_examples": {
+        "note_content": "'note-content-salt' prefix",
+        "api_key": "'api-key-salt' prefix",
+        "token": "'token-salt' prefix"
+      }
+    },
+    "encryption_operations": {
+      "encryptField": {
+        "function": "encryptField(plaintext: string, field_name: string): string",
+        "operation": "Single field encryption (used for note content, lobster api_key)",
+        "input": "Plain text string and field identifier",
+        "output": "Base64-encoded ciphertext with embedded nonce + auth_tag",
+        "aad": "field_name used as Additional Authenticated Data",
+        "file": "src/lib/shellCryption.ts"
+      },
+      "decryptField": {
+        "function": "decryptField(ciphertext: string, field_name: string): string",
+        "operation": "Single field decryption with tamper detection",
+        "input": "Base64-encoded ciphertext and field identifier",
+        "output": "Plain text string OR '[Decryption Failed]' marker",
+        "failure_handling": "Returns marker string on auth tag failure (tamper detection)",
+        "file": "src/lib/shellCryption.ts"
+      },
+      "encryptRecord": {
+        "function": "encryptRecord(record: Note): EncryptedNote",
+        "operation": "Bulk record encryption (all fields)",
+        "input": "Note object with id/title/content/starred/pinned",
+        "output": "Same structure with content field encrypted",
+        "use_case": "Storing encrypted note content in database",
+        "file": "src/lib/shellCryption.ts"
+      },
+      "decryptRecord": {
+        "function": "decryptRecord(record: EncryptedNote): Note",
+        "operation": "Bulk record decryption",
+        "input": "Note object with encrypted content",
+        "output": "Decrypted note object (or content = '[Decryption Failed]' if tamper detected)",
+        "use_case": "Retrieving decrypted note content from database",
+        "file": "src/lib/shellCryption.ts"
+      }
+    },
+    "authentication_vector": {
+      "authenticated_data": "field_name or record metadata used as AAD",
+      "purpose": "Prevent decryption of field in wrong context",
+      "tamper_detection": "Auth tag mismatch → decryption returns marker, not error",
+      "risk_mitigated": "Swap attacks (encrypted note content moved to different field)"
+    },
+    "storage_integration": {
+      "note_content": "Encrypted via encryptRecord on INSERT, decrypted on SELECT",
+      "lobster_api_key": "Encrypted via encryptField, stored as TEXT in lobster_keys.api_key",
+      "api_tokens": "Stored plaintext (short TTL = acceptable risk, auto-deleted after 24h)",
+      "database_column_type": "TEXT (base64-encoded ciphertext)",
+      "environment_requirement": "SHELL_ENCRYPTION_PASSWORD must be set before any encrypt/decrypt operations"
+    },
+    "failure_modes": {
+      "wrong_password": "Auth tag verification fails → returns '[Decryption Failed]' marker",
+      "tampered_ciphertext": "Auth tag verification fails → returns '[Decryption Failed]' marker",
+      "missing_nonce": "Malformed base64 → JSON parse error or decryption fails → marker returned",
+      "null_plaintext": "Graceful handling of null/undefined inputs (no crash)"
+    },
+    "verification": {
+      "test_coverage": "tests/lib/shellCryption.test.ts (15+ assertions)",
+      "round_trip_tests": "encryptField → decryptField matches plaintext",
+      "record_tests": "encryptRecord → decryptRecord matches original Note",
+      "tamper_tests": "Modified ciphertext → '[Decryption Failed]' marker returned",
+      "performance": "AES-256-GCM hardware acceleration on modern CPUs"
+    }
+  },
+  "integration": {
+    "auth_flow": {
+      "step_1_register": "User provides hu- ClawKey → stored as SHA-256 key_hash in users table",
+      "step_2_token_issue": "User proves possession of hu- ClawKey → server issues api- session token (32-char base62)",
+      "step_3_api_requests": "User includes 'Bearer api-<token>' in Authorization header",
+      "step_4_token_lookup": "Middleware extracts token → query api_tokens table → verify not expired",
+      "step_5_token_cleanup": "Expired tokens deleted on lookup (soft cleanup) or on logout (explicit)",
+      "step_6_agent_auth": "External agent uses lb- LobsterKey → server creates api- token from lb- key_hash"
+    },
+    "permission_enforcement": {
+      "human_users": "All permissions granted (canRead/Write/Edit/Delete = true by default)",
+      "lobster_agents": "Permissions stored as JSON in lobster_keys.permissions → checked by requirePermission()",
+      "example": "LobsterKey with {canRead: true, canWrite: false} → blocks PUT/PATCH to notes"
+    }
+  },
+  "compliance": {
+    "standards": ["OWASP Top 10", "ClawKeys©™ Protocol", "NIST SP 800-132 (PBKDF2 pattern via HKDF)"],
+    "reviewed_2026_03_15": true,
+    "audit_reference": "CRUSTAUDIT_PINCHPAD_CRYPTO_FIX.md (sentinal bias fix)",
+    "verified": true
+  },
+  "reference_files": {
+    "implementation": ["src/lib/crypto.ts", "src/lib/shellCryption.ts", "src/server/middleware/auth.ts"],
+    "tests": ["tests/lib/crypto.test.ts", "tests/lib/shellCryption.test.ts", "tests/server/auth.test.ts"],
+    "security_policy": "SECURITY.md (ClawKeys©™ protocol specification)"
+  },
+  "last_update": "2026-03-15T11:02:51Z",
+  "maintained_by": "CrustAgent©™"
+}

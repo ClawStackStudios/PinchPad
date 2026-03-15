@@ -1,0 +1,101 @@
+{
+  "framework": {
+    "engine": "Vitest 4.1.0",
+    "vite_integration": "native ESM support, zero-config for React 19",
+    "environment_strategy": "node (default, backend routes) + jsdom (frontend services)",
+    "coverage_provider": "v8",
+    "test_database": "better-sqlite3 :memory: per test file"
+  },
+  "configuration": {
+    "globals": true,
+    "setupFiles": ["tests/setup.ts"],
+    "coverage": {
+      "provider": "v8",
+      "includes": ["src/**/*.{ts,tsx}"],
+      "excludes": ["src/client/**", "**/*.test.ts"],
+      "thresholds": {
+        "routes": ">75%",
+        "middleware": ">90%",
+        "overall": ">60%"
+      }
+    },
+    "node_version_target": "22"
+  },
+  "test_phases": {
+    "phase_1": {
+      "name": "Auth & Crypto Foundation",
+      "files": ["tests/lib/crypto.test.ts", "tests/lib/shellCryption.test.ts", "tests/services/authService.test.ts", "tests/server/auth.test.ts"],
+      "assertions": 30,
+      "coverage": ["crypto.ts generateBase62()", "shellCryption.ts encryptField/decryptField/encryptRecord/decryptRecord", "authService.ts readSession()", "auth routes register/token/verify/logout"],
+      "status": "LOCKED"
+    },
+    "phase_2": {
+      "name": "Routes & Middleware Expansion",
+      "files": ["tests/server/notes.test.ts", "tests/server/agents.test.ts", "tests/server/middleware/auth.test.ts"],
+      "assertions": 73,
+      "coverage": ["notes CRUD (GET/POST/PUT/PATCH starred/pinned/DELETE)", "agents key CRUD (GET/POST/PUT revoke)", "auth middleware (requireAuth/requirePermission/requireHuman)", "permission enforcement", "cross-user isolation gates"],
+      "status": "LOCKED"
+    },
+    "phase_3": {
+      "name": "Integration & Data Integrity",
+      "files": ["tests/integration/token-lifecycle.test.ts", "tests/integration/cross-user-isolation.test.ts"],
+      "assertions": 40,
+      "coverage": ["token lifecycle (register→token→use→expire→auto-delete→logout)", "multi-step assertion chains", "cascading delete behavior", "cross-user data silos verified"],
+      "status": "LOCKED"
+    }
+  },
+  "test_patterns": {
+    "app_factory": {
+      "file": "tests/server/utils/app.ts",
+      "function": "createTestApp(): { app: Express, db: Database }",
+      "database_isolation": "Fresh :memory: database per test file",
+      "schema_initialization": "All CREATE TABLE statements from src/server/db.ts",
+      "dependency_injection": "req.db = test db via middleware, routes use fallback pattern"
+    },
+    "authentication_tests": {
+      "token_extraction": "Authorization: Bearer <token> header parsing",
+      "expiration_handling": "Expired tokens return 401, auto-delete on next lookup",
+      "permission_parsing": "JSON lobster_key.permissions → canRead/canWrite/canEdit/canDelete booleans",
+      "type_gates": "human vs lobster key type enforcement (requireHuman, requirePermission)"
+    },
+    "data_isolation_tests": {
+      "cross_user_access": "User A cannot read/modify/delete User B's notes (404 on direct access)",
+      "list_filtering": "GET endpoints filter by user_uuid in WHERE clause",
+      "cascading_deletes": "User deletion → cascade to notes + api_tokens + lobster_keys via FK constraints"
+    }
+  },
+  "critical_test_vectors": {
+    "security": [
+      "Token entropy (base62 length 32 for session tokens)",
+      "Constant-time comparison (query-based hash matching, no timing oracle)",
+      "Expired token cleanup (scheduled deletion from api_tokens)",
+      "Permission JSON validation (no injection via stored JSON)",
+      "Cross-user data boundary enforcement (sqlquery filtering by user_uuid)"
+    ],
+    "correctness": [
+      "Note CRUD preserves id/title/content/starred/pinned fields",
+      "Starred/pinned toggles update updated_at timestamp",
+      "Agent key revocation sets is_active=0 (subsequent auth fails)",
+      "Permission object correctly parsed and enforced",
+      "Lobster key without canWrite blocked from PUT/PATCH operations"
+    ]
+  },
+  "coverage_targets": {
+    "src/server/routes/": ">75%",
+    "src/server/middleware/auth.ts": "100%",
+    "src/server/routes/notes.ts": ">90%",
+    "src/server/routes/agents.ts": ">65%",
+    "src/lib/crypto.ts": ">60%",
+    "src/lib/shellCryption.ts": ">50%"
+  },
+  "test_execution": {
+    "command_run": "npm test (vitest run, exit after completion)",
+    "command_watch": "npm run test:watch (vitest, re-run on file change)",
+    "command_coverage": "npm run test:coverage (vitest run --coverage, generate v8 report)",
+    "pre_commit": "All tests must pass before commit (>143 tests PASS)",
+    "current_status": "143 tests passing across 9 files (Phase 1+2+3 complete)"
+  },
+  "verified": true,
+  "last_update": "2026-03-15T11:02:51Z",
+  "maintained_by": "CrustAgent©™"
+}
