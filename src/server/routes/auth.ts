@@ -4,6 +4,9 @@ import db from '../db';
 
 const router = Router();
 
+export const TOKEN_TTL_DEFAULT = 24 * 60 * 60 * 1000; // 24 Hours
+
+
 // Constant-time comparison
 function constantTimeCompare(a: string, b: string): boolean {
   if (a.length !== b.length) return false;
@@ -111,7 +114,7 @@ router.post('/token', (req, res) => {
     }
 
     const token = `api-${generateBase62(32)}`;
-    const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(); // 24 hours per skill
+    const expiresAt = new Date(Date.now() + TOKEN_TTL_DEFAULT).toISOString(); // 24 hours per skill
 
     // Invalidate old tokens for this user to keep the reef clean
     db.prepare('DELETE FROM api_tokens WHERE owner_uuid = ? AND owner_type = ?').run(user.uuid, type);

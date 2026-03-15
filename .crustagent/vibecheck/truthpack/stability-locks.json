@@ -1,11 +1,10 @@
 {
   "version": "2.0",
-  "project": "ClawChives-v2",
+  "project": "PinchPad",
   "locks": {
     "network": {
-      "ui_port": 4545,
-      "api_port": 4646,
-      "env_config_source": "src/config/apiConfig.ts"
+      "ui_port": 8282,
+      "api_port": 8383
     },
     "crypto": {
       "char_set_size": 62,
@@ -16,7 +15,8 @@
     },
     "auth": {
       "one_field_login": true,
-      "session_storage_only": true,
+      "session_storage_only": false,
+      "session_duration": "24h",
       "namespaced_keys": "cc_*",
       "required_middleware": [
         "requireAuth",
@@ -46,6 +46,6 @@
     }
   },
   "status": "STABLE_LOCKED",
-  "last_lock_update": "2026-03-14T22:23:00Z",
+  "last_lock_update": "2026-03-15T00:00:00Z",
   "maintained_by": "CrustAgent©™"
 }
