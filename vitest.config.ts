@@ -4,7 +4,8 @@ export default defineConfig({
   test: {
     globals: true,
     environment: 'node',          // default
-    setupFiles: ['./tests/setup.ts'],
+    setupFiles: ['./test/shared/setup.lobster.ts'],
+    include: ['test/**/*.lobster.test.ts'],
     coverage: {
       provider: 'v8',
       reporter: ['text', 'html'],

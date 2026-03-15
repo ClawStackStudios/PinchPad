@@ -1,9 +1,9 @@
 import express, { Express, RequestHandler } from 'express';
 import Database from 'better-sqlite3';
-import authRoutes from '../../../src/server/routes/auth';
-import notesRoutes from '../../../src/server/routes/notes';
-import agentsRoutes from '../../../src/server/routes/agents';
-import { requireAuth, requireHuman } from '../../../src/server/middleware/auth';
+import authRoutes from '../../src/server/routes/auth';
+import notesRoutes from '../../src/server/routes/notes';
+import agentsRoutes from '../../src/server/routes/agents';
+import { requireAuth, requireHuman } from '../../src/server/middleware/auth';
 
 export function createTestApp(): { app: Express; db: Database.Database } {
   const db = new Database(':memory:');

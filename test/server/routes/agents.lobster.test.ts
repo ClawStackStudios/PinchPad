@@ -1,7 +1,7 @@
 /// <reference types="vitest" />
 import { describe, it, expect, beforeEach } from 'vitest';
 import request from 'supertest';
-import { createTestApp, createTestUser, createTestToken, createTestLobsterKey } from './utils/app';
+import { createTestApp, createTestUser, createTestToken, createTestLobsterKey } from '../../shared/app';
 import { Express } from 'express';
 import Database from 'better-sqlite3';
 
