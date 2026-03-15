@@ -1,7 +1,8 @@
 import { Request, Response, NextFunction } from 'express';
-import db from '../db';
+import globalDb from '../db';
 
 export interface AuthRequest extends Request {
+  db?: any;
   user?: {
     uuid: string;
     keyType: 'human' | 'lobster';
@@ -11,13 +12,14 @@ export interface AuthRequest extends Request {
 
 export const requireAuth = () => {
   return (req: AuthRequest, res: Response, next: NextFunction) => {
+    const db = req.db || globalDb;
     const authHeader = req.headers.authorization;
     if (!authHeader || !authHeader.startsWith('Bearer ')) {
       return res.status(401).json({ error: 'Missing token' });
     }
 
     const token = authHeader.split(' ')[1];
-    
+
     const session = db.prepare('SELECT * FROM api_tokens WHERE key = ?').get(token) as any;
     if (!session) {
       return res.status(401).json({ error: 'Invalid token' });
@@ -41,7 +43,7 @@ export const requireAuth = () => {
       keyType: session.owner_type as 'human' | 'lobster',
       permissions
     };
-    
+
     next();
   };
 };

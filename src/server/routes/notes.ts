@@ -1,11 +1,12 @@
-import { Router } from 'express';
+import { Router, Response } from 'express';
 import crypto from 'crypto';
-import db from '../db';
+import globalDb from '../db';
 import { requireAuth, requirePermission, AuthRequest } from '../middleware/auth';
 
 const router = Router();
 
-router.get('/', requireAuth(), requirePermission('canRead'), (req: AuthRequest, res) => {
+router.get('/', requireAuth(), requirePermission('canRead'), (req: any, res: Response) => {
+  const db = req.db || globalDb;
   try {
     const notes = db.prepare('SELECT * FROM notes WHERE user_uuid = ? ORDER BY updated_at DESC').all(req.user!.uuid);
     res.json({ data: notes });
@@ -14,7 +15,8 @@ router.get('/', requireAuth(), requirePermission('canRead'), (req: AuthRequest, 
   }
 });
 
-router.post('/', requireAuth(), requirePermission('canWrite'), (req: AuthRequest, res) => {
+router.post('/', requireAuth(), requirePermission('canWrite'), (req: any, res: Response) => {
+  const db = req.db || globalDb;
   const { id, title, content, starred = 0, pinned = 0 } = req.body;
   if (!id || !title || !content) {
     return res.status(400).json({ error: 'Missing required fields' });
@@ -41,7 +43,8 @@ router.post('/', requireAuth(), requirePermission('canWrite'), (req: AuthRequest
   }
 });
 
-router.put('/:id', requireAuth(), requirePermission('canEdit'), (req: AuthRequest, res) => {
+router.put('/:id', requireAuth(), requirePermission('canEdit'), (req: any, res: Response) => {
+  const db = req.db || globalDb;
   const { title, content, starred, pinned } = req.body;
   const { id } = req.params;
 
@@ -71,7 +74,8 @@ router.put('/:id', requireAuth(), requirePermission('canEdit'), (req: AuthReques
   }
 });
 
-router.patch('/:id/starred', requireAuth(), requirePermission('canEdit'), (req: AuthRequest, res) => {
+router.patch('/:id/starred', requireAuth(), requirePermission('canEdit'), (req: any, res: Response) => {
+  const db = req.db || globalDb;
   const { starred } = req.body;
   const { id } = req.params;
 
@@ -94,7 +98,8 @@ router.patch('/:id/starred', requireAuth(), requirePermission('canEdit'), (req: 
   }
 });
 
-router.patch('/:id/pinned', requireAuth(), requirePermission('canEdit'), (req: AuthRequest, res) => {
+router.patch('/:id/pinned', requireAuth(), requirePermission('canEdit'), (req: any, res: Response) => {
+  const db = req.db || globalDb;
   const { pinned } = req.body;
   const { id } = req.params;
 
@@ -117,7 +122,8 @@ router.patch('/:id/pinned', requireAuth(), requirePermission('canEdit'), (req: A
   }
 });
 
-router.delete('/:id', requireAuth(), requirePermission('canDelete'), (req: AuthRequest, res) => {
+router.delete('/:id', requireAuth(), requirePermission('canDelete'), (req: any, res: Response) => {
+  const db = req.db || globalDb;
   const { id } = req.params;
 
   try {

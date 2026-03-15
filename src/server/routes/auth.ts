@@ -1,6 +1,6 @@
-import { Router } from 'express';
+import { Router, Request, Response } from 'express';
 import crypto from 'crypto';
-import db from '../db';
+import globalDb from '../db';
 
 const router = Router();
 
@@ -27,7 +27,8 @@ function generateBase62(length: number): string {
   return result;
 }
 
-router.post('/register', (req, res) => {
+router.post('/register', (req: any, res: Response) => {
+  const db = req.db || globalDb;
   const { uuid, username, displayName, keyHash } = req.body;
   if (!uuid || !username || !keyHash) {
     return res.status(400).json({ error: 'Missing required fields' });
@@ -53,7 +54,8 @@ router.post('/register', (req, res) => {
   }
 });
 
-router.post('/token', (req, res) => {
+router.post('/token', (req: any, res: Response) => {
+  const db = req.db || globalDb;
   const { uuid, username, keyHash, type = 'human' } = req.body;
 
   if (!keyHash) {
@@ -138,7 +140,8 @@ router.post('/token', (req, res) => {
  * GET /api/auth/verify
  * Check if the provided Bearer token is still valid.
  */
-router.get('/verify', (req, res) => {
+router.get('/verify', (req: any, res: Response) => {
+  const db = req.db || globalDb;
   const authHeader = req.headers.authorization;
   if (!authHeader || !authHeader.startsWith('Bearer ')) {
     return res.status(401).json({ error: 'Missing token' });
@@ -148,7 +151,7 @@ router.get('/verify', (req, res) => {
 
   try {
     const row = db.prepare(`
-      SELECT owner_uuid as uuid, username, display_name, owner_type as type 
+      SELECT owner_uuid as uuid, username, display_name, owner_type as type
       FROM api_tokens t
       JOIN users u ON t.owner_uuid = u.uuid
       WHERE t.key = ? AND datetime(t.expires_at) > datetime('now')
@@ -177,7 +180,8 @@ router.post('/logout', (req, res) => {
   const token = authHeader.slice(7);
 
   try {
-    db.prepare('DELETE FROM api_tokens WHERE key = ?').run(token);
+    const testDb = (req as any).db || globalDb;
+    testDb.prepare('DELETE FROM api_tokens WHERE key = ?').run(token);
     res.json({ success: true });
   } catch (error) {
     res.status(500).json({ error: 'Logout failed' });

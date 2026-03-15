@@ -1,6 +1,6 @@
-import { Router } from 'express';
+import { Router, Response } from 'express';
 import crypto from 'crypto';
-import db from '../db';
+import globalDb from '../db';
 import { requireAuth, requireHuman, AuthRequest } from '../middleware/auth';
 
 const router = Router();
@@ -15,7 +15,8 @@ function generateBase62(length: number): string {
   return result;
 }
 
-router.get('/', requireAuth(), requireHuman(), (req: AuthRequest, res) => {
+router.get('/', requireAuth(), requireHuman(), (req: any, res: Response) => {
+  const db = req.db || globalDb;
   try {
     const keys = db.prepare('SELECT id, name, permissions, expiration_type, expiration_date, rate_limit, is_active, created_at, last_used FROM lobster_keys WHERE user_uuid = ? ORDER BY created_at DESC').all(req.user!.uuid);
     res.json({ data: keys });
@@ -24,9 +25,10 @@ router.get('/', requireAuth(), requireHuman(), (req: AuthRequest, res) => {
   }
 });
 
-router.post('/', requireAuth(), requireHuman(), (req: AuthRequest, res) => {
+router.post('/', requireAuth(), requireHuman(), (req: any, res: Response) => {
+  const db = req.db || globalDb;
   const { id, name, permissions, expiration_type, expiration_date, rate_limit, api_key_hash, api_key_encrypted } = req.body;
-  
+
   if (!id || !name || !permissions || !expiration_type || !api_key_hash || !api_key_encrypted) {
     return res.status(400).json({ error: 'Missing required fields for Lobster Key creation' });
   }
@@ -50,18 +52,18 @@ router.post('/', requireAuth(), requireHuman(), (req: AuthRequest, res) => {
       now
     );
 
-    res.status(201).json({ 
-      data: { 
-        id, 
-        name, 
+    res.status(201).json({
+      data: {
+        id,
+        name,
         api_key: api_key_encrypted, // Server returns the encrypted pearl
-        permissions, 
-        expiration_type, 
-        expiration_date, 
-        rate_limit, 
-        is_active: 1, 
-        created_at: now 
-      } 
+        permissions,
+        expiration_type,
+        expiration_date,
+        rate_limit,
+        is_active: 1,
+        created_at: now
+      }
     });
   } catch (error) {
     console.error('[Agents] Failed to create lobster key:', error);
@@ -69,7 +71,8 @@ router.post('/', requireAuth(), requireHuman(), (req: AuthRequest, res) => {
   }
 });
 
-router.put('/:id/revoke', requireAuth(), requireHuman(), (req: AuthRequest, res) => {
+router.put('/:id/revoke', requireAuth(), requireHuman(), (req: any, res: Response) => {
+  const db = req.db || globalDb;
   const { id } = req.params;
 
   try {
