@@ -31,7 +31,7 @@ export const authService = {
 
   async loginWithKey(token: string, uuid?: string, username?: string): Promise<{ token: string, shellKey: CryptoKey, username: string, uuid: string }> {
     if (!token || !token.startsWith('hu-')) {
-      throw new Error('Invalid ClawKey format');
+      throw new Error('Invalid ClawKey©™ format');
     }
 
     const keyHash = await hashToken(token);

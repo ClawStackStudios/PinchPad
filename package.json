@@ -5,11 +5,15 @@
   "description": "Secure Agent Management and Note-taking platform with ClawKeys©™ and ShellCryption©™.",
   "type": "module",
   "scripts": {
-    "dev": "tsx --watch --ignore data/** server.ts",
+    "dev": "vite",
+    "dev:server": "tsx --watch --ignore data/** server.ts",
     "build": "vite build",
     "preview": "vite preview",
-    "clean": "rm -rf dist",
-    "lint": "tsc --noEmit"
+    "lint": "tsc --noEmit",
+    "start": "NODE_ENV=production tsx server.ts &",
+    "start-dev": "npm run dev:server & npm run dev &",
+    "stop": "fuser -k 8282/tcp 8383/tcp || true",
+    "stop-dev": "fuser -k 8282/tcp 8383/tcp || true"
   },
   "dependencies": {
     "@google/genai": "^1.29.0",

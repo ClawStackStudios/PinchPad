@@ -23,6 +23,6 @@ COPY --from=builder /app/tsconfig.json ./
 # Install tsx to run server.ts
 RUN npm install -g tsx
 
-EXPOSE 3000
+EXPOSE 8383
 
 CMD ["tsx", "server.ts"]

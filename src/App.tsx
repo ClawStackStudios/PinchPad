@@ -1,5 +1,5 @@
 import React from 'react';
-import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { Navbar } from './components/Layout/Navbar';
 import { Landing } from './pages/Landing/Landing';
@@ -14,7 +14,7 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
   
   if (isMolting) {
     return (
-      <div className="min-h-screen flex flex-col items-center justify-center bg-[#0f1419] text-cyan-500">
+      <div className="min-h-screen flex flex-col items-center justify-center bg-[#0f1419] text-amber-500">
         <Loader2 className="w-12 h-12 animate-spin mb-4" />
         <p className="font-bold tracking-widest uppercase text-xs">Scanning Exoskeleton...</p>
       </div>
@@ -37,19 +37,22 @@ export default function App() {
 
 function AppContent() {
   const { isMolting } = useAuth();
+  const location = useLocation();
 
   if (isMolting) {
     return (
-      <div className="min-h-screen flex flex-col items-center justify-center bg-[#0f1419] text-cyan-500">
+      <div className="min-h-screen flex flex-col items-center justify-center bg-[#0f1419] text-amber-500">
         <Loader2 className="w-12 h-12 animate-spin mb-4" />
         <p className="font-bold tracking-widest uppercase text-xs">Initializing Habitat...</p>
       </div>
     );
   }
 
+  const hideNavbar = ['/login', '/register'].includes(location.pathname);
+
   return (
     <div className="min-h-screen bg-slate-50 dark:bg-[#0f1419] text-slate-900 dark:text-[#faf8f6] font-sans transition-colors duration-500">
-      <Navbar />
+      {!hideNavbar && <Navbar />}
       <Routes>
         <Route path="/" element={<Landing />} />
         <Route path="/register" element={<Register />} />

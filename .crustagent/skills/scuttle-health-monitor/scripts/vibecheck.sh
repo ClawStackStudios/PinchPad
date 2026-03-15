@@ -3,8 +3,8 @@
 # scuttle-health-monitor script
 # Part of the ShellPlate©™ Sovereign Philosophy
 
-FRONTEND_PORT=5757
-BACKEND_PORT=6262
+FRONTEND_PORT=8282
+BACKEND_PORT=8383
 
 echo "🦞 Initiating ShellPlate Vibecheck..."
 
@@ -25,11 +25,11 @@ else
 fi
 
 # 3. Check Database
-if [ -f "data/shellplate.db" ]; then
+if [ -f "data/clawstack.db" ]; then
     echo "✅ Database file exists."
     # Basic integrity check (if sqlite3 is available)
     if command -v sqlite3 &> /dev/null; then
-        VAL=$(sqlite3 data/shellplate.db "PRAGMA integrity_check;")
+        VAL=$(sqlite3 data/clawstack.db "PRAGMA integrity_check;")
         if [ "$VAL" == "ok" ]; then
             echo "✅ Database integrity: OK"
         else

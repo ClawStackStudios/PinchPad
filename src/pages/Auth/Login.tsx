@@ -1,6 +1,15 @@
-import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, Upload, ClipboardPaste, Key, Lock } from 'lucide-react';
+import React, { useState, useRef } from 'react';
+import { useNavigate, useSearchParams } from 'react-router-dom';
+import { 
+  ArrowLeft, 
+  Upload, 
+  ClipboardPaste, 
+  Key, 
+  Lock, 
+  AlertCircle, 
+  CheckCircle, 
+  Loader2 
+} from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { clsx, type ClassValue } from 'clsx';
 import { twMerge } from 'tailwind-merge';
@@ -10,13 +19,21 @@ function cn(...inputs: ClassValue[]) {
 }
 
 export function Login() {
+  const [searchParams, setSearchParams] = useSearchParams();
+  const initialMode = (searchParams.get('mode') as 'file' | 'paste') || 'file';
+  
   const [isMolting, setIsMolting] = useState(false);
   const [isCracked, setIsCracked] = useState('');
-  const [mode, setMode] = useState<'file' | 'paste'>('file');
+  const [mode, setMode] = useState<'file' | 'paste'>(initialMode);
   const [pastedKey, setPastedKey] = useState('');
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [isAdvancedOpen, setIsAdvancedOpen] = useState(false);
+  const [pasteUuid, setPasteUuid] = useState('');
+  const [pasteUsername, setPasteUsername] = useState('');
+  
   const { pinchAccessToken, pinchWithKey } = useAuth();
   const navigate = useNavigate();
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -39,7 +56,7 @@ export function Login() {
         await pinchAccessToken(content);
         navigate('/notes');
       } catch (err: any) {
-        setIsCracked(err.message);
+        setIsCracked(err.message || 'Failed to authenticate with identity file');
       } finally {
         setIsMolting(false);
       }
@@ -49,7 +66,7 @@ export function Login() {
 
   const handlePasteLogin = async () => {
     if (!pastedKey.startsWith('hu-')) {
-      setIsCracked('Invalid ClawKey format. Must start with hu-');
+      setIsCracked('Invalid PinchKey©™ format. Must start with hu-');
       return;
     }
 
@@ -57,153 +74,265 @@ export function Login() {
     setIsCracked('');
 
     try {
-      await pinchWithKey(pastedKey.trim());
+      await pinchWithKey(pastedKey.trim(), pasteUuid || undefined, pasteUsername || undefined);
       navigate('/notes');
     } catch (err: any) {
-      setIsCracked(err.message);
+      setIsCracked(err.message || 'Invalid PinchKey©™');
     } finally {
       setIsMolting(false);
     }
   };
 
-  const isHardShell = pastedKey.startsWith('hu-') && pastedKey.length >= 67;
+  const updateMode = (newMode: 'file' | 'paste') => {
+    setMode(newMode);
+    setSearchParams({ mode: newMode });
+    setIsCracked('');
+  };
+
+  const isHardShell = pastedKey.startsWith('hu-') && pastedKey.length === 67;
 
   return (
-    <div className="flex justify-center items-center min-h-[calc(100vh-4rem)] p-4">
-      <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-xl w-full max-w-md p-8 border-2 border-cyan-500">
+    <div className="bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-50 antialiased min-h-screen flex items-center justify-center p-4">
+      
+      <div className="w-full max-w-md bg-white dark:bg-slate-900 rounded-2xl shadow-xl p-8 border-2 border-amber-500">
+        
         <button 
-          onClick={() => navigate('/')}
-          className="inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-cyan-500 disabled:pointer-events-none disabled:opacity-50 text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white mb-6"
+          onClick={() => navigate('/')} 
+          className="mb-6 flex items-center text-sm font-medium text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-50 bg-transparent border-none cursor-pointer transition-colors p-0 focus:outline-none"
         >
-          <ArrowLeft className="w-4 h-4" /> Back to Home
+          <ArrowLeft className="w-4 h-4 mr-2" />
+          Back to Home
         </button>
 
         <div className="text-center mb-8">
-          <div className="w-16 h-16 bg-gradient-to-br from-red-500 to-red-600 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-lg shadow-red-200 dark:shadow-red-900/20">
-            <span className="text-3xl">🦞</span>
+          <div className="w-16 h-16 bg-gradient-to-br from-amber-500 to-amber-600 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-lg shadow-amber-200 dark:shadow-amber-900/20">
+            <span className="text-3xl select-none">🦞</span>
           </div>
-          <h1 className="text-2xl font-bold text-slate-900 dark:text-white">Welcome Back</h1>
-          <p className="text-slate-600 dark:text-slate-400">Login with your ClawChives©™ identity</p>
+          <h1 className="text-2xl font-bold text-slate-900 dark:text-slate-50 mb-2">Welcome Back</h1>
+          <p className="text-sm text-slate-600 dark:text-slate-400">Login with your <span className="font-semibold text-amber-500 uppercase">PinchPad©™</span> identity</p>
         </div>
 
+        {/* ── Mode toggle tabs ─────────────────────────────────────────────── */}
         <div className="flex rounded-xl border border-slate-200 dark:border-slate-700 overflow-hidden mb-6">
           <button 
-            onClick={() => setMode('file')}
+            onClick={() => updateMode('file')} 
             className={cn(
               "flex-1 flex items-center justify-center gap-2 py-2.5 text-sm font-medium transition-colors",
               mode === 'file' 
-                ? "bg-cyan-600 text-white" 
-                : "bg-slate-50 dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700"
+                ? "bg-amber-600 text-white" 
+                : "text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800"
             )}
           >
-            <Upload className="w-4 h-4" /> Upload File
+            <Upload className="w-4 h-4" />
+            Upload File
           </button>
           <button 
-            onClick={() => setMode('paste')}
+            onClick={() => updateMode('paste')} 
             className={cn(
               "flex-1 flex items-center justify-center gap-2 py-2.5 text-sm font-medium transition-colors",
               mode === 'paste' 
-                ? "bg-cyan-600 text-white" 
-                : "bg-slate-50 dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700"
+                ? "bg-amber-600 text-white" 
+                : "text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800"
             )}
           >
-            <ClipboardPaste className="w-4 h-4" /> Paste ClawKey©™
+            <ClipboardPaste className="w-4 h-4" />
+            Paste ClawKey©™
           </button>
         </div>
 
+        {/* ── Error banner ─────────────────────────────────────────────────── */}
         {isCracked && (
-          <div className="p-3 mb-6 bg-red-50 dark:bg-red-950/20 border border-red-200 dark:border-red-900/40 text-red-700 dark:text-red-400 rounded-xl text-sm">
-            ✗ {isCracked}
+          <div className="mb-4 flex items-start gap-3 p-4 bg-red-50 dark:bg-red-950/20 border border-red-200 dark:border-red-900/40 rounded-xl">
+            <AlertCircle className="w-5 h-5 text-red-600 dark:text-red-500 flex-shrink-0 mt-0.5" />
+            <p className="text-sm text-red-800 dark:text-red-400">{isCracked}</p>
           </div>
         )}
 
-        <div className="space-y-6">
-          {mode === 'file' ? (
+        {/* ── Upload mode ──────────────────────────────────────────────────── */}
+        {mode === 'file' && (
+          <div className="space-y-6">
             <div>
-              <label className="text-sm font-medium text-slate-900 dark:text-white">Your Identity File</label>
+              <label className="block text-sm font-medium text-slate-700 dark:text-slate-300">Your Identity File</label>
               <div className="mt-2">
-                <input type="file" accept=".json" className="hidden" id="key-file" onChange={handleFileSelect} disabled={isMolting} />
+                <input 
+                  id="key-file-input" 
+                  type="file" 
+                  accept=".json" 
+                  onChange={handleFileSelect} 
+                  className="hidden" 
+                  disabled={isMolting} 
+                  ref={fileInputRef}
+                />
                 <label 
-                  htmlFor="key-file" 
+                  htmlFor="key-file-input" 
                   className={cn(
                     "flex items-center justify-center gap-3 w-full p-6 border-2 border-dashed rounded-xl cursor-pointer transition-colors",
                     selectedFile 
-                      ? "border-cyan-500 bg-cyan-50/50 dark:bg-cyan-950/20" 
-                      : "border-slate-300 dark:border-slate-700 hover:border-cyan-400 hover:bg-cyan-50/50 dark:hover:bg-cyan-950/20"
+                      ? "border-amber-500 bg-amber-50/50 dark:bg-amber-950/20" 
+                      : "border-slate-300 dark:border-slate-700 hover:border-amber-400 hover:bg-amber-50/50 dark:hover:bg-amber-950/20"
                   )}
                 >
-                  <Upload className={cn("w-8 h-8", selectedFile ? "text-cyan-500" : "text-slate-400")} />
-                  <div>
-                    {selectedFile ? (
-                      <>
-                        <p className="font-medium text-cyan-700 dark:text-cyan-400">✓ {selectedFile.name}</p>
-                        <p className="text-sm text-cyan-600/80 dark:text-cyan-500/80">Ready to authenticate. Click to change.</p>
-                      </>
-                    ) : (
-                      <>
-                        <p className="font-medium text-slate-900 dark:text-white">Click to upload your identity file</p>
-                        <p className="text-sm text-slate-500">.json files only</p>
-                      </>
-                    )}
+                  {selectedFile ? (
+                    <CheckCircle className="w-8 h-8 text-amber-600 dark:text-amber-500" />
+                  ) : (
+                    <Upload className="w-8 h-8 text-slate-400" />
+                  )}
+                  <div className="text-left">
+                    <p className={cn("font-medium", selectedFile ? "text-slate-900 dark:text-slate-100" : "text-slate-900 dark:text-slate-50")}>
+                      {selectedFile ? selectedFile.name : "Click to upload your identity file"}
+                    </p>
+                    <p className="text-sm text-slate-500 dark:text-slate-400">
+                      {selectedFile ? "File selected — click Login to proceed" : ".json files only"}
+                    </p>
                   </div>
                 </label>
               </div>
             </div>
-          ) : (
+
+            {/* Info Card */}
+            <div className="bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-900/40 rounded-xl p-4">
+              <div className="flex items-start gap-3">
+                <Lock className="w-5 h-5 text-amber-600 dark:text-amber-500 flex-shrink-0 mt-0.5" />
+                <div>
+                  <p className="text-sm font-medium text-amber-900 dark:text-amber-500">Can't find your identity file?</p>
+                  <p className="text-sm text-amber-700 dark:text-amber-600/80 mt-1">
+                    Your identity file is the only way to access your account. If you've lost it, you'll need to create a new account.
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            <button 
+              onClick={handleFileLogin}
+              disabled={isMolting || !selectedFile} 
+              className="w-full inline-flex items-center justify-center px-8 py-3 bg-gradient-to-r from-amber-600 to-amber-700 hover:from-amber-700 hover:to-amber-800 text-white text-base font-medium rounded-md shadow-lg shadow-amber-200 dark:shadow-amber-900/40 transition-all disabled:opacity-50 disabled:cursor-not-allowed group"
+            >
+              {isMolting ? (
+                <span className="flex items-center">
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                  Verifying Identity...
+                </span>
+              ) : (
+                <span className="flex items-center">
+                  <Key className="w-4 h-4 mr-2" />
+                  Login with Identity File
+                </span>
+              )}
+            </button>
+          </div>
+        )}
+
+        {/* ── Paste mode ───────────────────────────────────────────────────── */}
+        {mode === 'paste' && (
+          <div className="space-y-4">
             <div>
-              <label className="text-sm font-medium text-slate-900 dark:text-white">ClawKey</label>
-              <div className="mt-2">
-                <textarea
-                  value={pastedKey}
-                  onChange={(e) => { setPastedKey(e.target.value); setIsCracked(""); }}
-                  placeholder="Paste your hu-[64 chars] key here..."
-                  rows={3}
-                  className="w-full px-4 py-3 text-sm font-mono bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-xl text-slate-900 dark:text-white placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-cyan-500 resize-none"
+              <label htmlFor="paste-key" className="block text-sm font-medium text-slate-700 dark:text-slate-300">ClawKey©™</label>
+              <textarea
+                id="paste-key"
+                value={pastedKey}
+                onChange={(e) => { setPastedKey(e.target.value); setIsCracked(''); }}
+                placeholder="hu-..."
+                rows={3}
+                className="mt-1 w-full px-3 py-2 text-sm font-mono bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-slate-900 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-amber-500 dark:focus:ring-amber-600 resize-none"
+                autoComplete="off"
+                spellCheck={false}
+              ></textarea>
+              
+              {pastedKey && (
+                <div className="mt-1 min-h-[1.25rem]">
+                  {isHardShell ? (
+                    <p className="flex items-center gap-1 text-xs text-amber-600 dark:text-amber-400">
+                      <CheckCircle className="w-3 h-3" />
+                      Valid ClawKey©™ format
+                    </p>
+                  ) : (
+                    <p className="text-xs text-red-600 dark:text-red-400">
+                      {!pastedKey.startsWith('hu-') 
+                        ? 'ClawKey©™ must start with "hu-"' 
+                        : `Key must be 67 characters (hu- + 64). Current length: ${pastedKey.length}`}
+                    </p>
+                  )}
+                </div>
+              )}
+            </div>
+
+            {/* Info Card - mapped to Amber theme */}
+            <div className="bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-900/40 rounded-xl p-4">
+              <div className="flex items-start gap-3">
+                <CheckCircle className="w-5 h-5 text-amber-600 dark:text-amber-500 flex-shrink-0 mt-0.5" />
+                <div>
+                  <p className="text-sm font-medium text-amber-900 dark:text-amber-500 text-left">One-Field Login</p>
+                  <p className="text-sm text-amber-700 dark:text-amber-600/80 mt-1 text-left">
+                    Your <span className="font-semibold italic">ClawKey©™</span> is all you need to login. Advanced options are available for troubleshooting.
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            {/* Advanced Toggle */}
+            <div className="flex justify-start">
+              <button 
+                type="button" 
+                onClick={() => setIsAdvancedOpen(!isAdvancedOpen)} 
+                className="text-xs text-slate-500 dark:text-slate-400 hover:text-amber-600 dark:hover:text-amber-400 transition-colors flex items-center bg-transparent border-none p-0 cursor-pointer focus:outline-none"
+              >
+                <span>{isAdvancedOpen ? 'Hide Advanced Options' : 'Show Advanced Options (UUID/Username)'}</span>
+              </button>
+            </div>
+
+            {/* Advanced Options Panel */}
+            <div className={cn(
+              "space-y-4 overflow-hidden transition-all duration-300 ease-in-out",
+              isAdvancedOpen ? "max-h-[300px] opacity-100" : "max-h-0 opacity-0"
+            )}>
+              <div className="pt-2">
+                <label htmlFor="paste-uuid" className="text-left block mb-1 text-sm font-medium text-slate-700 dark:text-slate-300">Your UUID (Optional)</label>
+                <input
+                  id="paste-uuid"
+                  type="text"
+                  value={pasteUuid}
+                  onChange={(e) => setPasteUuid(e.target.value)}
+                  placeholder="550e8400-e29b-41d4-a716-446655440000"
+                  className="flex h-10 w-full rounded-md border border-slate-300 bg-transparent px-3 py-2 text-sm font-mono placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-transparent dark:border-slate-700 dark:text-white dark:focus:ring-amber-500"
                   autoComplete="off"
                   spellCheck={false}
                 />
-                {pastedKey && (
-                  <div className="mt-2 text-sm">
-                    {isHardShell ? (
-                      <span className="text-green-600 dark:text-green-400 font-medium">✓ Valid key format</span>
-                    ) : (
-                      <span className="text-red-600 dark:text-red-400">
-                        {!pastedKey.startsWith('hu-') 
-                          ? '✗ Key must start with hu-' 
-                          : `✗ Must be at least 67 characters (currently ${pastedKey.length})`}
-                      </span>
-                    )}
-                  </div>
-                )}
               </div>
-            </div>
-          )}
 
-          <div className="bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-900/40 rounded-xl p-4">
-            <div className="flex items-start gap-3">
-              <Lock className="w-5 h-5 text-amber-600 dark:text-amber-500 flex-shrink-0 mt-0.5" />
               <div>
-                <p className="text-sm font-medium text-amber-900 dark:text-amber-500">Can't find your identity file?</p>
-                <p className="text-sm text-amber-700 dark:text-amber-600/80 mt-1">
-                  Your identity file is the only way to access your account. If you've lost it, you'll need to create a new account.
-                </p>
+                <label htmlFor="paste-username" className="text-left block mb-1 text-sm font-medium text-slate-700 dark:text-slate-300">Username (Optional)</label>
+                <input
+                  id="paste-username"
+                  type="text"
+                  value={pasteUsername}
+                  onChange={(e) => setPasteUsername(e.target.value)}
+                  placeholder="your-username"
+                  className="flex h-10 w-full rounded-md border border-slate-300 bg-transparent px-3 py-2 text-sm placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-transparent dark:border-slate-700 dark:text-white dark:focus:ring-amber-500"
+                  autoComplete="off"
+                />
               </div>
             </div>
-          </div>
 
-          <button 
-            onClick={mode === 'file' ? handleFileLogin : handlePasteLogin}
-            disabled={isMolting || (mode === 'file' ? !selectedFile : !isHardShell)}
-            className="inline-flex items-center justify-center gap-2 whitespace-nowrap text-sm font-medium transition-colors h-12 rounded-xl px-8 w-full bg-gradient-to-r from-cyan-600 to-cyan-700 hover:from-cyan-700 hover:to-cyan-800 shadow-lg shadow-cyan-200 dark:shadow-cyan-900/40 text-white disabled:opacity-50 disabled:cursor-not-allowed disabled:from-slate-400 disabled:to-slate-500 disabled:shadow-none"
-          >
-            <Key className="w-4 h-4" /> 
-            {isMolting 
-              ? 'Authenticating...' 
-              : mode === 'file' 
-                ? 'Login with Identity File' 
-                : 'Login with ClawKey'}
-          </button>
-        </div>
+            <button 
+              onClick={handlePasteLogin}
+              disabled={isMolting || !isHardShell} 
+              className="w-full inline-flex items-center justify-center px-8 py-3 bg-gradient-to-r from-amber-600 to-amber-700 hover:from-amber-700 hover:to-amber-800 text-white text-base font-medium rounded-md shadow-lg shadow-amber-200 dark:shadow-amber-900/40 transition-all disabled:opacity-50 disabled:cursor-not-allowed group"
+            >
+              {isMolting ? (
+                <span className="flex items-center">
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                  Verifying Identity...
+                </span>
+              ) : (
+                <span className="flex items-center">
+                  <Key className="w-4 h-4 mr-2" />
+                  Login with ClawKey©™
+                </span>
+              )}
+            </button>
+          </div>
+        )}
+
       </div>
     </div>
   );

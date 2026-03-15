@@ -29,7 +29,7 @@ export function downloadIdentityFile(username: string, uuid: string, token: stri
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
   a.href = url;
-  a.download = `clawchives_identity_${username}.json`;
+  a.download = `pinchpad_identity_${username}.json`;
   document.body.appendChild(a);
   a.click();
   document.body.removeChild(a);

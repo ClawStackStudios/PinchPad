@@ -3,7 +3,6 @@ import cors from 'cors';
 import helmet from 'helmet';
 import rateLimit from 'express-rate-limit';
 import path from 'path';
-import { createServer as createViteServer } from 'vite';
 
 import authRoutes from './src/server/routes/auth';
 import notesRoutes from './src/server/routes/notes';
@@ -12,7 +11,7 @@ import { purgeExpiredTokens } from './src/server/db';
 
 async function startServer() {
   const app = express();
-  const PORT = 3000;
+  const PORT = process.env.PORT ? parseInt(process.env.PORT, 10) : 8383;
 
   // Initialize Reef: Purge expired tokens on startup
   purgeExpiredTokens();
@@ -25,7 +24,7 @@ async function startServer() {
   }));
   
   app.use(cors({
-    origin: process.env.CORS_ORIGIN || 'http://localhost:3000',
+    origin: process.env.CORS_ORIGIN || 'http://localhost:8282',
     credentials: true,
   }));
   
@@ -47,14 +46,8 @@ async function startServer() {
     res.json({ status: 'ok' });
   });
 
-  // Vite middleware for development
-  if (process.env.NODE_ENV !== 'production') {
-    const vite = await createViteServer({
-      server: { middlewareMode: true },
-      appType: 'spa',
-    });
-    app.use(vite.middlewares);
-  } else {
+  // In production (or when decoupling frontend/backend), serve static files if dist exists
+  if (process.env.NODE_ENV === 'production') {
     const distPath = path.join(process.cwd(), 'dist');
     app.use(express.static(distPath));
     app.get('*', (req, res) => {

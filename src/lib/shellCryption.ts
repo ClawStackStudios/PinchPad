@@ -13,7 +13,7 @@ export async function deriveShellKey(huKey: string, userUuid: string): Promise<C
       name: 'HKDF',
       hash: 'SHA-256',
       salt: encoder.encode(userUuid),
-      info: encoder.encode('clawchives-shellcryption-v1')
+      info: encoder.encode('pinchpad-shellcryption-v1')
     },
     keyMaterial,
     { name: 'AES-GCM', length: 256 },
@@ -59,7 +59,7 @@ export async function encryptField(plaintext: string, shellKey: CryptoKey, aad: 
   const result = {
     v: 1,
     alg: 'AES-GCM-256',
-    iv: arrayBufferToBase64(iv),
+    iv: arrayBufferToBase64(iv.buffer),
     ct: arrayBufferToBase64(ciphertextBuffer),
     aad
   };

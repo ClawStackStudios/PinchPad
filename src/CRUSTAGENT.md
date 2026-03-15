@@ -8,7 +8,7 @@ This document serves as the MAIN locus for high-level **CrustCode©™** pattern
 3. **Tailwind Ecosystem**: Ensure usage of `@tailwindcss/vite` pattern for styling. Adhere to the `MoltTheme` for view transitions.
 
 ## 🔒 Source Stability Locks
-- **ClawKeys©™ Authorization**: Client-side cryptography happens strictly within browser contexts. Do not offload `hu-` key generation to the server.
+- **PinchKeys©™ Authorization**: Client-side cryptography happens strictly within browser contexts. Do not offload `hu-` key generation to the server.
 - **ShellCryption©™ Integrity**: AES-256-GCM is non-negotiable for `title` and `content` fields. Keys (`hk-`) must never be transmitted over the wire un-hashed.
 - **SQLite Transactions**: Database actions must avoid race conditions. Given Node.js async nature and `better-sqlite3`'s synchronous API, ensure thread-safe wrapping where necessary.
 

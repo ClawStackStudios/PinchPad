@@ -44,21 +44,21 @@ export function Agents() {
       <div className="flex justify-between items-center mb-8">
         <div>
           <h1 className="text-3xl font-black text-slate-900 dark:text-white flex items-center gap-3">
-            <span className="text-2xl">🦞</span> Lobster Keys
+            <span className="text-2xl">🦞</span> Lobster Permits©™
           </h1>
-          <p className="text-slate-500 mt-2">Manage delegated agent access.</p>
+          <p className="text-slate-500 mt-2">Manage delegated agent access with <span className="font-semibold text-amber-500">ClawKeys©™</span>.</p>
         </div>
         <button 
           onClick={() => setShowNew(true)}
-          className="flex items-center gap-2 px-4 py-2 bg-cyan-600 hover:bg-cyan-700 text-white rounded-lg font-medium"
+          className="flex items-center gap-2 px-4 py-2 bg-amber-600 hover:bg-amber-700 text-white rounded-lg font-medium shadow-lg shadow-amber-500/10 transition-all font-sans uppercase tracking-wider text-xs"
         >
-          <Plus className="w-4 h-4" /> New Lobster
+          <Plus className="w-4 h-4" /> New Permit
         </button>
       </div>
 
       {newKey && (
         <div className="mb-8 p-6 bg-green-500/10 border border-green-500/30 rounded-2xl">
-          <h3 className="text-green-500 font-bold mb-2">Lobster Key Generated</h3>
+          <h3 className="text-green-500 font-bold mb-2">ClawKey©™ Hatched</h3>
           <p className="text-slate-600 dark:text-slate-300 text-sm mb-4">Copy this key now. It will never be shown again.</p>
           <code className="block p-4 bg-black/20 rounded-lg text-green-400 font-mono break-all">{newKey}</code>
           <button onClick={() => setNewKey('')} className="mt-4 px-4 py-2 bg-green-500/20 text-green-500 rounded-lg text-sm font-medium hover:bg-green-500/30">I have saved it</button>
@@ -67,14 +67,14 @@ export function Agents() {
 
       {showNew && (
         <div className="mb-8 p-6 bg-white dark:bg-[#0f1419] border border-slate-200 dark:border-slate-800 rounded-2xl">
-          <h3 className="text-lg font-bold text-slate-900 dark:text-white mb-4">Create New Lobster Key</h3>
+          <h3 className="text-lg font-bold text-slate-900 dark:text-white mb-4">Hatch New Lobster Permit</h3>
           <div className="flex gap-4">
             <input 
               type="text" 
               value={name}
               onChange={e => setName(e.target.value)}
               placeholder="e.g., Sync Bot"
-              className="flex-1 bg-slate-50 dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-xl px-4 py-2 text-slate-900 dark:text-white focus:outline-none focus:border-cyan-500"
+              className="flex-1 bg-slate-50 dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-xl px-4 py-2 text-slate-900 dark:text-white focus:outline-none focus:border-amber-500"
             />
             <button onClick={lockTheClaw} disabled={!name} className="px-6 py-2 bg-red-500 hover:bg-red-600 text-white font-bold rounded-xl disabled:opacity-50">
               Create

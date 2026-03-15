@@ -97,7 +97,7 @@ export function Notes() {
   if (isMolting) {
     return (
       <div className="flex flex-col items-center justify-center h-[calc(100vh-4rem)] text-slate-500">
-        <Loader2 className="w-12 h-12 animate-spin text-cyan-500 mb-4" />
+        <Loader2 className="w-12 h-12 animate-spin text-amber-500 mb-4" />
         <p className="font-bold text-lg">Scuttling the pot...</p>
       </div>
     );
@@ -107,14 +107,14 @@ export function Notes() {
     <div className="max-w-5xl mx-auto p-4 sm:p-8">
       <div className="flex justify-between items-center mb-8">
         <h1 className="text-3xl font-black text-slate-900 dark:text-white flex items-center gap-3">
-          <Shield className="text-cyan-500" /> Lobster Pot
+          <Shield className="text-amber-500" /> Pearl Pot©™
         </h1>
         <button 
           onClick={clearClaw}
           disabled={isPinchedByProcess}
-          className="flex items-center gap-2 px-4 py-2 bg-cyan-600 hover:bg-cyan-700 text-white rounded-lg font-medium transition-all disabled:opacity-50 shadow-lg shadow-cyan-500/10"
+          className="flex items-center gap-2 px-4 py-2 bg-amber-600 hover:bg-amber-700 text-white rounded-lg font-medium transition-all disabled:opacity-50 shadow-lg shadow-amber-500/10"
         >
-          <Plus className="w-4 h-4" /> New Note
+          <Plus className="w-4 h-4" /> New Pearl
         </button>
       </div>
 
@@ -134,8 +134,8 @@ export function Notes() {
                 className={cn(
                   "group relative p-5 rounded-2xl border-2 cursor-pointer transition-all duration-300 overflow-hidden",
                   editing?.id === polyP.id 
-                    ? "bg-cyan-500/5 border-cyan-500 shadow-lg shadow-cyan-500/10" 
-                    : "bg-white dark:bg-[#151b23] border-slate-200 dark:border-slate-800 hover:border-cyan-500/40 hover:shadow-md"
+                    ? "bg-amber-500/5 border-amber-500 shadow-lg shadow-amber-500/10" 
+                    : "bg-white dark:bg-[#151b23] border-slate-200 dark:border-slate-800 hover:border-amber-500/40 hover:shadow-md"
                 )}
                 whileHover={{ y: -2 }}
                 whileTap={{ scale: 0.98 }}
@@ -144,7 +144,7 @@ export function Notes() {
                 {editing?.id === polyP.id && (
                   <motion.div 
                     layoutId="active-pill"
-                    className="absolute left-0 top-0 bottom-0 w-1.5 bg-cyan-500"
+                    className="absolute left-0 top-0 bottom-0 w-1.5 bg-amber-500"
                   />
                 )}
 
@@ -152,13 +152,13 @@ export function Notes() {
                   <div className="flex justify-between items-start mb-2">
                     <h3 className={cn(
                       "font-bold truncate pr-8 transition-colors",
-                      editing?.id === polyP.id ? "text-cyan-500" : "text-slate-900 dark:text-white"
+                      editing?.id === polyP.id ? "text-amber-500" : "text-slate-900 dark:text-white"
                     )}>
                       {polyP.title}
                     </h3>
                     <ChevronRight className={cn(
                       "w-4 h-4 transition-all duration-300",
-                      editing?.id === polyP.id ? "text-cyan-500 translate-x-0" : "text-slate-400 -translate-x-2 opacity-0 group-hover:opacity-100 group-hover:translate-x-0"
+                      editing?.id === polyP.id ? "text-amber-500 translate-x-0" : "text-slate-400 -translate-x-2 opacity-0 group-hover:opacity-100 group-hover:translate-x-0"
                     )} />
                   </div>
                   
@@ -200,7 +200,7 @@ export function Notes() {
                 onClick={clearClaw}
                 className="px-4 py-2 bg-red-500/10 text-red-500 hover:bg-red-500/20 rounded-lg text-sm font-bold transition-colors"
               >
-                Pinch a New Note
+                Pinch a New Pearl
               </button>
             </div>
           )}
@@ -213,14 +213,14 @@ export function Notes() {
               type="text" 
               value={title}
               onChange={e => setTitle(e.target.value)}
-              placeholder="Note Title"
+              placeholder="Pearl Title"
               disabled={isPinchedByProcess}
               className="w-full bg-transparent text-3xl font-black text-slate-900 dark:text-white mb-6 focus:outline-none placeholder:text-slate-200 dark:placeholder:text-slate-800"
             />
             <textarea 
               value={content}
               onChange={e => setContent(e.target.value)}
-              placeholder="Write your secure note here..."
+              placeholder="Write your secure Pearl here..."
               disabled={isPinchedByProcess}
               className="w-full h-[32rem] bg-transparent text-lg text-slate-700 dark:text-slate-300 resize-none focus:outline-none placeholder:text-slate-200 dark:placeholder:text-slate-800 leading-relaxed"
             />
@@ -237,8 +237,8 @@ export function Notes() {
                   </button>
                 )}
                 {isPinchedByProcess && (
-                  <span className="text-xs font-bold text-cyan-500 animate-pulse uppercase tracking-widest ml-2 font-mono">
-                    Hardenening Shell...
+                  <span className="text-xs font-bold text-amber-500 animate-pulse uppercase tracking-widest ml-2 font-mono">
+                    Hardening Shell...
                   </span>
                 )}
               </div>
@@ -256,7 +256,7 @@ export function Notes() {
                   className="inline-flex items-center gap-3 px-8 py-2.5 bg-red-500 hover:bg-red-600 text-white font-black rounded-xl disabled:opacity-50 shadow-xl shadow-red-500/20 transition-all active:scale-95 active:shadow-inner"
                 >
                   {isPinchedByProcess && !editing ? <Loader2 className="w-5 h-5 animate-spin" /> : <Shield className="w-5 h-5" />}
-                  Save Note
+                  Shell the Pearl
                 </button>
               </div>
             </div>
