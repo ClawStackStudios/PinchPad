@@ -4,7 +4,12 @@ import { useAuth } from '../../context/AuthContext';
 import { useDashboard } from '../../context/DashboardContext';
 import { noteService, Note } from '../../services/noteService';
 
-function PearlCard({ pearl, onEdit }: { pearl: Note; onEdit: (note: Note) => void }) {
+interface PearlCardProps {
+  pearl: Note;
+  onEdit: (note: Note) => void;
+}
+
+const PearlCard: React.FC<PearlCardProps> = ({ pearl, onEdit }) => {
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
     return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
@@ -52,7 +57,7 @@ function PearlCard({ pearl, onEdit }: { pearl: Note; onEdit: (note: Note) => voi
       </div>
     </button>
   );
-}
+};
 
 function PearlSection({
   title,

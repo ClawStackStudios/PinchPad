@@ -71,7 +71,7 @@ export function Register() {
       try {
         await pinchWithKey(lobster.huKey, lobster.uuid, username);
         setStep(3); // Success step
-        setTimeout(() => navigate('/notes'), 2000);
+        setTimeout(() => navigate('/dashboard'), 2000);
       } catch (err: any) {
         setIsCracked(err.message);
       } finally {

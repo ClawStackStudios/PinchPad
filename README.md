@@ -101,22 +101,28 @@ graph TD
 
 ## 🛠️ NPC Commands (NPM Scripts)
 
-### Core Commands
+### ⛵ The Great Scuttle (Production)
+Commands for launching and managing the production-grade Hard Shell.
+
+- `npm run scuttle:prod-start`: Builds and hatches the production server in the background.
+- `npm run scuttle:prod-stop`: Safely declaws and halts the production ports.
+- `npm run scuttle:reset`: Full purge of `dist` and halt of production services.
+
+### 🌊 The Coral Nursery (Development)
+Fast-iteration commands for building the reef.
+
+- `npm run scuttle:dev-start`: Launches the dev habitat with hot-reloading.
+- `npm run scuttle:dev-stop`: Halts the development habitat.
+- `npm run scuttle:reset-dev`: Purges `dist` and halts development services.
+
+---
+
+### 📜 Command Reference
+
 | Command | Action |
 | :--- | :--- |
-| `npm run dev` | Starts the Vite dev server (frontend only). |
-| `npm run dev:server` | Starts the Express backend with watch mode. |
 | `npm run build` | Builds the production "Hard Shell" dist. |
-| `npm run preview` | Previews the production build locally. |
 | `npm run lint` | Scans the exoskeleton for type errors. |
-
-### 🦞 The Great Scuttle (Full Stack Commands)
-
-**Development:**
-```bash
-npm run scuttle:dev-start      # Start backend + frontend in parallel
-npm run scuttle:dev-stop       # Stop all dev processes
-npm run scuttle:reset-dev      # Clear databases, keep code intact
 ```
 
 **Production:**

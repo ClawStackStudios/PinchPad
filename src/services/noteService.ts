@@ -38,7 +38,7 @@ export const noteService = {
       pinned: pinned ? 1 : 0
     });
 
-    const note = decryptRecord(response.data, ['title', 'content'], shellKey, 'notes');
+    const note = await decryptRecord(response.data, ['title', 'content'], shellKey, 'notes');
     return {
       ...note,
       starred: !!note.starred,
@@ -57,7 +57,7 @@ export const noteService = {
       pinned: pinned ? 1 : 0
     });
 
-    const note = decryptRecord(response.data, ['title', 'content'], shellKey, 'notes');
+    const note = await decryptRecord(response.data, ['title', 'content'], shellKey, 'notes');
     return {
       ...note,
       starred: !!note.starred,
