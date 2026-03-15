@@ -6,7 +6,7 @@ import authRouter from '../../src/server/routes/auth';
 import notesRouter from '../../src/server/routes/notes';
 import agentsRouter from '../../src/server/routes/agents';
 
-describe.skip('Cross-User Data Isolation', () => {
+describe('Cross-User Data Isolation', () => {
   let db: Database.Database;
   let app: express.Application;
 
@@ -337,13 +337,16 @@ describe.skip('Cross-User Data Isolation', () => {
         new Date().toISOString()
       );
 
-      // User B tries to fetch it via API
+      // User B tries to fetch it via API (should only see their own note from test 10)
       const response = await request(app)
         .get('/api/notes')
         .set('Authorization', `Bearer ${tokenB}`);
 
       expect(response.status).toBe(200);
-      expect(response.body.data).toHaveLength(0);
+      expect(response.body.data).toHaveLength(1);
+      expect(response.body.data[0].id).toBe('note-b-isolation-1');
+      // Verify user A's attack note is NOT in the results
+      expect(response.body.data.some((note: any) => note.id === 'note-attack-test')).toBe(false);
     });
 
     it('20. Unauthenticated request cannot access any user data', async () => {

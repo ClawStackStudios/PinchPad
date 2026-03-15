@@ -6,7 +6,7 @@ import authRouter, { TOKEN_TTL_DEFAULT } from '../../src/server/routes/auth';
 import notesRouter from '../../src/server/routes/notes';
 import { requireAuth } from '../../src/server/middleware/auth';
 
-describe.skip('Token Lifecycle Integration', () => {
+describe('Token Lifecycle Integration', () => {
   let db: Database.Database;
   let app: express.Application;
   let testUuid: string;
