@@ -39,10 +39,13 @@
     },
     "ui": {
       "sync_theme_initialization": true,
-      "visual_hierarchy_lock": true
+      "visual_hierarchy_lock": true,
+      "brand_color_primary": "#f59e0b",
+      "brand_pivot_locked": true,
+      "allowed_exceptions": ["Localized contextual buttons (e.g. Cyan 'Create Account')"]
     }
   },
   "status": "STABLE_LOCKED",
-  "last_lock_update": "2026-03-14T20:47:00Z",
+  "last_lock_update": "2026-03-14T22:23:00Z",
   "maintained_by": "CrustAgent©™"
 }

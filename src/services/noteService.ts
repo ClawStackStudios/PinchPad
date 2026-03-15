@@ -6,6 +6,8 @@ export interface Note {
   user_uuid: string;
   title: string;
   content: string;
+  starred: boolean;
+  pinned: boolean;
   created_at: string;
   updated_at: string;
 }
@@ -14,45 +16,73 @@ export const noteService = {
   async getAll(shellKey: CryptoKey): Promise<Note[]> {
     const response = await restAdapter.GET('/api/notes');
     const decryptedNotes = await Promise.all(
-      response.data.map((note: Note) => decryptRecord(note, ['title', 'content'], shellKey, 'notes'))
+      response.data.map((note: any) => decryptRecord(note, ['title', 'content'], shellKey, 'notes'))
     );
-    return decryptedNotes;
+    return decryptedNotes.map(note => ({
+      ...note,
+      starred: !!note.starred,
+      pinned: !!note.pinned
+    }));
   },
 
-  async create(title: string, content: string, shellKey: CryptoKey): Promise<Note> {
+  async create(title: string, content: string, shellKey: CryptoKey, starred = false, pinned = false): Promise<Note> {
     const tempId = crypto.randomUUID();
     const tempRecord = { id: tempId, title, content };
     const encrypted = await encryptRecord(tempRecord, ['title', 'content'], shellKey, 'notes');
-    
-    // We send the encrypted title and content. The server will assign a new ID,
-    // but wait, the AAD uses the ID. If the server assigns a new ID, the AAD will mismatch!
-    // So the client MUST generate the ID and send it, OR the server generates it and we encrypt AFTER?
-    // The prompt says: "AAD: record ID + table name".
-    // Let's have the client generate the ID and send it, or we can just use the server's ID.
-    // Wait, the server route `POST /api/notes` generates the ID.
-    // If the server generates the ID, the client can't know the AAD before sending.
-    // Let's modify the server route to accept the ID from the client, or we change the AAD.
-    // Let's modify the server route to accept the ID from the client.
-    
+
     const response = await restAdapter.POST('/api/notes', {
       id: tempId,
       title: encrypted.title,
-      content: encrypted.content
+      content: encrypted.content,
+      starred: starred ? 1 : 0,
+      pinned: pinned ? 1 : 0
     });
-    
-    return decryptRecord(response.data, ['title', 'content'], shellKey, 'notes');
+
+    const note = decryptRecord(response.data, ['title', 'content'], shellKey, 'notes');
+    return {
+      ...note,
+      starred: !!note.starred,
+      pinned: !!note.pinned
+    };
   },
 
-  async update(id: string, title: string, content: string, shellKey: CryptoKey): Promise<Note> {
+  async update(id: string, title: string, content: string, shellKey: CryptoKey, starred = false, pinned = false): Promise<Note> {
     const tempRecord = { id, title, content };
     const encrypted = await encryptRecord(tempRecord, ['title', 'content'], shellKey, 'notes');
 
     const response = await restAdapter.PUT(`/api/notes/${id}`, {
       title: encrypted.title,
-      content: encrypted.content
+      content: encrypted.content,
+      starred: starred ? 1 : 0,
+      pinned: pinned ? 1 : 0
     });
 
-    return decryptRecord(response.data, ['title', 'content'], shellKey, 'notes');
+    const note = decryptRecord(response.data, ['title', 'content'], shellKey, 'notes');
+    return {
+      ...note,
+      starred: !!note.starred,
+      pinned: !!note.pinned
+    };
+  },
+
+  async toggleStarred(id: string, starred: boolean): Promise<Note> {
+    const response = await restAdapter.PATCH(`/api/notes/${id}/starred`, { starred: starred ? 1 : 0 });
+    const note = response.data;
+    return {
+      ...note,
+      starred: !!note.starred,
+      pinned: !!note.pinned
+    };
+  },
+
+  async togglePinned(id: string, pinned: boolean): Promise<Note> {
+    const response = await restAdapter.PATCH(`/api/notes/${id}/pinned`, { pinned: pinned ? 1 : 0 });
+    const note = response.data;
+    return {
+      ...note,
+      starred: !!note.starred,
+      pinned: !!note.pinned
+    };
   },
 
   async delete(id: string): Promise<void> {

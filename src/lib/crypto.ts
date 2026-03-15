@@ -1,10 +1,14 @@
 export function generateBase62(length: number): string {
   const charset = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
   let result = '';
-  const randomValues = new Uint32Array(length);
-  window.crypto.getRandomValues(randomValues);
-  for (let i = 0; i < length; i++) {
-    result += charset[randomValues[i] % 62];
+  const randomBuffer = new Uint8Array(1);
+  
+  while (result.length < length) {
+    window.crypto.getRandomValues(randomBuffer);
+    const val = randomBuffer[0];
+    if (val < 248) { // 256 - (256 % 62) = 248
+      result += charset[val % 62];
+    }
   }
   return result;
 }

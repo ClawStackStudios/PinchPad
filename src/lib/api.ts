@@ -7,7 +7,7 @@ export function getApiBaseUrl(): string {
 
 export const restAdapter = {
   async GET(endpoint: string): Promise<any> {
-    const token = sessionStorage.getItem('cc_api_token');
+    const token = localStorage.getItem('cc_api_token');
     const response = await apiFetch(`${getApiBaseUrl()}${endpoint}`, {
       headers: { 'Authorization': `Bearer ${token}` }
     });
@@ -16,7 +16,7 @@ export const restAdapter = {
   },
 
   async POST(endpoint: string, body: any): Promise<any> {
-    const token = sessionStorage.getItem('cc_api_token');
+    const token = localStorage.getItem('cc_api_token');
     const response = await apiFetch(`${getApiBaseUrl()}${endpoint}`, {
       method: 'POST',
       headers: {
@@ -33,7 +33,7 @@ export const restAdapter = {
   },
 
   async PUT(endpoint: string, body: any): Promise<any> {
-    const token = sessionStorage.getItem('cc_api_token');
+    const token = localStorage.getItem('cc_api_token');
     const response = await apiFetch(`${getApiBaseUrl()}${endpoint}`, {
       method: 'PUT',
       headers: {
@@ -46,8 +46,22 @@ export const restAdapter = {
     return response.json();
   },
 
+  async PATCH(endpoint: string, body: any): Promise<any> {
+    const token = localStorage.getItem('cc_api_token');
+    const response = await apiFetch(`${getApiBaseUrl()}${endpoint}`, {
+      method: 'PATCH',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(body)
+    });
+    if (!response.ok) throw new Error(`PATCH ${endpoint} failed: ${response.statusText}`);
+    return response.json();
+  },
+
   async DELETE(endpoint: string): Promise<any> {
-    const token = sessionStorage.getItem('cc_api_token');
+    const token = localStorage.getItem('cc_api_token');
     const response = await apiFetch(`${getApiBaseUrl()}${endpoint}`, {
       method: 'DELETE',
       headers: { 'Authorization': `Bearer ${token}` }

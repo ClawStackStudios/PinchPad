@@ -101,13 +101,30 @@ graph TD
 
 ## 🛠️ NPC Commands (NPM Scripts)
 
+### Core Commands
 | Command | Action |
 | :--- | :--- |
-| `npm run dev` | Starts the Express + Vite dev server. |
+| `npm run dev` | Starts the Vite dev server (frontend only). |
+| `npm run dev:server` | Starts the Express backend with watch mode. |
 | `npm run build` | Builds the production "Hard Shell" dist. |
 | `npm run preview` | Previews the production build locally. |
 | `npm run lint` | Scans the exoskeleton for type errors. |
-| `npm run clean` | Purges the `dist` directory. |
+
+### 🦞 The Great Scuttle (Full Stack Commands)
+
+**Development:**
+```bash
+npm run scuttle:dev-start      # Start backend + frontend in parallel
+npm run scuttle:dev-stop       # Stop all dev processes
+npm run scuttle:reset-dev      # Clear databases, keep code intact
+```
+
+**Production:**
+```bash
+npm run scuttle:prod-start     # Start production server (NODE_ENV=production)
+npm run scuttle:prod-stop      # Stop production processes
+npm run scuttle:reset          # Wipe dist/ + databases, rebuild
+```
 
 ---
 

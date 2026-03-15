@@ -4,10 +4,12 @@ This document serves as the MAIN locus for high-level **CrustCode©™** pattern
 
 ## 🦀 CrustCode©™ Patterns & Architecture Constraints
 1. **Feature Separation**: The `/src` directory must enforce clean separation of concerns by feature (e.g., `features/auth`, `features/notes`). Monolithic files are strictly forbidden.
-2. **React/Vite Paradigm**: Prioritize TSX/TS components. Leverage React 19's capabilities along with Vite's build optimizations.
-3. **Tailwind Ecosystem**: Ensure usage of `@tailwindcss/vite` pattern for styling. Adhere to the `MoltTheme` for view transitions.
+2. **Layout Architecture**: Maintain a full-screen **Sidebar + Main** structure for authenticated routes using `DashboardLayout`, `Sidebar`, and `AppHeader`. Pure architectural mirroring from ClawChives.
+3. **React/Vite Paradigm**: Prioritize TSX/TS components. Leverage React 19's capabilities along with Vite's build optimizations.
+4. **Tailwind Ecosystem**: Ensure usage of `@tailwindcss/vite` pattern for styling. Adhere to the `MoltTheme` for view transitions.
 
 ## 🔒 Source Stability Locks
+- **Dashboard Integrity**: All authenticated Feature Pages (Notes, Settings, Agents) MUST be wrapped in `DashboardLayout`. 
 - **PinchKeys©™ Authorization**: Client-side cryptography happens strictly within browser contexts. Do not offload `hu-` key generation to the server.
 - **ShellCryption©™ Integrity**: AES-256-GCM is non-negotiable for `title` and `content` fields. Keys (`hk-`) must never be transmitted over the wire un-hashed.
 - **SQLite Transactions**: Database actions must avoid race conditions. Given Node.js async nature and `better-sqlite3`'s synchronous API, ensure thread-safe wrapping where necessary.

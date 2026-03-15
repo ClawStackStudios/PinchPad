@@ -25,7 +25,7 @@ function generateBase62(length: number): string {
 }
 
 router.post('/register', (req, res) => {
-  const { uuid, username, keyHash } = req.body;
+  const { uuid, username, displayName, keyHash } = req.body;
   if (!uuid || !username || !keyHash) {
     return res.status(400).json({ error: 'Missing required fields' });
   }
@@ -36,9 +36,10 @@ router.post('/register', (req, res) => {
       return res.status(400).json({ error: 'Username already taken' });
     }
 
-    db.prepare('INSERT INTO users (uuid, username, key_hash, created_at) VALUES (?, ?, ?, ?)').run(
+    db.prepare('INSERT INTO users (uuid, username, display_name, key_hash, created_at) VALUES (?, ?, ?, ?, ?)').run(
       uuid,
       username,
+      displayName || null,
       keyHash,
       new Date().toISOString()
     );
@@ -51,7 +52,7 @@ router.post('/register', (req, res) => {
 
 router.post('/token', (req, res) => {
   const { uuid, username, keyHash, type = 'human' } = req.body;
-  
+
   if (!keyHash) {
     return res.status(400).json({ error: 'keyHash is required' });
   }
@@ -70,15 +71,17 @@ router.post('/token', (req, res) => {
         user = db.prepare('SELECT * FROM users WHERE username = ?').get(username) as any;
       }
 
-      // 3. NEW: FALLBACK - Look up by keyHash alone if nothing else matched
       if (!user) {
-        user = db.prepare('SELECT * FROM users WHERE key_hash = ?').get(keyHash) as any;
+        return res.status(401).json({
+          error: 'Invalid identity or key'
+        });
       }
 
-      if (!user || !constantTimeCompare(keyHash, user.key_hash)) {
-        return res.status(401).json({ 
-          error: 'Invalid identity or key',
-          suggestion: !user ? 'Try providing your username for better error details.' : null
+      const hashMatch = constantTimeCompare(keyHash, user.key_hash);
+
+      if (!hashMatch) {
+        return res.status(401).json({
+          error: 'Invalid identity or key'
         });
       }
     } else if (type === 'lobster') {
@@ -96,22 +99,15 @@ router.post('/token', (req, res) => {
     let lobsterKeyId = null;
 
     if (type === 'lobster') {
-      // For lobster, keyHash is the SHA-256 of the lb- key
-      const lobsters = db.prepare('SELECT * FROM lobster_keys WHERE user_uuid = ? AND is_active = 1').all(user.uuid) as any[];
-      let matched = false;
-      for (const lobster of lobsters) {
-        // We need to hash the stored plaintext lb- key to compare with the submitted keyHash
-        const storedHash = crypto.createHash('sha256').update(lobster.api_key).digest('hex');
-        if (constantTimeCompare(keyHash, storedHash)) {
-          matched = true;
-          lobsterKeyId = lobster.id;
-          db.prepare('UPDATE lobster_keys SET last_used = ? WHERE id = ?').run(new Date().toISOString(), lobster.id);
-          break;
-        }
+      // Secure Lobster Authentication: Lookup by user + key hash
+      const lobster = db.prepare('SELECT id FROM lobster_keys WHERE user_uuid = ? AND api_key_hash = ? AND is_active = 1').get(user.uuid, keyHash) as any;
+
+      if (!lobster) {
+        return res.status(401).json({ error: 'Invalid agent credentials' });
       }
-      if (!matched) {
-        return res.status(401).json({ error: 'Invalid credentials' });
-      }
+
+      lobsterKeyId = lobster.id;
+      db.prepare('UPDATE lobster_keys SET last_used = ? WHERE id = ?').run(new Date().toISOString(), lobster.id);
     }
 
     const token = `api-${generateBase62(32)}`;
@@ -129,9 +125,8 @@ router.post('/token', (req, res) => {
       new Date().toISOString()
     );
 
-    res.json({ token, type, uuid: user.uuid, username: user.username });
+    res.json({ token, type, uuid: user.uuid, username: user.username, displayName: user.display_name });
   } catch (error) {
-    console.error('[Auth] Token generation failed:', error);
     res.status(500).json({ error: 'Failed to authenticate' });
   }
 });
@@ -150,7 +145,7 @@ router.get('/verify', (req, res) => {
 
   try {
     const row = db.prepare(`
-      SELECT owner_uuid as uuid, username, owner_type as type 
+      SELECT owner_uuid as uuid, username, display_name, owner_type as type 
       FROM api_tokens t
       JOIN users u ON t.owner_uuid = u.uuid
       WHERE t.key = ? AND datetime(t.expires_at) > datetime('now')

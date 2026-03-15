@@ -131,6 +131,7 @@ export async function decryptRecord<T extends Record<string, any>>(
       try {
         result[field] = await decryptField(result[field] as string, shellKey, aad) as any;
       } catch (e) {
+        console.warn(`[Crypto] Decryption failed for ${table}:${String(field)}:${recordId}`, e instanceof Error ? e.message : String(e));
         result[field] = '[Decryption Failed]' as any;
       }
     }

@@ -15,7 +15,7 @@ router.get('/', requireAuth(), requirePermission('canRead'), (req: AuthRequest, 
 });
 
 router.post('/', requireAuth(), requirePermission('canWrite'), (req: AuthRequest, res) => {
-  const { id, title, content } = req.body;
+  const { id, title, content, starred = 0, pinned = 0 } = req.body;
   if (!id || !title || !content) {
     return res.status(400).json({ error: 'Missing required fields' });
   }
@@ -23,15 +23,17 @@ router.post('/', requireAuth(), requirePermission('canWrite'), (req: AuthRequest
   const now = new Date().toISOString();
 
   try {
-    db.prepare('INSERT INTO notes (id, user_uuid, title, content, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?)').run(
+    db.prepare('INSERT INTO notes (id, user_uuid, title, content, starred, pinned, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)').run(
       id,
       req.user!.uuid,
       title,
       content,
+      starred ? 1 : 0,
+      pinned ? 1 : 0,
       now,
       now
     );
-    
+
     const newNote = db.prepare('SELECT * FROM notes WHERE id = ? AND user_uuid = ?').get(id, req.user!.uuid);
     res.status(201).json({ data: newNote });
   } catch (error) {
@@ -40,7 +42,7 @@ router.post('/', requireAuth(), requirePermission('canWrite'), (req: AuthRequest
 });
 
 router.put('/:id', requireAuth(), requirePermission('canEdit'), (req: AuthRequest, res) => {
-  const { title, content } = req.body;
+  const { title, content, starred, pinned } = req.body;
   const { id } = req.params;
 
   if (!title || !content) {
@@ -48,9 +50,11 @@ router.put('/:id', requireAuth(), requirePermission('canEdit'), (req: AuthReques
   }
 
   try {
-    const result = db.prepare('UPDATE notes SET title = ?, content = ?, updated_at = ? WHERE id = ? AND user_uuid = ?').run(
+    const result = db.prepare('UPDATE notes SET title = ?, content = ?, starred = ?, pinned = ?, updated_at = ? WHERE id = ? AND user_uuid = ?').run(
       title,
       content,
+      starred ? 1 : 0,
+      pinned ? 1 : 0,
       new Date().toISOString(),
       id,
       req.user!.uuid
@@ -64,6 +68,52 @@ router.put('/:id', requireAuth(), requirePermission('canEdit'), (req: AuthReques
     res.json({ data: updatedNote });
   } catch (error) {
     res.status(500).json({ error: 'Failed to update note' });
+  }
+});
+
+router.patch('/:id/starred', requireAuth(), requirePermission('canEdit'), (req: AuthRequest, res) => {
+  const { starred } = req.body;
+  const { id } = req.params;
+
+  try {
+    const result = db.prepare('UPDATE notes SET starred = ?, updated_at = ? WHERE id = ? AND user_uuid = ?').run(
+      starred ? 1 : 0,
+      new Date().toISOString(),
+      id,
+      req.user!.uuid
+    );
+
+    if (result.changes === 0) {
+      return res.status(404).json({ error: 'Note not found' });
+    }
+
+    const updatedNote = db.prepare('SELECT * FROM notes WHERE id = ? AND user_uuid = ?').get(id, req.user!.uuid);
+    res.json({ data: updatedNote });
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to toggle starred' });
+  }
+});
+
+router.patch('/:id/pinned', requireAuth(), requirePermission('canEdit'), (req: AuthRequest, res) => {
+  const { pinned } = req.body;
+  const { id } = req.params;
+
+  try {
+    const result = db.prepare('UPDATE notes SET pinned = ?, updated_at = ? WHERE id = ? AND user_uuid = ?').run(
+      pinned ? 1 : 0,
+      new Date().toISOString(),
+      id,
+      req.user!.uuid
+    );
+
+    if (result.changes === 0) {
+      return res.status(404).json({ error: 'Note not found' });
+    }
+
+    const updatedNote = db.prepare('SELECT * FROM notes WHERE id = ? AND user_uuid = ?').get(id, req.user!.uuid);
+    res.json({ data: updatedNote });
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to toggle pinned' });
   }
 });
 

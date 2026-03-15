@@ -6,14 +6,16 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "dev:server": "tsx --watch --ignore data/** server.ts",
+    "dev:server": "tsx --watch server.ts",
     "build": "vite build",
     "preview": "vite preview",
     "lint": "tsc --noEmit",
-    "start": "NODE_ENV=production tsx server.ts &",
-    "start-dev": "npm run dev:server & npm run dev &",
-    "stop": "fuser -k 8282/tcp 8383/tcp || true",
-    "stop-dev": "fuser -k 8282/tcp 8383/tcp || true"
+    "scuttle:prod-start": "NODE_ENV=production tsx server.ts &",
+    "scuttle:prod-stop": "fuser -k 5173/tcp 5174/tcp 3000/tcp || true",
+    "scuttle:dev-start": "npm run dev:server & npm run dev &",
+    "scuttle:dev-stop": "fuser -k 5173/tcp 5174/tcp 3000/tcp || true",
+    "scuttle:reset": "rm -rf dist/ data/*.db && npm run build",
+    "scuttle:reset-dev": "rm -rf dist/ data/*.db && echo 'Dev environment reset. Run npm run scuttle:dev-start to begin.'"
   },
   "dependencies": {
     "@google/genai": "^1.29.0",

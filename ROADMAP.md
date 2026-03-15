@@ -6,12 +6,15 @@
 - [x] Added Docker support.
 - [x] Initial Architecture Blueprint.
 
-## 🦞 Phase 1: Refining the Shell (Q1 2026)
-- [ ] **Refactor App.tsx:** Separate monolithic component into modular pages and components.
-- [ ] **State Management:** Formalize Auth Context and Note Context.
-- [ ] **Enhanced UI:** Move to specialized component files for better maintenance.
+## 🦞 Phase 1: Refining the Shell (Q1 2026) - [COMPLETE]
+- [x] **Refactor App.tsx:** Separated monolithic component into modular pages and components.
+- [x] **State Management:** Formalized Auth Context and Note Context.
+- [x] **Enhanced UI:** Moved to specialized component files for better maintenance.
+- [x] **Dashboard Overhaul:** Implemented full-screen Sidebar + Main architecture (mirroring ClawChives).
 
 ## 🔒 Phase 2: Strengthening the Pot (Q2 2026)
+- [ ] **Pearl Full-Screen View:** Dedicated `/notes/:id` route for viewing and editing individual pearls in full-screen mode.
+- [ ] **Pearl Inline Expand:** Card expansion in-place (no navigation) with quick star/pin/delete actions for rapid note management.
 - [ ] **Multi-Device Sync:** Secure syncing of `hu-` keys across browsers.
 - [ ] **Rich-Text Support:** Implement secure rich-text editing in the pot.
 - [ ] **Attachment Support:** Encrypted file attachments.

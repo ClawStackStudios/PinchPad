@@ -6,9 +6,9 @@
   },
   "cryptographic_standards": {
     "rng":        "crypto.randomInt(charset_size) — unbiased, replaces modulo bias pattern",
-    "hashing":    "SHA-256 via crypto.createHash / Web Crypto API (frontend)",
-    "encryption": "AES-256-GCM (ShellCryption — shellCryption.ts)",
-    "comparison": "Constant-time via constantTimeCompare (XOR loop)"
+    "hashing":    "SHA-256 for Lobster Key verification (api_key_hash)",
+    "encryption": "AES-256-GCM (ShellCryption — stored as api_key in lobster_keys)",
+    "comparison": "Direct query-based hash matching (constant-time)"
   },
   "access_control": {
     "middleware": "requireAuth() → injects req.user",
@@ -19,6 +19,7 @@
   "compliance": {
     "standards": ["OWASP Top 10", "ClawKeys©™ Protocol"],
     "sentinel_fix": "Modulo bias eliminated 2026-03-14 — CRUSTAUDIT_PINCHPAD_CRYPTO_FIX.md",
+    "hardening": "Hashed + ShellCrypted Lobster Keys implemented 2026-03-14",
     "verified": true
   }
 }

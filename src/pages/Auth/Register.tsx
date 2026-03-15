@@ -21,6 +21,7 @@ import { InteractiveBrand } from '../../components/Branding/InteractiveBrand';
 export function Register() {
   const [step, setStep] = useState(1);
   const [username, setUsername] = useState('');
+  const [displayName, setDisplayName] = useState('');
   const [isMolting, setIsMolting] = useState(false);
   const [isCracked, setIsCracked] = useState('');
   const [lobster, setLobster] = useState<{ uuid: string, huKey: string } | null>(null);
@@ -29,12 +30,17 @@ export function Register() {
   const navigate = useNavigate();
   const { pinchWithKey } = useAuth();
 
+  // Set page title
+  React.useEffect(() => {
+    document.title = 'Register | PinchPad';
+  }, []);
+
   const handleMoltRegister = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsMolting(true);
     setIsCracked('');
     try {
-      const pearl = await authService.register(username);
+      const pearl = await authService.register(username, displayName);
       setLobster(pearl);
       setStep(2); // Move to review step
     } catch (err: any) {
@@ -132,8 +138,19 @@ export function Register() {
                     value={username}
                     onChange={e => setUsername(e.target.value)}
                     className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl px-4 py-3 text-slate-900 dark:text-white focus:outline-none focus:border-amber-500 focus:ring-1 focus:ring-amber-500 text-sm transition-all"
-                    placeholder="lucaslobster"
+                    placeholder="Lobster_King"
                     required
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <label className="text-[10px] font-bold uppercase tracking-widest text-slate-500 ml-1">Display Name (Optional)</label>
+                  <input 
+                    type="text" 
+                    value={displayName}
+                    onChange={e => setDisplayName(e.target.value)}
+                    className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl px-4 py-3 text-slate-900 dark:text-white focus:outline-none focus:border-amber-500 focus:ring-1 focus:ring-amber-500 text-sm transition-all"
+                    placeholder="Larry Lobster"
                   />
                 </div>
                 

@@ -1,26 +1,30 @@
-# Codebase Navigation
-
-# Codebase Navigation Skill
+# Codebase Navigation Skill 🦞🗺️
 
 ## Project Map
-### Structure: feature-based
-Top-level directories: `data/`, `public/`, `scripts/`, `server/`, `src/`, `workflows/`
+### Structure: Feature-Based Sovereign Cluster
+The project is decoupled into a React frontend and an Express/SQLite backend.
 
+**Top-level directories:**
+- `.crustagent/`: The brain—skills, memories, rules, vibes, and truthpack.
+- `src/`: Core logic.
+  - `src/server/`: The backend Burrow (Routes, DB, Middleware).
+  - `src/pages/`: Feature-clustered UI pages.
+  - `src/components/`: Modular building blocks.
+- `data/`: SQLite storage (ClawStack.db).
+- `scripts/`: Dev-hardening and verification tools.
 
-### API Entry Points
-- `GET /server/routes/agents` → `/server/routes/agents.js`
-- `GET /server/routes/settings` → `/server/routes/settings.js`
-- `GET /server/routes/auth` → `/server/routes/auth.js`
-- `GET /.crustagent/ShellPlate/server/routes/agents` → `/.crustagent/ShellPlate/server/routes/agents.js`
-- `GET /.crustagent/ShellPlate/server/routes/settings` → `/.crustagent/ShellPlate/server/routes/settings.js`
-- `GET /.crustagent/ShellPlate/server/routes/auth` → `/.crustagent/ShellPlate/server/routes/auth.js`
+### API Entry Points (src/server/routes/)
+The following are the verified routes anchored in `routes.json`:
+- `/api/auth/` -> `auth.ts` (Identity hashing and session tokens)
+- `/api/notes/` -> `notes.ts` (Sovereign note management)
+- `/api/agents/` -> `agents.ts` (Lobster Key orchestration)
 
 ### Key Configuration
-- Package manager: `npm`
-- TypeScript config: `tsconfig.json`
-- Tailwind config: `tailwind.config.*`
-- CI/CD: `GitHub Actions`
-
+- **Package Manager**: `npm` (Lockfile: `package-lock.json`)
+- **Frontend Stack**: Vite + React + TSX + Tailwind CSS 4
+- **Backend Stack**: Node.js + Express + better-sqlite3
+- **Security**: ShellCryption©™ + ClawKeys©™ Protocol
 
 ---
-<!-- vibecheck:context-engine:v2 -->
+*Maintained by CrustAgent©™*
+<!-- vibecheck:context-engine:v3 -->

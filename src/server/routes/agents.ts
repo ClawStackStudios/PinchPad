@@ -25,24 +25,24 @@ router.get('/', requireAuth(), requireHuman(), (req: AuthRequest, res) => {
 });
 
 router.post('/', requireAuth(), requireHuman(), (req: AuthRequest, res) => {
-  const { id, name, permissions, expiration_type, expiration_date, rate_limit } = req.body;
+  const { id, name, permissions, expiration_type, expiration_date, rate_limit, api_key_hash, api_key_encrypted } = req.body;
   
-  if (!id || !name || !permissions || !expiration_type) {
-    return res.status(400).json({ error: 'Missing required fields' });
+  if (!id || !name || !permissions || !expiration_type || !api_key_hash || !api_key_encrypted) {
+    return res.status(400).json({ error: 'Missing required fields for Lobster Key creation' });
   }
 
-  const apiKey = `lb-${generateBase62(64)}`;
   const now = new Date().toISOString();
 
   try {
     db.prepare(`
-      INSERT INTO lobster_keys (id, user_uuid, name, api_key, permissions, expiration_type, expiration_date, rate_limit, is_active, created_at)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, 1, ?)
+      INSERT INTO lobster_keys (id, user_uuid, name, api_key, api_key_hash, permissions, expiration_type, expiration_date, rate_limit, is_active, created_at)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 1, ?)
     `).run(
       id,
       req.user!.uuid,
       name,
-      apiKey,
+      api_key_encrypted,
+      api_key_hash,
       JSON.stringify(permissions),
       expiration_type,
       expiration_date || null,
@@ -50,9 +50,21 @@ router.post('/', requireAuth(), requireHuman(), (req: AuthRequest, res) => {
       now
     );
 
-    // Return the api_key only once upon creation
-    res.status(201).json({ data: { id, name, api_key: apiKey, permissions, expiration_type, expiration_date, rate_limit, is_active: 1, created_at: now } });
+    res.status(201).json({ 
+      data: { 
+        id, 
+        name, 
+        api_key: api_key_encrypted, // Server returns the encrypted pearl
+        permissions, 
+        expiration_type, 
+        expiration_date, 
+        rate_limit, 
+        is_active: 1, 
+        created_at: now 
+      } 
+    });
   } catch (error) {
+    console.error('[Agents] Failed to create lobster key:', error);
     res.status(500).json({ error: 'Failed to create lobster key' });
   }
 });

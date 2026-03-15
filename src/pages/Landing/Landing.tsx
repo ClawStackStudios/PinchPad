@@ -27,6 +27,11 @@ export function Landing() {
   const navigate = useNavigate();
   const { isClawSigned, shellKey } = useAuth();
 
+  // Set page title
+  React.useEffect(() => {
+    document.title = 'PinchPad — Sovereign Notes';
+  }, []);
+
   // Redirect if fully signed in (token + encryption key)
   React.useEffect(() => {
     if (isClawSigned && shellKey) {
@@ -72,16 +77,16 @@ export function Landing() {
                 Local-First Sovereign Pinching©™
               </div>
 
-              <h1 className="text-5xl sm:text-6xl lg:text-7xl font-bold mb-6 tracking-tight">
-                <InteractiveBrand variant="prominent" showCopyright={false} />
+              <h1 className="text-6xl sm:text-7xl lg:text-8xl font-bold mb-6 tracking-tight">
+                <InteractiveBrand variant="prominent" />
               </h1>
 
-              <p className="text-xl text-slate-600 dark:text-slate-400 font-medium mb-4 max-w-2xl mx-auto">
+              <p className="text-xl sm:text-2xl text-slate-600 dark:text-slate-400 font-medium mb-4 max-w-3xl mx-auto leading-relaxed">
                 Your sovereign <span className="text-red-500 font-bold italic">Pearl</span> library where Humans and AI Lobsters collaborate to <span className="text-amber-500 font-semibold italic">molt</span> your notes.
               </p>
 
-              <p className="text-lg text-slate-500 dark:text-slate-500/80 max-w-2xl mx-auto mb-10 leading-relaxed italic">
-                Snap out of the generic SaaS trap. <span className="text-amber-500 font-semibold not-italic">PinchPad©™</span> secures your notes with <span className="text-amber-500 font-semibold not-italic">ShellCryption©™</span> and <span className="text-amber-500 font-semibold not-italic">Armor Plated Authentication</span>. <span className="text-amber-500 font-semibold not-italic italic">Clutch your Pearls</span> while your sovereign AI agents <span className="text-amber-600 font-semibold not-italic">scuttle</span> your thoughts and capture the catch! 🦞
+              <p className="text-lg text-slate-500 dark:text-slate-400 max-w-2xl mx-auto mb-10 leading-relaxed">
+                Snap out of the generic SaaS trap. <span className="text-amber-500 font-semibold">PinchPad©™</span> secures your notes with <span className="text-amber-500 font-semibold">ShellCryption©™</span> and <span className="text-amber-500 font-semibold">Armor Plated Authentication</span>. <span className="italic">Clutch your Pearls</span> while your sovereign AI agents <span className="text-amber-600 font-semibold">scuttle</span> your thoughts and capture the catch! 🦞
               </p>
 
               <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">

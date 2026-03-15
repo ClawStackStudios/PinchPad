@@ -22,7 +22,7 @@ function cn(...inputs: ClassValue[]) {
 export function Login() {
   const [searchParams, setSearchParams] = useSearchParams();
   const initialMode = (searchParams.get('mode') as 'file' | 'paste') || 'file';
-  
+
   const [isMolting, setIsMolting] = useState(false);
   const [isCracked, setIsCracked] = useState('');
   const [mode, setMode] = useState<'file' | 'paste'>(initialMode);
@@ -31,6 +31,11 @@ export function Login() {
   const [isAdvancedOpen, setIsAdvancedOpen] = useState(false);
   const [pasteUuid, setPasteUuid] = useState('');
   const [pasteUsername, setPasteUsername] = useState('');
+
+  // Set page title
+  React.useEffect(() => {
+    document.title = 'Login | PinchPad';
+  }, []);
   
   const { pinchAccessToken, pinchWithKey } = useAuth();
   const navigate = useNavigate();
@@ -55,7 +60,7 @@ export function Login() {
       try {
         const content = event.target?.result as string;
         await pinchAccessToken(content);
-        navigate('/notes');
+        navigate('/dashboard');
       } catch (err: any) {
         setIsCracked(err.message || 'Failed to authenticate with identity file');
       } finally {
@@ -110,7 +115,7 @@ export function Login() {
             <InteractiveBrand showCopyright={false} showIcon={true} onClick={() => navigate('/')} />
           </div>
           <h1 className="text-2xl font-bold text-slate-900 dark:text-slate-50 mb-2">Welcome Back</h1>
-          <p className="text-sm text-slate-600 dark:text-slate-400">Login with your <InteractiveBrand className="font-semibold inline-flex" showCopyright={true} /> identity</p>
+          <div className="text-sm text-slate-600 dark:text-slate-400">Login with your <InteractiveBrand className="font-semibold inline-flex" showCopyright={true} /> identity</div>
         </div>
 
         {/* ── Mode toggle tabs ─────────────────────────────────────────────── */}

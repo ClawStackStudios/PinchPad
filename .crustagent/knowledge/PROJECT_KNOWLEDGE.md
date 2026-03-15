@@ -18,4 +18,13 @@ This document stores detailed context, memories, and known operational quirks of
 - Further expansion of the `MoltTheme` aesthetics across the app using `framer-motion` and `lucide-react`.
 - Expanding the test coverage. Future test suites should utilize tools like `vitest` for the Vite ecosystem.
 
-*This file is maintained and updated dynamically by CrustAgent as the project evolves.*
+## 🧪 Brand Stability & Visual Identity
+
+> [!IMPORTANT]
+> **Primary Brand Color**: Amber (`#f59e0b`).
+> **Secondary Accent**: Red/Cyan (Contextual only).
+> **Stability Lock**: No brand-wide color pivots or theme shifts are permitted without an explicit, signed-off Implementation Plan. Unprompted "liberties" on branding are a violation of the CrustAgent©™ Protocol.
+
+*This file is maintained and updated dynamically by CrustAgent©™ as the project evolves.*
+<!-- lock: theme-amber -->
+Maintained by CrustAgent©™

@@ -6,11 +6,51 @@ import { deriveShellKey } from '../lib/shellCryption';
 const SESSION_KEYS = {
   token: 'cc_api_token',
   username: 'cc_username',
+  displayName: 'cc_display_name',
   uuid: 'cc_user_uuid'
 } as const;
 
+const EXPIRY_KEY = 'cc_session_expiry';
+
+/**
+ * Reads the session from localStorage and validates expiry.
+ * Returns null if no session exists or if it has expired.
+ * If expired, clears all session keys.
+ */
+export function readSession(): { token: string; uuid: string; username: string; displayName: string } | null {
+  const token = localStorage.getItem(SESSION_KEYS.token);
+  const uuid = localStorage.getItem(SESSION_KEYS.uuid);
+  const username = localStorage.getItem(SESSION_KEYS.username);
+  const displayName = localStorage.getItem(SESSION_KEYS.displayName);
+  const expiry = localStorage.getItem(EXPIRY_KEY);
+
+  // Check if any required field is missing
+  if (!token || !uuid || !username) {
+    return null;
+  }
+
+  // Check expiry
+  if (expiry) {
+    const expiryTime = parseInt(expiry, 10);
+    if (Date.now() > expiryTime) {
+      // Session expired, clear all keys
+      Object.values(SESSION_KEYS).forEach(k => localStorage.removeItem(k));
+      localStorage.removeItem(EXPIRY_KEY);
+      return null;
+    }
+  }
+
+  return { token, uuid, username, displayName: displayName || '' };
+}
+
+/**
+ * AuthService uses apiFetch directly instead of restAdapter because:
+ * - register() and login flows happen before a token is available
+ * - verifyToken() and logout() DO have a token, but must explicitly handle Bearer auth
+ * - This keeps the auth layer's fetch patterns explicit and separate from general API calls
+ */
 export const authService = {
-  async register(username: string): Promise<{ uuid: string, huKey: string }> {
+  async register(username: string, displayName?: string): Promise<{ uuid: string, huKey: string }> {
     const uuid = crypto.randomUUID();
     const huKey = `hu-${generateBase62(64)}`;
     const keyHash = await hashToken(huKey);
@@ -18,7 +58,7 @@ export const authService = {
     const response = await apiFetch(`${getApiBaseUrl()}/api/auth/register`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ uuid, username, keyHash })
+      body: JSON.stringify({ uuid, username, displayName, keyHash })
     });
 
     if (!response.ok) {
@@ -29,7 +69,7 @@ export const authService = {
     return { uuid, huKey };
   },
 
-  async loginWithKey(token: string, uuid?: string, username?: string): Promise<{ token: string, shellKey: CryptoKey, username: string, uuid: string }> {
+  async loginWithKey(token: string, uuid?: string, username?: string): Promise<{ token: string, shellKey: CryptoKey, username: string, displayName: string | null, uuid: string }> {
     if (!token || !token.startsWith('hu-')) {
       throw new Error('Invalid ClawKey©™ format');
     }
@@ -53,15 +93,17 @@ export const authService = {
     }
 
     const pearl = await response.json();
-    sessionStorage.setItem(SESSION_KEYS.token, pearl.token);
-    sessionStorage.setItem(SESSION_KEYS.username, pearl.username);
-    sessionStorage.setItem(SESSION_KEYS.uuid, pearl.uuid);
+    localStorage.setItem(SESSION_KEYS.token, pearl.token);
+    localStorage.setItem(SESSION_KEYS.username, pearl.username);
+    if (pearl.displayName) localStorage.setItem(SESSION_KEYS.displayName, pearl.displayName);
+    localStorage.setItem(SESSION_KEYS.uuid, pearl.uuid);
+    localStorage.setItem(EXPIRY_KEY, String(Date.now() + 86400000)); // 24 hours
 
     const shellKey = await deriveShellKey(token, pearl.uuid);
-    return { token: pearl.token, shellKey, username: pearl.username, uuid: pearl.uuid };
+    return { token: pearl.token, shellKey, username: pearl.username, displayName: pearl.displayName, uuid: pearl.uuid };
   },
 
-  async login(identityFileContent: string): Promise<{ token: string, shellKey: CryptoKey, username: string, uuid: string }> {
+  async login(identityFileContent: string): Promise<{ token: string, shellKey: CryptoKey, username: string, displayName: string | null, uuid: string }> {
     const identity = JSON.parse(identityFileContent);
     const huKey = identity.token || identity.huKey; // Handle both formats
     const uuid = identity.uuid;
@@ -84,15 +126,17 @@ export const authService = {
     }
 
     const pearl = await response.json();
-    sessionStorage.setItem(SESSION_KEYS.token, pearl.token);
-    sessionStorage.setItem(SESSION_KEYS.username, pearl.username);
-    sessionStorage.setItem(SESSION_KEYS.uuid, pearl.uuid);
+    localStorage.setItem(SESSION_KEYS.token, pearl.token);
+    localStorage.setItem(SESSION_KEYS.username, pearl.username);
+    if (pearl.displayName) localStorage.setItem(SESSION_KEYS.displayName, pearl.displayName);
+    localStorage.setItem(SESSION_KEYS.uuid, pearl.uuid);
+    localStorage.setItem(EXPIRY_KEY, String(Date.now() + 86400000)); // 24 hours
 
     const shellKey = await deriveShellKey(huKey, pearl.uuid);
-    return { token: pearl.token, shellKey, username: pearl.username, uuid: pearl.uuid };
+    return { token: pearl.token, shellKey, username: pearl.username, displayName: pearl.displayName, uuid: pearl.uuid };
   },
 
-  async verifyToken(token: string): Promise<{ uuid: string, username: string }> {
+  async verifyToken(token: string): Promise<{ uuid: string, username: string, displayName: string | null }> {
     const response = await apiFetch(`${getApiBaseUrl()}/api/auth/verify`, {
       method: 'GET',
       headers: {
@@ -108,7 +152,7 @@ export const authService = {
   },
 
   async logout() {
-    const token = sessionStorage.getItem(SESSION_KEYS.token);
+    const token = localStorage.getItem(SESSION_KEYS.token);
     if (token) {
       try {
         await apiFetch(`${getApiBaseUrl()}/api/auth/logout`, {
@@ -121,6 +165,7 @@ export const authService = {
         console.warn('[Auth] Server-side logout failed, clearing local session anyway.');
       }
     }
-    Object.values(SESSION_KEYS).forEach(k => sessionStorage.removeItem(k));
+    Object.values(SESSION_KEYS).forEach(k => localStorage.removeItem(k));
+    localStorage.removeItem(EXPIRY_KEY);
   }
 };

@@ -13,7 +13,7 @@
       "data": {
         "id": "string",
         "name": "string",
-        "api_key": "string (lb-<base62[64]>) — returned ONCE only",
+        "api_key": "string (ShellCrypted pearl: hu-<base62[64]>) — returned ONCE only",
         "permissions": "object",
         "expiration_type": "string",
         "expiration_date": "string | null",
@@ -39,6 +39,7 @@
     "request": {
       "uuid": "string",
       "username": "string",
+      "displayName": "string (optional)",
       "keyHash": "string (SHA-256 hex of hu- key)"
     },
     "response_201": { "success": true },
@@ -56,7 +57,8 @@
       "token": "string (api-<base62[32]>)",
       "type": "string",
       "uuid": "string",
-      "username": "string"
+      "username": "string",
+      "displayName": "string | null"
     },
     "verified": true
   }
