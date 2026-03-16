@@ -3,7 +3,10 @@ build/
 dist/
 coverage/
 data/
+data-dev/
 .DS_Store
 *.log
 .env*
 !.env.example
+
+docker-compose.dev.yml

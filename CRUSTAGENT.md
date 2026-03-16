@@ -31,9 +31,64 @@ PinchPad is a sovereign lobster pot designed for the modern web. It protects ide
 - Plan thoroughly before implementation. Code must be robust, properly tested, and well-documented.
 - Direct answers, practical solutions. Tell Lucas what he needs to hear.
 
-## 📂 Navigation & Knowledge
-- For high-level CrustCode©™ patterns and source-level stability locks, consult `src/CRUSTAGENT.md`.
-- For deeply detailed project knowledge, workflows, and skills, explore the `.crustagent/` directory.
+---
+
+## 🗺️ Complete File Map & Context References
+
+### Core Documentation
+- **README.md** - Project overview, installation, and usage instructions
+- **CONTRIBUTING.md** - Development guidelines and contribution process
+- **ROADMAP.md** - Project vision, timeline, and feature roadmap
+- **SECURITY.md** - Security policy and vulnerability reporting process
+- **CRUSTSECURITY.md** - Comprehensive security framework and standards
+
+### Project Intelligence & Validation
+- **src/CRUSTAGENT.md** - Source-level patterns and stability locks
+- **.crustagent/vibecheck/truthpack/** - Project truth validation and stability locks
+  - `auth.json` - Authentication system contracts
+  - `blueprint.json` - Technical architecture blueprint
+  - `contracts.json` - API endpoint contracts
+  - `env.json` - Environment variable contracts
+  - `routes.json` - API route definitions
+  - `security.json` - Security standards and compliance
+  - `stability-locks.json` - Project stability constraints
+- **.crustagent/crustaudits/** - Automated audit reports and validation results
+- **.crustagent/knowledge/** - Project knowledge base and documentation
+
+### AI Agent Context Access
+When working on ClawChives, AI agents should read these files in order:
+1. **CRUSTAGENT.md** (this file) - Primary intelligence handshake
+2. **src/CRUSTAGENT.md** - Source-level implementation patterns
+3. **README.md** - User-facing documentation and setup
+4. **CONTRIBUTING.md** - Development standards and workflow
+5. **.crustagent/vibecheck/truthpack/** - Current project state validation
+6. **.crustagent/crustaudits/** - Recent audit results and findings
+7. **.crustagent/knowledge/** - Deep project knowledge and philosophy
+
+## Map to the Reef 🗺️
+- `CRUSTAGENT.md`: Detailed transition logs and technical invariants.
+- `src/CRUSTAGENT.md`: Source-level patterns and stability locks.
+- `README.md`: Project overview and user documentation.
+- `CONTRIBUTING.md`: Development guidelines and contribution process.
+- `ROADMAP.md`: Project vision and feature roadmap.
+- `SECURITY.md`: Security policy and vulnerability reporting.
+- `CRUSTSECURITY.md`: Comprehensive security framework.
+- `.crustagent/vibecheck/truthpack/`: Project truth validation and stability locks.
+- `.crustagent/crustaudits/`: Automated audit reports and validation results.
+- `.crustagent/knowledge/`: Project knowledge base and documentation.
+- `.crustagent/memory/`: CrustAgent's memory store.
 
 ---
-*Stay Grounded. Stay Crusty.*
+
+
+
+
+```text
+       _..._
+     .'     '.      HATCH YOUR CLAWCHIVE.
+    /  _   _  \     RESPECT THE SHELL.
+    | (q) (p) |     PUNCH THE CLOUD.
+    (_   Y   _)
+     '.__W__.'
+     Maintained by CrustAgent©™
+```

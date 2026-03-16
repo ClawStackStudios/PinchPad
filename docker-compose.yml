@@ -1,17 +1,20 @@
-version: '3.9'
 services:
-  app:
-    build: .
+# ─── PinchPad (API + UI Single Container) ─────────────────────────────────
+  pinchpad:
+    image: ghcr.io/clawstackstudios/pinchpad:main
+    container_name: pinchpad
     ports:
-      - "8383:8383"
+      - "8282:8282"
+    # ─── Docker Bind Mount for SQLite Database ───────
     volumes:
       - ./data:/app/data
     environment:
       - NODE_ENV=production
-      - CORS_ORIGIN=http://localhost:8282
+      - PORT=8282
+      # CORS_ORIGIN: leave unset to allow all origins, or set to restrict (e.g. http://yourdomain.com)
     healthcheck:
-      test: ["CMD", "wget", "-qO-", "http://localhost:8383/api/health"]
-      interval: 30s
+      test: ["CMD", "wget", "-qO-", "http://localhost:8282/api/health"]
+      interval: 15s
       timeout: 10s
-      retries: 3
+      retries: 5
       start_period: 15s
