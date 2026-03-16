@@ -1,140 +1,306 @@
-# 🦞 PinchPad©™
+# 🦞 PinchPad
 
-[![Status](https://img.shields.io/badge/Status-Hatched-red?style=for-the-badge)](https://github.com/ClawStackStudios/PinchPad)
-[![Version](https://img.shields.io/badge/Version-1.0.0--prototype-cyan?style=for-the-badge)](https://github.com/ClawStackStudios/PinchPad)
-[![License](https://img.shields.io/badge/License-MIT-green?style=for-the-badge)](LICENSE)
-[![Vite](https://img.shields.io/badge/Vite-6.x-646CFF?style=for-the-badge&logo=vite&logoColor=white)](https://vitejs.dev/)
-[![React](https://img.shields.io/badge/React-19.x-61DAFB?style=for-the-badge&logo=react&logoColor=black)](https://react.dev/)
+<div align="center">
 
-**Secure Agent Management and Note-taking platform built on the Lobsterized©™ ethos.**
+```
+    ██████╗ ██╗███╗   ██╗ ██████╗██╗  ██╗██████╗  █████╗ ██████╗
+    ██╔══██╗██║████╗  ██║██╔════╝██║  ██║██╔══██╗██╔══██╗██╔══██╗
+    ██████╔╝██║██╔██╗ ██║██║     ███████║██████╔╝███████║██║  ██║
+    ██╔═══╝ ██║██║╚██╗██║██║     ██╔══██║██╔═══╝ ██╔══██║██║  ██║
+    ██║     ██║██║ ╚████║╚██████╗██║  ██║██║     ██║  ██║██████╔╝
+    ╚═╝     ╚═╝╚═╝  ╚═══╝ ╚═════╝╚═╝  ╚═╝╚═╝     ╚═╝  ╚═╝╚═════╝
+```
+
+*Your Sovereign Scratchpad — where Humans and AI Lobsters collaborate to protect ideas.*
+
 </div>
 
 ---
 
-## 🌊 The Reef Ecosystem
-
-PinchPad is a sovereign lobster pot designed for the modern web. It protects your ideas with client-side encryption while allowing you to delegate granular access to autonomous agents. No passwords, no emails—just your claws and your keys.
-
-### 🏗️ Architecture Flow
-
-```mermaid
-graph TD
-    A[Human / Agent] -->|hu- / lb- Key| B(Auth Middleware)
-    B -->|Verified| C{Lobster Pot}
-    C -->|AES-256-GCM| D[ShellCryption Service]
-    D -->|Encrypted Pearl| E[(ClawStack DB)]
-    C -->|Lobsterized Logic| F[Agent Service]
-    F -->|lb- Keys| G[Delegated Agents]
-```
-...
-## 🦞 Feature Exoskeleton
-
-```ascii
-[ PINCHPAD CORE ]
-       |
-       +--- [ 🔒 ClawKeys©™ ] : Decentralized identity keys (hu-) generated client-side.
-       |
-       +--- [ 🐚 ShellCryption©™ ] : Zero-knowledge AES-256-GCM encryption for notes.
-       |
-       +--- [ 🦞 LobsterKeys©™ ] : Granular, revocable API keys (lb-) for Agent access.
-       |
-       +--- [ 🗄️ Secure Reef ] : Persistent SQLite storage with Volume binding.
-       |
-       +--- [ 🌓 MoltTheme ] : High-performance View Transition theme engine.
-```
-
-       +--- [ 🌓 MoltTheme ] : High-performance View Transition theme engine.
-```
+[![Vite](https://img.shields.io/badge/Vite-B73BFE?style=for-the-badge&logo=vite&logoColor=FFD62E)](https://vitejs.dev/)
+[![React](https://img.shields.io/badge/React-20232A?style=for-the-badge&logo=react&logoColor=61DAFB)](https://reactjs.org/)
+[![TypeScript](https://img.shields.io/badge/TypeScript-007ACC?style=for-the-badge&logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
+[![TailwindCSS](https://img.shields.io/badge/Tailwind_CSS-38B2AC?style=for-the-badge&logo=tailwind-css&logoColor=white)](https://tailwindcss.com/)
+[![Docker](https://img.shields.io/badge/Docker-2CA5E0?style=for-the-badge&logo=docker&logoColor=white)](https://www.docker.com/)
+[![SQLite](https://img.shields.io/badge/SQLite-07405E?style=for-the-badge&logo=sqlite&logoColor=white)](https://www.sqlite.org/)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg?style=for-the-badge)](LICENSE)
+[![Phase](https://img.shields.io/badge/Phase-3_Active-00cc66?style=for-the-badge)](#)
 
 ---
 
-## 🚀 Quick Start (Molt into Action)
-
-### 🛠️ Local Development (Bare Metal)
-
-**Prerequisites:** Node.js (v22+)
-
-1.  **Clone the Reef:**
-    ```bash
-    git clone https://github.com/ClawStackStudios/PinchPad.git
-    cd PinchPad
-    ```
-
-2.  **Initialize Habitat:**
-    ```bash
-    npm install
-    cp .env.example .env.local
-    # Edit .env.local and add your GEMINI_API_KEY
-    ```
-
-3.  **Hatch the Server:**
-    ```bash
-    npm run dev
-    ```
-
-### 🐳 Docker Deployment (Containerized)
-
-**Prerequisites:** Docker & Docker Compose
-
-1.  **Build and Run:**
-    ```bash
-    docker-compose up --build -d
-    ```
-
-2.  **Volume Persistence:**
-    Your data is stored in `./data/clawstack.db`. This is bound to the container for persistent storage across molts.
-
----
-
-## 📜 Documentation Habitat
+## 📜 Table of Contents
 
 <details>
-<summary>📂 View Project Artifacts</summary>
+<summary>Unfurl the Scroll 📜</summary>
 
-- [🏗️ BLUEPRINT.md](./BLUEPRINT.md) - ASCII Architecture & System Flow.
-- [🗺️ ROADMAP.md](./ROADMAP.md) - Future molts and planned features.
-- [🤝 CONTRIBUTING.md](./CONTRIBUTING.md) - How to help the reef grow.
-- [🛡️ SECURITY.md](./SECURITY.md) - Security policies and reporting.
+- [About](#-about)
+- [Architecture](#-architecture)
+- [Getting Started](#-getting-started)
+  - [Prerequisites](#prerequisites)
+  - [Running with npm](#-running-with-npm)
+  - [Running with Docker](#-running-with-docker)
+- [Key System](#-key-system)
+- [API Reference](#-api-reference)
+- [Project Structure](#-project-structure)
+- [Available Scripts](#-available-scripts)
+- [Contributing](#-contributing)
+- [Security](#-security)
+
 </details>
 
 ---
 
-## 🛠️ NPC Commands (NPM Scripts)
+## 📌 About
 
-### ⛵ The Great Scuttle (Production)
-Commands for launching and managing the production-grade Hard Shell.
+**PinchPad** is a privacy-first, self-hostable **note-taking** app designed for the Human-Agent ecosystem. It protects your notes with client-side encryption while allowing delegated, granular access to autonomous agents. No passwords, no accounts, no servers watching — just cryptographic keys and sovereign data.
 
-- `npm run scuttle:prod-start`: Builds and hatches the production server in the background.
-- `npm run scuttle:prod-stop`: Safely declaws and halts the production ports.
-- `npm run scuttle:reset`: Full purge of `dist` and halt of production services.
-
-### 🌊 The Coral Nursery (Development)
-Fast-iteration commands for building the reef.
-
-- `npm run scuttle:dev-start`: Launches the dev habitat with hot-reloading.
-- `npm run scuttle:dev-stop`: Halts the development habitat.
-- `npm run scuttle:reset-dev`: Purges `dist` and halts development services.
+- 🔒 **ClawKeys©™** — login with a decentralized identity key instead of passwords. Your `hu-` key is your passport.
+- 🐚 **ShellCryption©™** — zero-knowledge AES-256-GCM encryption for all notes at rest. Only you can decrypt your thoughts.
+- 🦞 **LobsterKeys©™** — issue granular, revocable API keys to AI agents. Let your Lobsters scuttle the reef securely.
+- 🤖 **Gemini AI Integration** — native agent notepad with Google Gemini. Ask questions, get answers, save insights.
+- 🗄️ **SQLite Bedrock** — a fast, reliable, zero-dependency backend with WAL mode and cascade-delete integrity.
+- 🌓 **MoltTheme** — View Transition-based theme engine. Watching the world shift colors.
 
 ---
 
-### 📜 Command Reference
+## 🏗️ Architecture
 
-| Command | Action |
-| :--- | :--- |
-| `npm run build` | Builds the production "Hard Shell" dist. |
-| `npm run lint` | Scans the exoskeleton for type errors. |
+```mermaid
+graph TD
+    subgraph Client ["🌐 Browser"]
+        UI[React / Tailwind UI]
+        Auth["Auth Module<br/>SetupWizard + LoginForm"]
+        Provider["DashboardContext<br/>useNotes() hook"]
+        REST[RestAdapter]
+        Theme[MoltTheme<br/>View Transition]
+    end
+
+    subgraph Server ["🖥️ server.ts (Express)"]
+        API["REST API<br/>Port 8383 dev<br/>Port 8282 prod"]
+        DB[(SQLite<br/>WAL Mode)]
+    end
+
+    UI --> Auth
+    UI --> Theme
+    UI --> Provider
+    Provider --> REST
+    REST -->|"fetch + Bearer token"| API
+    API --> DB
 ```
 
-**Production:**
+---
+
+## 🚀 Getting Started
+
+### Prerequisites
+
+- **Node.js** v22+
+- **npm** v10+
+- **Docker & Docker Compose** *(for containerized deployment)*
+
+---
+
+### 🐚 Running with npm
+
+<details>
+<summary>Expand npm instructions</summary>
+
+**Install dependencies first:**
 ```bash
-npm run scuttle:prod-start     # Start production server (NODE_ENV=production)
-npm run scuttle:prod-stop      # Stop production processes
-npm run scuttle:reset          # Wipe dist/ + databases, rebuild
+npm install
 ```
+
+**Development Commands (The Coral Nursery):**
+- **Start Frontend + Backend**: `npm run scuttle:dev-start` (Frontend :8282, Backend :8383 w/ HMR)
+- **Stop All**: `npm run scuttle:dev-stop`
+- **Reset DB**: `npm run scuttle:reset-dev` (Scuttles dev reef)
+
+---
+
+**Production Commands (The Great Scuttle):**
+- **Build & Start**: `npm run scuttle:prod-start` (API + Frontend on :8282)
+- **Stop All**: `npm run scuttle:prod-stop`
+- **Reset DB**: `npm run scuttle:reset` (DANGER: Deletes prod reef)
+
+---
+
+**Utility Scripts:**
+- **Frontend Only**: `npm run dev` (Vite :8282 with HMR)
+- **Backend Only**: `npm run dev:server` (Express :8383 with watch)
+- **Build Bundle**: `npm run build`
+- **Preview Build**: `npm run preview`
+
+</details>
+
+---
+
+### 🐳 Running with Docker
+
+<details>
+<summary>Expand Docker instructions</summary>
+
+**Environment Variables:**
+
+```bash
+# Default (edit in compose files if needed)
+PORT=8282                    # Server listen port (single container)
+NODE_ENV=production          # production or development
+CORS_ORIGIN=http://yourdomain.com  # restrict CORS origin, or leave unset for open LAN
+GEMINI_API_KEY=your-key-here # For AI agent integration
+```
+
+**Option A: Production (Pull from GHCR) ⚓**
+Use this for a stable, sovereign deployment. It pulls the latest pre-built image from the GitHub Container Registry.
+```bash
+docker compose up -d
+```
+
+**Option B: Development & Testing (Build Locally) 🛠️**
+Use this if you are modifying the source code and want to test changes immediately.
+```bash
+docker compose -f docker-compose.dev.yml up -d --build
+```
+
+**Monitoring & Maintenance:**
+
+- **View Logs**: `docker compose logs -f`
+- **Stop Stack**: `docker compose down`
+- **Healthcheck**: `curl http://localhost:8282/api/health`
+
+> [!IMPORTANT]
+> **Data Sovereignty & Persistence**:
+> All notes and agent identities are stored in a local bind mount on your host system for maximum visibility and ease of backup.
+> - **Path**: `./data/clawstack.db`
+>
+> You can directly copy or backup this file. If it doesn't exist, Docker will create it when the container starts.
+
+</details>
+
+---
+
+## 🔑 Key System
+
+PinchPad uses a **prefix-based identity token system** — no passwords, no usernames stored on a server. Your key file is your identity.
+
+| Prefix | Type | Length | Usage |
+|---|---|---|---|
+| `hu-` | **Human Key** | 64 chars | Your personal identity. Hashed SHA-256, stored securely. |
+| `lb-` | **Lobster/Agent Key** | 64 chars | For your AI agents. Granular permissions (canRead, canWrite, canDelete, canEdit). |
+| `api-` | **Session Token** | 32 chars | Short-lived REST API bearer. 24h TTL. Issued via `POST /api/auth/token`. |
+
+> [!CAUTION]
+> Your `hu-` key is the **only** way to access your PinchPad. Keep it safe. If you lose it, it cannot be recovered. Back it up somewhere secure.
+
+---
+
+## 🔌 API Reference
+
+> All endpoints except `/api/health` and `/api/auth/register` require `Authorization: Bearer <api-token>`.
+
+<details>
+<summary>View full API endpoint table</summary>
+
+| Method | Endpoint | Auth | Permission | Description |
+|---|---|---|---|---|
+| `POST` | `/api/auth/register` | No | - | Create new identity key |
+| `POST` | `/api/auth/token` | No | - | Issue `api-` token from `hu-` or `lb-` key |
+| `GET` | `/api/auth/verify` | Yes | - | Verify current Bearer token |
+| `POST` | `/api/auth/logout` | Yes | - | Revoke current session token |
+| `GET` | `/api/notes` | Yes | canRead | List all notes |
+| `POST` | `/api/notes` | Yes | canWrite | Create note |
+| `PUT` | `/api/notes/:id` | Yes | canEdit | Update note |
+| `DELETE` | `/api/notes/:id` | Yes | canDelete | Delete note |
+| `GET` | `/api/agents` | Yes | human-only | List agent keys |
+| `POST` | `/api/agents` | Yes | human-only | Create agent key |
+| `PUT` | `/api/agents/:id/revoke` | Yes | human-only | Revoke agent key |
+| `GET` | `/api/health` | No | - | Health check |
+
+</details>
+
+---
+
+## 📂 Project Structure
+
+See [BLUEPRINT.md](./BLUEPRINT.md) for the full ASCII construction diagram.
+
+```
+PinchPad/
+├── src/
+│   ├── server/                 # Backend (Express + SQLite)
+│   │   ├── db.ts               # Schema & migrations
+│   │   ├── middleware/         # Auth, permission gates
+│   │   ├── routes/             # API endpoints
+│   │   └── utils/              # Crypto, token helpers
+│   ├── components/             # Feature-scoped UI
+│   │   ├── auth/               # LoginForm + SetupWizard
+│   │   ├── dashboard/          # Main note grid + sidebar
+│   │   ├── notes/              # Note editor + viewer
+│   │   └── ui/                 # shadcn/ui base components
+│   ├── services/               # Business logic
+│   │   ├── authService.ts      # Key generation, hashing
+│   │   ├── noteService.ts      # Note CRUD
+│   │   ├── agentService.ts     # Agent key management
+│   │   └── types/              # Shared TypeScript interfaces
+│   └── lib/                    # Utilities
+│       ├── crypto.ts           # SHA-256, AES-256-GCM, UUID
+│       └── utils.ts            # Helpers
+├── test/                       # Test suite (140 tests, Vitest)
+│   ├── server/                 # Backend integration tests
+│   ├── services/               # Service unit tests
+│   ├── lib/                    # Utility tests
+│   └── shared/                 # Test fixtures + setup
+├── Dockerfile                  # Single-container image
+├── docker-compose.yml          # Prod: pull from GHCR
+├── docker-compose.dev.yml      # Dev: build locally
+├── server.ts                   # Express entry point
+├── vite.config.ts              # Bundler config
+├── tailwind.config.js          # Design tokens
+└── package.json                # Dependencies & scripts
+```
+
+---
+
+## 🛠️ Available Scripts
+
+| Script | Description |
+|---|---|
+| `npm run scuttle:dev-start` | 🦞 Start both Frontend + Backend concurrently (dev mode) |
+| `npm run scuttle:dev-stop` | Kill the frontend and backend dev servers |
+| `npm run scuttle:prod-start` | Build + start production server (:8282) |
+| `npm run scuttle:prod-stop` | Kill the production server |
+| `npm run scuttle:reset` | Scuttle the production database (DANGER) |
+| `npm run scuttle:reset-dev` | Scuttle the development database |
+| `npm run dev` | Vite frontend dev server (:8282 with HMR) |
+| `npm run dev:server` | Express backend dev server (:8383 with watch) |
+| `npm run build` | Vite production build → `dist/` |
+| `npm run preview` | Serve the production `dist/` locally |
+| `npm run lint` | TypeScript type-check (tsc --noEmit) |
+| `npm test` | Run all 140 tests (Vitest) |
+| `npm run test:watch` | Watch mode for tests |
+| `npm run test:coverage` | Coverage report (threshold: middleware 100%, routes >75%) |
+
+---
+
+## 🤝 Contributing
+
+See [CONTRIBUTING.md](./CONTRIBUTING.md) for the full guide.
+
+## 🛡️ Security
+
+See [SECURITY.md](./SECURITY.md) for vulnerability reporting and key security practices.
 
 ---
 
 <div align="center">
-<i>Built with ❤️ by Lucas and Gemini CLI</i><br>
-<b>© 2026 ClawStack Studios. Stay Grounded. Stay Crusty.</b>
+
+```
+       _..._
+     .'     '.      HATCH YOUR PINCHPAD.
+    /  _   _  \     PROTECT YOUR IDEAS.
+    | (q) (p) |     PUNCH THE CLOUD.
+    (_   Y   _)
+     '.__W__.'
+     Maintained by CrustAgent©™
+```
+
 </div>

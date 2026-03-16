@@ -1,120 +1,122 @@
-# PinchPad Roadmap
+# 🗺️ PinchPad — Roadmap
 
-## Current Status (v1.0.0-prototype)
-- [x] Initialized NPM environment.
-- [x] Secured API keys in `.env.local`.
-- [x] Added Docker support.
-- [x] Initial Architecture Blueprint.
+[![Phase](https://img.shields.io/badge/Phase-3%20Active-00cc66?style=for-the-badge)](#)
+[![Status](https://img.shields.io/badge/Status-In_Development-orange?style=for-the-badge)](#)
 
-## 🦞 Phase 1: Refining the Shell (Q1 2026) - [COMPLETE]
-- [x] **Refactor App.tsx:** Separated monolithic component into modular pages and components.
-- [x] **State Management:** Formalized Auth Context and Note Context.
-- [x] **Enhanced UI:** Moved to specialized component files for better maintenance.
-- [x] **Dashboard Overhaul:** Implemented full-screen Sidebar + Main architecture (mirroring ClawChives).
+This document tracks where PinchPad has been, where it is now, and where it's going.
 
-## 🔒 Phase 2: Strengthening the Pot (Q2 2026)
-- [ ] **Pearl Full-Screen View:** Dedicated `/notes/:id` route for viewing and editing individual pearls in full-screen mode.
-- [ ] **Pearl Inline Expand:** Card expansion in-place (no navigation) with quick star/pin/delete actions for rapid note management.
-- [ ] **Multi-Device Sync:** Secure syncing of `hu-` keys across browsers.
-- [ ] **Rich-Text Support:** Implement secure rich-text editing in the pot.
-- [ ] **Attachment Support:** Encrypted file attachments.
+---
 
-## 🤖 Phase 3: Agent Evolution (Q3 2026)
-- [ ] **Granular Permissions:** More fine-grained `lb-` key permissions.
-- [ ] **Usage Quotas:** Rate limiting and quotas per Agent key.
-- [ ] **Agent Marketplace Interface:** Template keys for popular AI frameworks.
+## Timeline Overview
 
-## 🚢 Phase 4: Production Readiness (Q4 2026)
-- [ ] **Unit Tests:** Rigorous testing of crypto functions.
-- [ ] **Security Audit:** Community-driven security review of ClawKeys/ShellCryption.
-- [ ] **Full Deployment Docs:** One-click deployment strategies.
+```mermaid
+gantt
+    title PinchPad Evolution
+    dateFormat  YYYY-MM-DD
+    section Phase 1 — Foundation
+    Vite + React Scaffold       :done,    p1a, 2026-01-15, 2026-01-20
+    ClawKeys Auth System        :done,    p1b, 2026-01-20, 1d
+    ShellCryption AES-256-GCM   :done,    p1c, 2026-01-20, 1d
+    Docker Single Container     :done,    p1d, 2026-01-21, 1d
+    section Phase 2 — Agent & API
+    LobsterKeys (lb-)           :done,    p2a, 2026-02-01, 1d
+    Identity Key Export (hu-)   :done,    p2b, 2026-02-01, 1d
+    Session Management          :done,    p2c, 2026-02-01, 1d
+    Express REST API            :done,    p2d, 2026-02-02, 1d
+    MoltTheme View Transitions  :done,    p2e, 2026-02-03, 1d
+    section Phase 3 — Hardening & Testing
+    Full Test Suite (140 tests) :done,    p3a, 2026-02-04, 14d
+    GitHub Actions CI Pipeline  :done,    p3b, 2026-02-18, 2d
+    Docker Image Push to GHCR   :done,    p3c, 2026-02-20, 1d
+    ClawKeys Portability        :active,  p3d, 2026-03-01, 14d
+    Test Coverage Improvement   :active,  p3e, 2026-03-05, 10d
+    section Phase 4 — Ecosystem
+    ShellPlate Integration      :         p4a, after p3e, 21d
+    Multi-Device Sync           :         p4b, after p4a, 14d
+    WebSocket Real-Time Sync    :         p4c, after p4a, 10d
+```
 
+---
 
+## ✅ Phase 1 — Foundation
 
+<details>
+<summary>View completed items</summary>
 
-----
+- [x] Vite + React 19 + TypeScript scaffold
+- [x] TailwindCSS 4 + Framer Motion component system
+- [x] Docker single-container architecture (Dockerfile + docker-compose)
+- [x] ClawKeys©™ identity system (`hu-` client-side keys)
+- [x] ShellCryption©™ AES-256-GCM note encryption
+- [x] Setup Wizard (first-run key generation)
+- [x] DashboardLayout (main UI architecture)
+- [x] MoltTheme (View Transition dark mode toggle)
 
-1. Add a new API endpoint to `/api/keys` that allows fetching ClawKey details for the authenticated user. This endpoint should be protected by `requireAuth` and `requirePermission('canRead')`. It should return the `id`, `name`, `expiration_type`, and `created_at` fields for each active ClawKey belonging to the user.
+</details>
 
-2. Implement the ability to edit existing ClawKey details. Create a new API route `PUT /api/agents/:id` that accepts `name`, `permissions`, `expiration_type`, and `expiration_date` in the request body. This route should be protected by `requireAuth` and `requirePermission('canEdit')`. It should update the corresponding ClawKey in the database and return the updated record. Ensure that sensitive fields like the `api_key` are not returned.
+---
 
-3. In the `Agents` component, add a loading state that is displayed while the `agentService.getAll` call is in progress. Show a skeleton loader or a simple 'Loading lobsters...' message to provide better UX.
+## ✅ Phase 2 — Agent & API Layer
 
-4. Enhance the ClawKey creation form in the `Agents` component. Add fields for `expiration_type` (e.g., dropdown with 'never', 'one-time', 'daily', 'monthly') and `expiration_date` (if 'one-time' is selected). Also, include an optional field for `rate_limit`.
+<details>
+<summary>View completed items</summary>
 
-5. Integrate a toast notification system to provide user feedback for actions like creating, revoking, or updating ClawKeys. Display success messages (e.g., 'Lobster key created successfully') and error messages (e.g., 'Failed to revoke key').
+- [x] **Identity Key System** — `hu-` human keys (64 chars base62) with SecureContext export
+- [x] **Agent Key System** — `lb-` agent keys (64 chars base62) with granular permissions (canRead/Write/Edit/Delete)
+- [x] **SQLite Architecture** — 5-table schema with WAL mode, FK constraints, cascade deletes
+- [x] **REST API Server** (`server.ts`) — Express + better-sqlite3 on port 8383 (dev) / 8282 (prod)
+- [x] **Strict Auth Middleware** — `requireAuth` → `requirePermission` → `requireHuman` immutable stack
+- [x] **Token System** — `api-` session tokens (32 chars, 24h TTL), `hu-` and `lb-` identity keys
+- [x] **Gemini AI Integration** — Native agent notepad via `@google/genai`
+- [x] **Type-Safe Backend** — TypeScript feature-split architecture (`src/server/routes`, `services`, `middleware`)
 
-6. Implement the functionality to edit existing notes. When a note is selected, populate the input fields with its title and content, and allow the user to update it.
+</details>
 
-7. Add a delete button for each note. When clicked, it should prompt the user for confirmation before deleting the note via the API.
+---
 
-- [DONE] 8. Enhance the UI for the notes list. Currently, notes are displayed as plain divs. Refactor them to use a more visually appealing card-like structure with a subtle hover effect.
+## 🔄 Phase 3 — Hardening & Testing *(Active)*
 
-- [DONE] 9. When fetching notes or performing create/update/delete operations, display a loading indicator to provide feedback to the user.
+<details>
+<summary>View completed & in-progress items</summary>
 
-- [DONE] 10. When there are no notes, display a clear message indicating that the vault is empty and prompt the user to create a new note.
+**Completed (this phase):**
+- [x] **Comprehensive Test Suite** — 140 passing tests across 9 files (Vitest 4.1.0)
+- [x] **Test Architecture** — `*.lobster.test.ts` naming, `createTestApp()` factory, in-memory SQLite
+- [x] **Coverage Gates** — Middleware 100%, Routes avg 79%, Overall 56.84%
+- [x] **GitHub Actions CI** — Automated test gate before Docker build/push to GHCR
+- [x] **Production Docker Image** — `ghcr.io/clawstackstudios/pinchpad:main`
+- [x] **Browser UUID Compatibility** — Fixed `crypto.randomUUID()` for client-side services
 
-- [DONE] 11. In the 'Notes' component, add a placeholder 'Note Title' to the title input field.
+**In Progress:**
+- [ ] **ClawKeys Portability** — Design for cross-service key transfer via remote SQLite
+- [ ] **Test Coverage Improvement** — Currently 56.84% overall → target 75%
+- [ ] **Screenshot Documentation** — Visual guide for UI and key workflows
+- [ ] **CRUSTSECURITY.md** — Comprehensive security framework document
 
-- [DONE] 12. In the 'Notes' component, add a placeholder 'Write your secure note here...' to the content textarea.
+</details>
 
-- [DONE] 13. In the 'Notes' component, implement the 'New Note' button to clear the title and content fields and reset the editing state.
+---
 
-- [DONE] 14. In the 'Notes' component, add a 'Clear' button next to the 'Save Note' button that clears the title and content fields.
+## 🔜 Phase 4 — Ecosystem Integration
 
-- [DONE] 15. In the 'Notes' component, add a confirmation dialog before deleting a note when the trash icon is clicked.
+- [ ] **ShellPlate Integration** — Centralized multi-app SQLite (PinchPad + future services)
+- [ ] **Multi-Device Sync** — Secure `hu-` key sync across browsers and devices
+- [ ] **WebSocket Real-Time Sync** — Live note updates across browser tabs and remote clients
+- [ ] **Browser Extension** — One-click note capture from any webpage
+- [ ] **Webhook Support** — Outbound webhooks for `lb-` keys (agent automation)
+- [ ] **Public Share Links** — Read-only note sharing without authentication
 
-----
+---
 
-GEMINI's Suggestions
+## 💡 Future Explorations
 
-To keep the PinchPad habitat truly sovereign and "Hard-Shelled," here are a
-  few ways we can molt the codebase into a higher security tier:
+- [ ] Multi-user / team collections
+- [ ] AI-powered tag suggestions
+- [ ] Read-later with offline article caching
+- [ ] Note linking and backlinks
+- [ ] Full-text search optimization
+- [ ] Progressive Web App (PWA) offline support
 
+---
 
-  1. 🦞 The Lobster Trap (Hash the Agent Keys)
-  Right now, the lb- (Lobster) keys for your agents are stored plaintext in the
-  lobster_keys table.
-   * The Risk: If someone steals your clawstack.db, they can steal your agents'
-     identities.
-   * The Hardening: We should only store the SHA-256 hash of the lb- key. When
-     an agent calls the API, we hash their provided key and compare it. This
-     ensures even the DB owner can't "impersonate" an agent.
-
-
-  2. 🛡️ The Lead Shell (Argon2 Identity Hashing)
-  The user's hu- key hash is currently generated using a simple SHA-256.
-   * The Risk: If the DB is leaked, an attacker could attempt a massive
-     GPU-accelerated brute-force attack against that hash.
-   * The Hardening: We should use a memory-hard KDF (like Argon2 or at least
-     Bcrypt) for the server-side key_hash. This makes offline attacks
-     computationally expensive.
-
-
-  3. 🐚 Encrypted Metadata
-  Currently, the title and content of your notes are encrypted, but the Note ID,
-  Created Date, and Lobster Key names are plaintext.
-   * The Risk: Metadata leakage. An observer can see when you write and how many
-     notes you have.
-   * The Hardening: We could encrypt the names of your Lobster Keys and even
-     "pad" the ciphertext of your notes so an attacker can't guess the content
-     length.
-
-
-  4. 🗜️ The Pincer Grip (Session Binding)
-  Currently, an api- token can be used from any device once stolen.
-   * The Hardening: We can bind the session token to the User-Agent or a unique
-     Client Fingerprint. If the token is used from a different browser, the
-     "Pincer Grip" fails and the session is immediately declawed.
-
-
-  5. 🌊 Secure Key Molting (Key Rotation)
-  A feature to "Molt" your identity.
-   * The Feature: It would allow you to provide your old hu- key and a new one.
-     The browser would decrypt everything in the Pot and re-encrypt it with the
-     new shell in one atomic operation.
-
-
-  Which of these "Crusty" upgrades should we tackle first? I'd recommend
-  starting with #1 (Hashing Lobster Keys), as it's a critical missing piece of
-  the Zero-Knowledge promise. 🦞🛡️
+*Maintained by CrustAgent©™*
