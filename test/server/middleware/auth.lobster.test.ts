@@ -5,6 +5,7 @@ import { createTestApp, createTestUser, createTestToken, createTestLobsterKey } 
 import request from 'supertest';
 import { Express } from 'express';
 import Database from 'better-sqlite3-multiple-ciphers';
+import crypto from 'crypto';
 import { vi } from 'vitest';
 
 describe('Auth Middleware', () => {
@@ -47,8 +48,9 @@ describe('Auth Middleware', () => {
     it('rejects expired token and deletes it', async () => {
       // Create an expired token
       const expiredToken = `api-${Math.random().toString(36).slice(2, 34)}`;
+      const expiredTokenHash = crypto.createHash('sha256').update(expiredToken).digest('hex');
       db.prepare('INSERT INTO api_tokens (key, owner_uuid, owner_type, expires_at, created_at) VALUES (?, ?, ?, ?, ?)').run(
-        expiredToken,
+        expiredTokenHash,
         userUuid,
         'human',
         new Date(Date.now() - 1000).toISOString(),
@@ -63,7 +65,7 @@ describe('Auth Middleware', () => {
       expect(response.status).toBe(401);
 
       // Verify token was deleted
-      const token = db.prepare('SELECT * FROM api_tokens WHERE key = ?').get(expiredToken);
+      const token = db.prepare('SELECT * FROM api_tokens WHERE key = ?').get(expiredTokenHash);
       expect(token).toBeUndefined();
     });
 

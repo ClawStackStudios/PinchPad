@@ -14,6 +14,9 @@ services:
       # CORS_ORIGIN: leave unset to allow all origins, or set to restrict (e.g. http://yourdomain.com)
       # DB_ENCRYPTION_KEY: Generate with: openssl rand -base64 32
       # - DB_ENCRYPTION_KEY=your-key-here
+      # PUID/PGID: Set to your user:group ID for proper file ownership (optional, default 0:0)
+      # - PUID=1000
+      # - PGID=1000
     healthcheck:
       test: ["CMD", "wget", "-qO-", "http://localhost:8282/api/health"]
       interval: 15s

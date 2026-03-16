@@ -1,4 +1,5 @@
 import { Request, Response, NextFunction } from 'express';
+import crypto from 'crypto';
 import globalDb from '../db';
 
 export interface AuthRequest extends Request {
@@ -19,14 +20,15 @@ export const requireAuth = () => {
     }
 
     const token = authHeader.split(' ')[1];
+    const tokenHash = crypto.createHash('sha256').update(token).digest('hex');
 
-    const session = db.prepare('SELECT * FROM api_tokens WHERE key = ?').get(token) as any;
+    const session = db.prepare('SELECT * FROM api_tokens WHERE key = ?').get(tokenHash) as any;
     if (!session) {
       return res.status(401).json({ error: 'Invalid token' });
     }
 
     if (session.expires_at && new Date(session.expires_at) < new Date()) {
-      db.prepare('DELETE FROM api_tokens WHERE key = ?').run(token);
+      db.prepare('DELETE FROM api_tokens WHERE key = ?').run(tokenHash);
       return res.status(401).json({ error: 'Token expired' });
     }
 

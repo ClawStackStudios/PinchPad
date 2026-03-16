@@ -1,5 +1,6 @@
 import express, { Express, RequestHandler } from 'express';
 import Database from 'better-sqlite3-multiple-ciphers';
+import crypto from 'crypto';
 import authRoutes from '../../src/server/routes/auth';
 import notesRoutes from '../../src/server/routes/notes';
 import agentsRoutes from '../../src/server/routes/agents';
@@ -95,8 +96,9 @@ export function createTestUser(db: Database.Database, username = 'testuser', key
 
 export function createTestToken(db: Database.Database, userUuid: string, type = 'human', lobsterKeyId: string | null = null): string {
   const token = `api-${Math.random().toString(36).slice(2, 34)}`;
+  const tokenHash = crypto.createHash('sha256').update(token).digest('hex');
   db.prepare('INSERT INTO api_tokens (key, owner_uuid, owner_type, lobster_key_id, expires_at, created_at) VALUES (?, ?, ?, ?, ?, ?)').run(
-    token,
+    tokenHash,
     userUuid,
     type,
     lobsterKeyId,

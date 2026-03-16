@@ -116,13 +116,14 @@ router.post('/token', (req: any, res: Response) => {
     }
 
     const token = `api-${generateBase62(32)}`;
+    const tokenHash = crypto.createHash('sha256').update(token).digest('hex');
     const expiresAt = new Date(Date.now() + TOKEN_TTL_DEFAULT).toISOString(); // 24 hours per skill
 
     // Invalidate old tokens for this user to keep the reef clean
     db.prepare('DELETE FROM api_tokens WHERE owner_uuid = ? AND owner_type = ?').run(user.uuid, type);
 
     db.prepare('INSERT INTO api_tokens (key, owner_uuid, owner_type, lobster_key_id, expires_at, created_at) VALUES (?, ?, ?, ?, ?, ?)').run(
-      token,
+      tokenHash,
       user.uuid,
       type,
       lobsterKeyId,
@@ -148,6 +149,7 @@ router.get('/verify', (req: any, res: Response) => {
   }
 
   const token = authHeader.slice(7);
+  const tokenHash = crypto.createHash('sha256').update(token).digest('hex');
 
   try {
     const row = db.prepare(`
@@ -155,7 +157,7 @@ router.get('/verify', (req: any, res: Response) => {
       FROM api_tokens t
       JOIN users u ON t.owner_uuid = u.uuid
       WHERE t.key = ? AND datetime(t.expires_at) > datetime('now')
-    `).get(token) as any;
+    `).get(tokenHash) as any;
 
     if (!row) {
       return res.status(401).json({ error: 'Token expired or invalid' });
@@ -178,10 +180,11 @@ router.post('/logout', (req, res) => {
   }
 
   const token = authHeader.slice(7);
+  const tokenHash = crypto.createHash('sha256').update(token).digest('hex');
 
   try {
     const testDb = (req as any).db || globalDb;
-    testDb.prepare('DELETE FROM api_tokens WHERE key = ?').run(token);
+    testDb.prepare('DELETE FROM api_tokens WHERE key = ?').run(tokenHash);
     res.json({ success: true });
   } catch (error) {
     res.status(500).json({ error: 'Logout failed' });
