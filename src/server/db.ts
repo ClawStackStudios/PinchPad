@@ -1,4 +1,4 @@
-import Database from 'better-sqlite3';
+import Database from 'better-sqlite3-multiple-ciphers';
 import path from 'path';
 import fs from 'fs';
 
@@ -8,7 +8,49 @@ if (!fs.existsSync(dataDir)) {
 }
 
 const dbPath = path.join(dataDir, 'clawstack.db');
-const db = new Database(dbPath);
+const encryptionKey = process.env.DB_ENCRYPTION_KEY;
+
+function openDatabase(): Database.Database {
+  const db = new Database(dbPath);
+
+  if (encryptionKey) {
+    // Apply SQLCipher key — must be first pragma after open
+    db.pragma(`key = '${encryptionKey}'`);
+
+    // Verify the key works — if DB exists but was plaintext, this will fail
+    try {
+      db.pragma('user_version');
+    } catch (e) {
+      // Key failed on existing DB → it's a plaintext DB, migrate it
+      console.log('[DB] Detected unencrypted database — migrating to encrypted...');
+      db.close();
+      encryptExistingDatabase(dbPath, encryptionKey);
+      const encrypted = new Database(dbPath);
+      encrypted.pragma(`key = '${encryptionKey}'`);
+      return encrypted;
+    }
+  } else {
+    console.warn('[DB] WARNING: DB_ENCRYPTION_KEY is not set — database is unencrypted at rest.');
+  }
+
+  return db;
+}
+
+function encryptExistingDatabase(dbPath: string, key: string) {
+  // Open plaintext DB, attach encrypted copy, export, replace
+  const tempPath = dbPath + '.tmp';
+  const plain = new Database(dbPath);
+  plain.exec(`
+    ATTACH DATABASE '${tempPath}' AS encrypted KEY '${key}';
+    SELECT sqlcipher_export('encrypted');
+    DETACH DATABASE encrypted;
+  `);
+  plain.close();
+  fs.renameSync(tempPath, dbPath);
+  console.log('[DB] Database encrypted successfully.');
+}
+
+const db = openDatabase();
 
 db.pragma('journal_mode = WAL');
 db.pragma('foreign_keys = ON');

@@ -4,7 +4,7 @@ import { Response, NextFunction } from 'express';
 import { createTestApp, createTestUser, createTestToken, createTestLobsterKey } from '../../shared/app';
 import request from 'supertest';
 import { Express } from 'express';
-import Database from 'better-sqlite3';
+import Database from 'better-sqlite3-multiple-ciphers';
 import { vi } from 'vitest';
 
 describe('Auth Middleware', () => {

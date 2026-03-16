@@ -1,5 +1,5 @@
 import express, { Express, RequestHandler } from 'express';
-import Database from 'better-sqlite3';
+import Database from 'better-sqlite3-multiple-ciphers';
 import authRoutes from '../../src/server/routes/auth';
 import notesRoutes from '../../src/server/routes/notes';
 import agentsRoutes from '../../src/server/routes/agents';

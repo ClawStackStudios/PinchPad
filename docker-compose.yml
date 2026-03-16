@@ -12,6 +12,8 @@ services:
       - NODE_ENV=production
       - PORT=8282
       # CORS_ORIGIN: leave unset to allow all origins, or set to restrict (e.g. http://yourdomain.com)
+      # DB_ENCRYPTION_KEY: Generate with: openssl rand -base64 32
+      # - DB_ENCRYPTION_KEY=your-key-here
     healthcheck:
       test: ["CMD", "wget", "-qO-", "http://localhost:8282/api/health"]
       interval: 15s

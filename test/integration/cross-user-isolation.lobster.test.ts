@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeAll, afterAll } from 'vitest';
-import Database from 'better-sqlite3';
+import Database from 'better-sqlite3-multiple-ciphers';
 import express from 'express';
 import request from 'supertest';
 import authRouter from '../../src/server/routes/auth';
