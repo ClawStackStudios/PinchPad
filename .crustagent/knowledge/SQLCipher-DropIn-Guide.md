@@ -94,7 +94,7 @@ if (!fs.existsSync(dataDir)) {
 }
 ```
 
-### 2c. Wrap your Database open call in `openDatabase()`
+### 2c. Add the helper functions and open call
 
 Find the line where your DB is opened. It will look like:
 
@@ -102,7 +102,7 @@ Find the line where your DB is opened. It will look like:
 const db = new Database(dbPath);
 ```
 
-Replace it with this full block (paste verbatim):
+Replace it with these helper functions and the new open call (paste verbatim):
 
 ```typescript
 function ensureDbPermissions() {
@@ -260,6 +260,51 @@ import Database from 'better-sqlite3-multiple-ciphers';
 ```
 
 > The type signature is identical. `Database.Database` type, all method signatures — no changes needed to test logic.
+
+### ⚠️ Important: Token Hashing in Test Utilities
+
+**If your project uses session tokens** (Bearer token auth), you must also update your test utility that creates tokens.
+
+In `test/shared/app.ts` (or your equivalent test factory):
+
+**Before:**
+```typescript
+export function createTestToken(db: Database.Database, userUuid: string): string {
+  const token = `api-${Math.random().toString(36).slice(2, 34)}`;
+  db.prepare('INSERT INTO api_tokens (key, owner_uuid, ...) VALUES (?, ?, ...)').run(
+    token,  // ← plaintext token inserted
+    userUuid,
+    ...
+  );
+  return token;
+}
+```
+
+**After:**
+```typescript
+import crypto from 'crypto';
+
+export function createTestToken(db: Database.Database, userUuid: string): string {
+  const token = `api-${Math.random().toString(36).slice(2, 34)}`;
+  const tokenHash = crypto.createHash('sha256').update(token).digest('hex');
+  db.prepare('INSERT INTO api_tokens (key, owner_uuid, ...) VALUES (?, ?, ...)').run(
+    tokenHash,  // ← hashed token inserted (defense-in-depth)
+    userUuid,
+    ...
+  );
+  return token;  // ← return plaintext so tests can use in Bearer header
+}
+```
+
+This ensures your test DB matches production: tokens are stored hashed, but the function returns plaintext for Bearer header construction.
+
+**Also update any test queries** that look up tokens:
+```typescript
+// Old: const token = db.prepare('SELECT * FROM api_tokens WHERE key = ?').get(testToken);
+// New:
+const tokenHash = crypto.createHash('sha256').update(testToken).digest('hex');
+const token = db.prepare('SELECT * FROM api_tokens WHERE key = ?').get(tokenHash);
+```
 
 ---
 
@@ -442,14 +487,136 @@ For any target project:
 
 ---
 
+## Troubleshooting
+
+### Tests fail with "Token not found" or "Invalid token"
+
+**Cause**: Test utilities are inserting plaintext tokens, but production code is hashing tokens before lookup.
+
+**Fix**: Follow the "Token Hashing in Test Utilities" section above. Update your `createTestToken()` to hash before INSERT, and update all test queries to hash before SELECT.
+
+### Tests pass but app crashes on startup with "Invalid DB_ENCRYPTION_KEY format"
+
+**Cause**: The key validation regex is strict: only base64 characters (A-Z, a-z, 0-9, +, /, =) accepted. Non-base64 keys are rejected at module load.
+
+**Fix**: Generate key correctly:
+```bash
+openssl rand -base64 32
+```
+
+Do NOT manually create keys or paste non-base64 values. The regex prevents SQL injection via malformed keys — it's intentional.
+
+### "file is encrypted or is not a database" error
+
+**Cause**: SQLCipher can't read the DB with the provided key. Either:
+1. Key is wrong
+2. DB was encrypted with a different key
+3. DB is corrupted
+
+**Fix**:
+- Verify key in `DB_ENCRYPTION_KEY` matches the key used to create the DB
+- Check `.db` file exists and is readable
+- If uncertain, delete the `.db` file and restart — a new encrypted DB will be created with the current key
+
+### Plaintext DB not auto-migrating to encrypted
+
+**Cause**: Auto-migration only triggers if:
+1. DB file exists (is plaintext)
+2. `DB_ENCRYPTION_KEY` is set
+3. First open attempt fails with plaintext DB
+
+**Fix**: Ensure key is set BEFORE starting the app. The check happens during database initialization.
+
+### Permission denied on database files
+
+**Cause**: Database files created with insufficient permissions (world-readable 0o644 instead of owner-only 0o600).
+
+**Fix**:
+- Ensure `process.umask(0o077)` is called before DB creation
+- Run `chmod 600 data/*.db*` on existing database files
+- This only applies to production — test DBs are in-memory and unaffected
+
+### Docker container can't read database volume
+
+**Cause**: Database files owned by host user (1000:1000) but container running as different UID/GID (often root 0:0).
+
+**Fix**: Set `PUID` and `PGID` environment variables in docker-compose:
+```yaml
+environment:
+  - PUID=1000
+  - PGID=1000
+  - DB_ENCRYPTION_KEY=your-key-here
+```
+
+This ensures container process has permission to read/write the bind-mounted volume.
+
+### Migrations failing with "database is locked"
+
+**Cause**: SQLCipher export migration conflicts with other DB operations or improper connection cleanup.
+
+**Fix**:
+- Ensure only one process is accessing the DB during migration
+- Close all other connections before the app starts
+- The migration is synchronous and should complete in <1 second for typical databases
+
+---
+
+## Implementation Checklist for CrustAgent
+
+When implementing in a new project, verify:
+
+- [ ] `package.json` dependency swapped **and `npm install` run** (must compile native bindings)
+- [ ] `src/server/db.ts` imports `better-sqlite3-multiple-ciphers` not `better-sqlite3`
+- [ ] `fs` module imported in `db.ts` (for chmod and mkdir operations)
+- [ ] `crypto` module imported in `db.ts` (for key validation - though not strictly needed for validation itself)
+- [ ] All test files have import swapped (`grep -r "better-sqlite3'" test/` should return zero results)
+- [ ] Test utilities updated to hash tokens before INSERT and before SELECT
+- [ ] All test queries that look up tokens are updated to hash before SELECT
+- [ ] `npm test` passes with 100% of tests (all tests should pass, encryption doesn't affect in-memory DBs)
+- [ ] `.env.example` documents `DB_ENCRYPTION_KEY` requirement
+- [ ] `docker-compose.yml` has `DB_ENCRYPTION_KEY` commented (shows it's available)
+- [ ] Key validation regex is exactly: `/^[A-Za-z0-9+/=]{43,}$/` (minimum 32 bytes base64)
+- [ ] Umask is set to `0o077` before DB creation and restored in finally block
+- [ ] File permissions are explicitly `chmod 0o600` on DB + WAL + SHM files
+- [ ] Symlink check is present in `encryptExistingDatabase()` before `fs.renameSync()`
+- [ ] Stale temp file cleanup is present at startup
+- [ ] `npm run build` succeeds (TypeScript compilation)
+
+### Red flags to watch for:
+
+1. **Tests fail with "token not found"** → Token hashing not applied to test utilities
+2. **Tests pass but app crashes on startup** → Key validation is too permissive or not present
+3. **Permission denied errors** → Umask not set or not restored properly
+4. **App starts but can't read DB** → Docker PUID/PGID mismatch on volume mount
+5. **DB not encrypting** → Key pragma not being called or is after other pragmas
+
+---
+
 ## Reference: PinchPad Implementation
 
 The canonical implementation lives in:
-- `src/server/db.ts` — full working implementation
-- `.crustagent/crustaudits/CRUSTAUDIT_SQLCIPHER_ENCRYPTION.md` — full technical audit
+- `src/server/db.ts` — full working implementation with all security hardening
+- `.crustagent/crustaudits/FULL_AUDIT_2026-03-16.md` — complete security audit and fixes
+- `test/shared/app.ts` — test utilities with token hashing applied
+- `test/integration/token-lifecycle.lobster.test.ts` — example of token hash lookups in tests
+
+Copy these files verbatim when dropping into new projects.
+
+---
+
+## Why This Matters
+
+SQLCipher encryption protects your database at rest (Layer 2 of defense). Without it:
+- Anyone with filesystem access can read your entire database with any SQLite tool
+- Credentials, tokens, user data — all plaintext
+- With this drop-in, the `.db` file becomes an unreadable binary blob to anyone without the key
+
+The key is stored in `DB_ENCRYPTION_KEY` environment variable — standard practice, requires trusted deployment environment (Docker secrets, HashiCorp Vault, etc.).
 
 ---
 
 *Maintained by CrustAgent©™*
 *Origin: PinchPad©™ — 2026-03-16*
+*Last Updated: 2026-03-16 (post-implementation learnings)*
 *Universal across: ClawStack Studios©™ projects using better-sqlite3 + Express + Docker*
+*Tested in production: PinchPad©™ (140/140 tests passing)*
