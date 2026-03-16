@@ -21,10 +21,16 @@ async function startServer() {
   // Security Middlewares
   app.use(helmet({
     contentSecurityPolicy: false, // Disabled for Vite HMR in dev
+    crossOriginEmbedderPolicy: false, // Don't restrict cross-origin resources
+    crossOriginResourcePolicy: false, // Don't restrict cross-origin resource loading
+    crossOriginOpenerPolicy: false, // Don't isolate — let crypto.subtle use JS fallback
+    originAgentCluster: false, // Don't force origin-keyed clusters (fixes console warning)
   }));
-  
+
   app.use(cors({
-    origin: process.env.CORS_ORIGIN || 'http://localhost:8282',
+    origin: process.env.CORS_ORIGIN
+      ? process.env.CORS_ORIGIN.split(',').map(o => o.trim())
+      : true, // 'true' = mirror request origin — allows any LAN IP without configuration
     credentials: true,
   }));
   

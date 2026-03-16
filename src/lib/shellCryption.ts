@@ -1,6 +1,22 @@
+/**
+ * Check if ShellCryption (AES-256-GCM) is available in this browser context.
+ * Returns false on plain HTTP (LAN IPs), true on HTTPS or localhost.
+ */
+export function isShellCryptionAvailable(): boolean {
+  return typeof crypto !== 'undefined' && crypto.subtle != null;
+}
+
 export async function deriveShellKey(huKey: string, userUuid: string): Promise<CryptoKey> {
+  // Guard: ShellCryption requires a Secure Context (HTTPS or localhost)
+  if (!isShellCryptionAvailable()) {
+    throw new Error(
+      'ShellCryption requires a Secure Context (HTTPS or localhost). ' +
+      'Notes are unavailable over plain HTTP LAN access. Use HTTPS or access via localhost.'
+    );
+  }
+
   const encoder = new TextEncoder();
-  const keyMaterial = await window.crypto.subtle.importKey(
+  const keyMaterial = await crypto.subtle.importKey(
     'raw',
     encoder.encode(huKey),
     { name: 'HKDF' },
@@ -8,7 +24,7 @@ export async function deriveShellKey(huKey: string, userUuid: string): Promise<C
     ['deriveKey']
   );
 
-  return window.crypto.subtle.deriveKey(
+  return crypto.subtle.deriveKey(
     {
       name: 'HKDF',
       hash: 'SHA-256',
@@ -44,9 +60,9 @@ function base64ToArrayBuffer(base64: string): ArrayBuffer {
 
 export async function encryptField(plaintext: string, shellKey: CryptoKey, aad: string): Promise<string> {
   const encoder = new TextEncoder();
-  const iv = window.crypto.getRandomValues(new Uint8Array(12));
-  
-  const ciphertextBuffer = await window.crypto.subtle.encrypt(
+  const iv = crypto.getRandomValues(new Uint8Array(12));
+
+  const ciphertextBuffer = await crypto.subtle.encrypt(
     {
       name: 'AES-GCM',
       iv: iv,
@@ -77,7 +93,7 @@ export async function decryptField(encryptedJson: string, shellKey: CryptoKey, a
     const iv = base64ToArrayBuffer(data.iv);
     const ct = base64ToArrayBuffer(data.ct);
 
-    const decryptedBuffer = await window.crypto.subtle.decrypt(
+    const decryptedBuffer = await crypto.subtle.decrypt(
       {
         name: 'AES-GCM',
         iv: new Uint8Array(iv),
