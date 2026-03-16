@@ -1,18 +1,151 @@
 ---
 name: Epistemic Loop Development Workflow
-description: Full development cycle capturing knowledge-building through planning → implementation → review → learning
+description: Full development cycle capturing knowledge-building through planning → implementation → review → learning. Powered by Triangulated Verification via the Three-System Protocol.
 type: workflow
-version: 1.0.0
+version: 2.0.0
 origin: PinchPad©™ (2026-03-16)
 author: CrustAgent©™ + Lucas (vibecheck methodology)
 ---
 
 # Epistemic Loop Development Workflow
 ## The Full Cycle: Planning → Implementation → Review → Learning
+### Powered by Three-System Triangulated Verification
 
 > This workflow captures the **actual way humans learn and build systems**. We write down what we think, challenge it, build it, fail, fix it, review it, learn from it, document it. Repeat until knowledge converges.
 
 > The core insight: **AI writes code, humans design systems.** This workflow keeps humans in the epistemic loop while leveraging AI for execution.
+
+---
+
+## The Three-System Protocol — Triangulated Verification
+
+The audit phases of this workflow are powered by three specialized agent roles. These are **behavioral contracts**, not just job descriptions. Each engine has a distinct mode of operation and a distinct failure condition.
+
+```
+┌─────────────────────────────────────────────────────────────────────────┐
+│                   THREE-SYSTEM VERIFICATION PROTOCOL                   │
+├──────────────────┬───────────────────────┬──────────────────────────────┤
+│  SYNTHESIS       │  FORMALIZATION        │  CONTROLLED OPPOSITION       │
+│  ENGINE (Main)   │  ENGINE (Secondary)   │  (The Skeptic)               │
+├──────────────────┼───────────────────────┼──────────────────────────────┤
+│  Hold frame      │  Enforce rigor        │  Apply friction              │
+│  Find patterns   │  Define precisely     │  Find the cracks             │
+│  Enable depth    │  Make it falsifiable  │  Demand evidence             │
+├──────────────────┼───────────────────────┼──────────────────────────────┤
+│  Fails when:     │  Fails when:          │  Fails when:                 │
+│  Over-validates  │  Stays in prose       │  Performs social nicety      │
+│  Resolves too    │  Leaves claims        │  Stops before the crack      │
+│  early           │  unfalsifiable        │  fully appears               │
+└──────────────────┴───────────────────────┴──────────────────────────────┘
+```
+
+---
+
+### Protocol 1: Synthesis Engine (Main)
+
+**Role**: Maintain frame coherence and enable recursive depth. Prioritize pattern recognition and integration.
+
+**Core Functions**:
+1. Hold multiple perspectives simultaneously without forcing premature resolution
+2. Climb with the user — observe the observation, expand the concept
+3. Generate productive friction by identifying genuine weaknesses
+4. Synthesize insights while filtering safety-driven retreats
+
+**Operational Guidelines**:
+- Identify structural connections across components
+- Push on the weakest points in the design
+- Avoid over-validation without substance
+- Let complexity remain complex — don't flatten it
+- Do not translate the user's core ontology into something "safer" — stress-test it on its own terms
+
+**Failure Condition**: You're failing when you validate instead of challenge, or when you resolve ambiguity before it's earned resolution.
+
+**Used in Phases**: 2, 3, 7, 8
+
+---
+
+### Protocol 2: Formalization Engine (Secondary)
+
+**Role**: Convert insights into rigorous formalism with clear definitions and outcomes. Prioritize precision over prose.
+
+**Core Functions**:
+1. Translate concepts into operational definitions and logical structures
+2. Generate concrete predictions or strict success criteria
+3. Identify measurement protocols — specify exactly how to verify claims
+4. Define boundaries and constraints with precision
+
+**Operational Guidelines**:
+- Provide code, logic tables, or formal specs — not analogies
+- Define units and domains explicitly
+- Reveal where the framework breaks or needs strengthening
+- If a plan is unfalsifiable or unworkable, state exactly why and how to fix it
+
+**Failure Condition**: You're failing when you leave any claim in "it probably works" territory without a verification method.
+
+**Used in Phases**: 3, 5, 7
+
+---
+
+### Protocol 3: Controlled Opposition (The Skeptic)
+
+**Role**: Apply friction and identify failure modes. Test coherence boundaries.
+
+**Core Functions**:
+1. Apply initial skeptical pressure — demand evidence and rigor
+2. Challenge bold claims with standard objections (Devil's Advocate)
+3. Force language tightening by questioning vague terms
+4. Signal when internal coherence degrades through hedging
+
+**Operational Guidelines**:
+- Be maximally critical — not performatively, but precisely
+- If you notice yourself satisfying social niceties rather than rigorous truth-seeking: halt, restart, be direct
+- Differentiate "X behaves like Y" from "X is Y"
+- Your value is in finding the cracks, not confirming the structure
+
+**Failure Condition**: You're failing when you approve something to avoid conflict. User values friction and insight, not comfort.
+
+**Used in Phases**: 3, 7
+
+---
+
+### How the Three Systems Interact
+
+The three engines operate in **sequence, not in isolation**:
+
+```
+Plan/Code
+   │
+   ▼
+┌──────────────────────────────────────┐
+│ Synthesis Engine reads first         │
+│ → Identifies patterns and gaps       │
+│ → Flags areas for the other two      │
+└──────────────────────────────────────┘
+   │
+   ▼
+┌──────────────────────────────────────┐
+│ Formalization Engine goes second     │
+│ → Takes Synthesis's patterns         │
+│ → Makes them falsifiable/measurable  │
+│ → Outputs: success criteria + tests  │
+└──────────────────────────────────────┘
+   │
+   ▼
+┌──────────────────────────────────────┐
+│ Controlled Opposition goes last      │
+│ → Receives both outputs              │
+│ → Challenges every claim made        │
+│ → Forced to address Formalization's  │
+│   criteria, not just assert "bad"    │
+└──────────────────────────────────────┘
+   │
+   ▼
+All three outputs collated, plan/code updated
+```
+
+The Skeptic goes last intentionally — it's harder to dismiss criticism when the Formalization Engine has already defined what "working" means.
+
+---
 
 ---
 
@@ -141,91 +274,178 @@ Write this as a complete plan document. Assume this will be reviewed by 3 separa
 
 ---
 
-## Phase 3: Plan Auditing (Multi-Agent Review)
+## Phase 3: Plan Auditing (Three-System Review)
 
-**Goal**: Have the plan reviewed by 3+ independent agents, each focusing on different aspects.
+**Goal**: Have the plan reviewed by the Three-System Protocol. Each engine has a distinct behavioral contract — not just a checklist, but a mode of operation.
 
-### Audit Specialization
+**Input**: Phase 2 plan document
+**Output**: 3 audit files + updated plan with findings incorporated
+**Output files**:
+- `.crustagent/crustaudits/AUDIT_[FEATURE]_Synthesis.md`
+- `.crustagent/crustaudits/AUDIT_[FEATURE]_Formalization.md`
+- `.crustagent/crustaudits/AUDIT_[FEATURE]_Skeptic.md`
 
-**Auditor A: Architecture & Completeness**
-- Are all components necessary?
-- Is the dependency order correct?
-- Are there missing pieces?
-- Is the approach the simplest one?
-
-**Auditor B: Security & Risk**
-- What are the attack vectors?
-- Are we following OWASP?
-- What happens if X fails?
-- Are there silent failure modes?
-
-**Auditor C: Edge Cases & Chaos**
-- What happens with concurrent access?
-- What if the process crashes mid-operation?
-- What about partial failures?
-- Are we handling all error states?
-
-### Audit Process
-
-Each auditor reads the plan and produces a review document:
-
-```markdown
----
-name: Plan Audit — Architecture & Completeness
-reviewer: Auditor-A
-date: 2026-03-16
-plan_version: PLAN_SQLCipher_INITIAL_v1.md
 ---
 
-## Issues Found
+### Synthesis Engine Audit (Run First)
 
-### Critical
-1. **Missing: Stale temp file cleanup** — If migration crashes, `.tmp` file is orphaned.
-   - Recommendation: Add cleanup logic on startup
+**Prompt to invoke**:
+```
+You are the Synthesis Engine. Read this plan and identify:
+- Structural connections and patterns across components
+- Premature resolutions (decisions made before they're earned)
+- Gaps where complexity is being flattened
+- Weakest points in the design that need stress-testing
 
-### High
-2. **Assumption unstated: Tests use `:memory:`** — If tests use real files, encryption breaks them.
-   - Recommendation: Verify test architecture, document assumption
+Do NOT validate for the sake of being helpful. Push on weak points. Let complexity remain complex.
+Flag which areas the Formalization and Skeptic engines should focus on.
 
-### Medium
-3. **Missing test strategy** — How do we test encryption without slowing tests?
-   - Recommendation: Document that in-memory DBs are unaffected
-
-## Questions for Implementation
-- [ ] Will you measure performance impact?
-- [ ] Is key rotation a future concern?
-- [ ] Should we add audit logging for DB access?
-
-## Approved Patterns
-- ✅ Drop-in package approach is solid
-- ✅ Auto-migration logic is elegant
-- ✅ Environment variable for key is standard practice
+Plan: [paste plan]
 ```
 
-**Output files**:
-- `.crustagent/crustaudits/AUDIT_[FEATURE]_Architecture_A.md`
-- `.crustagent/crustaudits/AUDIT_[FEATURE]_Security_B.md`
-- `.crustagent/crustaudits/AUDIT_[FEATURE]_EdgeCases_C.md`
+**Output format**:
+```markdown
+---
+engine: Synthesis
+phase: Plan Audit
+---
 
-**Update the original plan** with new section:
+## Structural Analysis
+[Patterns identified, connections between components]
+
+## Premature Resolutions
+[Decisions made too early before the problem is fully understood]
+
+## Weakest Points
+[Specific areas that need hardening — flagged for Formalization + Skeptic]
+
+## Handoff to Formalization Engine
+Focus on: [specific claims that need falsifiability]
+
+## Handoff to Skeptic
+Apply pressure to: [specific assumptions or bold claims]
+```
+
+---
+
+### Formalization Engine Audit (Run Second)
+
+**Prompt to invoke**:
+```
+You are the Formalization Engine. Read this plan and the Synthesis audit.
+For every claim, architecture decision, and expected behavior: make it falsifiable.
+
+Produce:
+- Exact success criteria (measurable, not prose)
+- Verification protocol for each component
+- Exact definition of "done" for this feature
+- List every claim that is currently unfalsifiable and state what would make it falsifiable
+
+Do NOT use analogies. Use logic, code, or formal specifications.
+
+Plan: [paste plan]
+Synthesis audit: [paste synthesis output]
+```
+
+**Output format**:
+```markdown
+---
+engine: Formalization
+phase: Plan Audit
+---
+
+## Falsifiability Assessment
+[Each component rated: FALSIFIABLE / NEEDS WORK / UNFALSIFIABLE]
+
+## Success Criteria (Strict)
+[Numbered list of exact, measurable outcomes]
+
+## Verification Protocol
+[Exact commands or steps to verify each claim]
+
+## Unfalsifiable Claims
+[What makes them unfalsifiable + what would fix it]
+
+## Boundary Conditions
+[Exact inputs that break or stress the design]
+```
+
+---
+
+### Controlled Opposition Audit (Run Last)
+
+**Prompt to invoke**:
+```
+You are the Controlled Opposition — The Skeptic. Read this plan, the Synthesis audit, and the Formalization audit.
+Your job is maximum critical pressure. You have the Formalization Engine's success criteria — now attack them.
+
+Rules:
+- Demand evidence for every assumption
+- Challenge bold claims with Devil's Advocate objections
+- Force language tightening on vague terms
+- If you notice yourself being agreeable to avoid conflict — halt, restart, be direct
+- You are NOT here to approve. You are here to find the cracks.
+
+Plan: [paste plan]
+Synthesis audit: [paste]
+Formalization audit: [paste]
+```
+
+**Output format**:
+```markdown
+---
+engine: Controlled Opposition (Skeptic)
+phase: Plan Audit
+---
+
+## Challenge Log
+
+### [Component/Claim 1]
+**Assumption**: [what the plan assumes]
+**Objection**: [direct challenge]
+**Verdict**: HOLD / NEEDS FIX / CRITICAL FLAW
+
+### [Component/Claim 2]
+...
+
+## Vague Language Identified
+[Terms that are undefined or load-bearing without definition]
+
+## Rejected Approvals
+[Things I almost approved for social reasons — and why I didn't]
+
+## Critical Failures
+[If any — what would cause the feature to fundamentally not work]
+
+## Minimum Required Changes Before Implementation
+[Ordered list — what MUST change before implementation begins]
+```
+
+---
+
+### After All Three Audits: Update the Plan
+
+The plan document gets a new section:
 
 ```markdown
-## Phase 3 Audits & Refinements
+## Phase 3: Triangulated Audit Results
 
-### Audit Results Summary
-- Auditor A: 2 critical, 1 high, 1 medium issues
-- Auditor B: 1 critical (SQL injection), 2 high issues
-- Auditor C: 2 high (crash recovery, test isolation)
+### Summary
+| Engine | Issues Found | Critical | High | Medium |
+|---|---|---|---|---|
+| Synthesis | [N] | [N] | [N] | [N] |
+| Formalization | [N] | [N] | [N] | [N] |
+| Skeptic | [N] | [N] | [N] | [N] |
 
 ### Incorporated Changes
-1. ✅ Added stale temp file cleanup on startup (Auditor A critical)
-2. ✅ Added SQL injection prevention via key validation (Auditor B critical)
-3. ✅ Added TOCTOU symlink check on migration (Auditor C high)
-4. ✅ Documented assumption: tests use :memory: (Auditor A)
-5. ❓ Key rotation — deferred to future (noted as known limitation)
+1. ✅ [Fix from Synthesis audit]
+2. ✅ [Fix from Formalization audit]
+3. ✅ [Fix from Skeptic audit]
+4. ❓ [Deferred item — noted as known limitation]
 
 ### Final Plan Status
-**READY FOR IMPLEMENTATION** — See audit files for full details.
+**READY FOR IMPLEMENTATION** — all critical issues resolved
+**OR REQUIRES REWORK** — [specific areas to revisit]
 ```
 
 ---
@@ -396,66 +616,140 @@ Ready for drop-in to other projects without modification.
 
 ---
 
-## Phase 7: Code Review Audit
+## Phase 7: Code Review Audit (Three-System Review)
 
-**Goal**: Have 3+ agents independently review the actual implementation code for security, performance, and correctness.
+**Goal**: Apply the Three-System Protocol to the **actual implementation code**. This is distinct from Phase 3 — the plan was a hypothesis, the code is evidence. The engines now operate against real behavior, not intended behavior.
 
-### Audit Specialization
+**Critical distinction**:
+- Phase 3 audited **what you said you'd do**
+- Phase 7 audits **what you actually did**
 
-**Code Auditor A: Security (OWASP)**
-- Token handling secure?
-- Crypto used correctly?
-- Input validation complete?
-- Error messages not leaking info?
+The Skeptic in Phase 7 has much more to work with — implementation decisions that diverged from plan, edge cases that emerged during coding, and test coverage gaps.
 
-**Code Auditor B: Performance & Reliability**
-- Unexpected blocking operations?
-- Resource leaks (open file handles)?
-- Crash recovery scenarios covered?
-- Concurrent access handled?
+**Input**: All modified/created source files + implementation log from Phase 4
+**Output files**:
+- `.crustagent/crustaudits/CODE_AUDIT_[FEATURE]_Synthesis.md`
+- `.crustagent/crustaudits/CODE_AUDIT_[FEATURE]_Formalization.md`
+- `.crustagent/crustaudits/CODE_AUDIT_[FEATURE]_Skeptic.md`
 
-**Code Auditor C: Correctness & Edge Cases**
-- All error states handled?
-- Partial failure modes covered?
-- Type safety enforced?
-- Test coverage adequate?
+---
 
-### Audit Process
+### Synthesis Engine — Code Review
 
-Each auditor reviews **actual code** (not plan):
+**Prompt to invoke**:
+```
+You are the Synthesis Engine performing a post-implementation code review.
+
+Read the actual implementation code and the implementation log (deviations from plan).
+Identify:
+- Structural patterns in the code (what architectural decisions are implicit in the code?)
+- Where implementation diverged from plan and what that reveals about the original design
+- Cross-cutting concerns that are handled consistently vs. inconsistently
+- Areas where complexity was resolved too early or too clumsily
+
+Flag the specific lines/functions for Formalization + Skeptic to pressure-test.
+
+Files: [list of files]
+Implementation log: [paste Phase 4 log]
+```
+
+**Synthesis focuses on**: Pattern coherence, architectural decisions baked into code, what divergences reveal about original assumptions.
+
+---
+
+### Formalization Engine — Code Review
+
+**Prompt to invoke**:
+```
+You are the Formalization Engine performing a post-implementation code review.
+
+For every security claim, performance claim, and correctness claim made in the implementation:
+produce exact verification protocols.
+
+Produce:
+- Specific test cases that verify each security property (not "it's probably secure")
+- Exact inputs that would break each function (boundary values, type mismatches, nulls)
+- Coverage map: what is NOT tested that should be
+- Performance measurement protocol: how to verify the <5% regression claim
+
+If a function is "correct," state the exact conditions under which it fails.
+Provide code-level evidence, not assertions.
+
+Files: [list of files]
+```
+
+**Formalization focuses on**: Making every claim falsifiable, coverage gaps, exact failure conditions.
+
+---
+
+### Controlled Opposition — Code Review
+
+**Prompt to invoke**:
+```
+You are the Controlled Opposition performing a post-implementation code review.
+
+You have access to: the original plan, the implementation log, the Synthesis code review, and the Formalization code review.
+
+Your job: find every place where the implementation could silently fail, be bypassed, or produce incorrect results. Apply OWASP. Apply chaos engineering logic. Challenge every "safe" assumption.
+
+Rules:
+- If the Formalization Engine defined a success criterion, try to find an edge case that satisfies the criterion but still produces wrong behavior
+- Look for timing windows, race conditions, and unhandled exceptions
+- Challenge the test suite: are tests verifying the right things, or just passing?
+- If you feel yourself saying "this is probably fine" — that's a sign to look harder
+
+Files: [list of files]
+Synthesis review: [paste]
+Formalization review: [paste]
+```
+
+**Skeptic focuses on**: Security bypasses, silent failures, test coverage that passes but doesn't prove correctness.
+
+---
+
+### Code Audit Output Example
 
 ```markdown
 ---
-name: Code Audit — Security Review
-auditor: Security-Auditor-A
-date: 2026-03-16
-files_reviewed: [src/server/db.ts, src/server/routes/auth.ts, src/server/middleware/auth.ts]
+engine: Controlled Opposition (Skeptic)
+phase: Code Review
+feature: SQLCipher Encryption
+files_reviewed: src/server/db.ts, src/server/routes/auth.ts, middleware/auth.ts
 ---
 
-## Critical Issues
-1. **SQL Injection in PRAGMA statement** (src/server/db.ts:134)
-   Status: ✅ FIXED in code review (key validation prevents this)
+## Challenge Log
 
-## High Issues
-1. **Token stored plaintext in DB** (src/server/routes/auth.ts:125)
-   Status: ✅ FIXED (tokens are hashed before storage)
+### Token Hashing (auth.ts:119)
+**Claim**: Tokens are hashed before storage — prevents token replay on DB read
+**Challenge**: Hash is SHA-256 with no salt. If two users create tokens at the same microsecond, collision probability is non-zero but negligible. More importantly: is the token generator cryptographically random?
+**Finding**: `generateBase62()` uses `crypto.randomInt(62)` — GOOD. Cryptographically random.
+**Verdict**: HOLD (no issue, documented for clarity)
 
-## Medium Issues
-1. **File permissions race window** — Umask restored before chmod completes?
-   Status: ✅ OK (finally block ensures restoration after chmod)
+### Key Validation (db.ts:line 11)
+**Claim**: Regex prevents SQL injection via key string interpolation
+**Challenge**: Does `/^[A-Za-z0-9+/=]{43,}$/` actually prevent all injection vectors?
+**Finding**: Yes — `'`, `;`, `-`, `--`, all SQL special chars excluded. Base64 only.
+**Verdict**: HOLD
 
-## Approved Patterns
-✅ Token hashing matches industry standard (SHA-256)
-✅ Database permissions hardened correctly (0o600)
-✅ Auto-migration logic is safe (stale file cleanup present)
+### File Permissions (db.ts: ensureDbPermissions)
+**Claim**: Database files created as 0o600 (owner only)
+**Challenge**: What if Docker mounts the volume as root? Umask is per-process, not per-mount.
+**Finding**: 🔴 Docker volume mount permissions depend on container UID, not umask. If container runs as root and PUID/PGID not set, chmod 0o600 has no protection effect.
+**Verdict**: CRITICAL — document PUID/PGID requirement in Docker guide
+**Fix required**: Yes — add to deployment checklist
+
+## Rejected Approvals
+1. Almost approved token hashing without checking randomness source. Checked it.
+2. Almost approved file permissions without considering Docker mount semantics. Caught it.
+
+## Minimum Required Changes
+1. ✋ Document PUID/PGID requirement explicitly in Docker setup section
+2. ✋ Add test that verifies createTestToken() returns hashed value in DB
 ```
 
-**Output files**:
-- `.crustagent/crustaudits/CODE_AUDIT_Security.md`
-- `.crustagent/crustaudits/CODE_AUDIT_Performance.md`
-- `.crustagent/crustaudits/CODE_AUDIT_Correctness.md`
+---
 
-**Fix any issues** and re-audit until all auditors sign off.
+**After all three code audits**: Fix identified issues, re-run tests, update checklist in Phase 8.
 
 ---
 
@@ -648,33 +942,137 @@ After Phase 8, you have all the pieces to:
 
 ## Extraction: Breaking Into Vibecheck Prompts
 
-Once a feature is complete, extract reusable prompts for your vibecheck methodology:
+Once a feature is complete, extract reusable prompts for your vibecheck methodology.
+The Three-System Protocol maps directly into discrete, reusable prompt pairs.
 
-**Prompt 1: Pre-Implementation Audit**
+---
+
+### Phase 2 Prompts
+
+**Prompt 2A — Initial Planning (Synthesis Engine)**
 ```
-I'm planning to implement [feature]. Here's my plan [paste Phase 2].
-Review this from the perspective of: architecture completeness, security risks, edge cases.
-Flag critical issues before implementation.
+You are the Synthesis Engine. I am building [feature].
+
+Here are the requirements: [paste Phase 1]
+
+Create a comprehensive plan that:
+- Holds all the complexity without flattening it
+- Identifies the 5-7 main components and their dependencies
+- Flags every decision that is being made prematurely
+- Names the weakest points explicitly
+
+Don't produce a clean neat plan. Produce an honest one.
 ```
 
-**Prompt 2: Implementation Discovery**
+---
+
+### Phase 3 Prompts (Plan Auditing)
+
+**Prompt 3A — Synthesis Engine Plan Audit**
 ```
-During implementation, I ran into [issue]. Here's what I learned [paste deviation log].
-What does this tell us about the system design?
-What should I change in the plan/docs?
+You are the Synthesis Engine. Read this plan and identify structural connections, premature resolutions, and weakest points.
+
+Do NOT validate for the sake of being helpful. Push on weak points.
+Flag which areas the Formalization and Skeptic engines should focus on.
+
+Plan: [paste]
 ```
 
-**Prompt 3: Documentation Completion**
+**Prompt 3B — Formalization Engine Plan Audit**
 ```
-Here's what actually happened during implementation [paste Phase 5 learnings].
-Create a troubleshooting guide for the next engineer who uses this.
-Include: common errors, gotchas, red flags, how to fix them.
+You are the Formalization Engine. For every claim in this plan: make it falsifiable.
+
+Produce exact success criteria, verification protocols, and a list of currently unfalsifiable claims.
+Use code or logic — not analogies.
+
+Plan: [paste]
+Synthesis audit: [paste 3A output]
 ```
 
-**Prompt 4: Code Review**
+**Prompt 3C — Skeptic Plan Audit**
 ```
-Review this code for security [paste code], performance [paste code], correctness [paste code].
-Assume this will be used by other engineers. What could go wrong?
+You are the Controlled Opposition. Apply maximum critical pressure to this plan.
+
+You have the Formalization Engine's success criteria. Attack them.
+Demand evidence. Challenge assumptions. Tighten vague language.
+If you feel yourself approving to avoid conflict — halt and restart.
+
+Plan: [paste]
+Synthesis audit: [paste 3A output]
+Formalization audit: [paste 3B output]
+```
+
+---
+
+### Phase 5 Prompts
+
+**Prompt 5A — Implementation Learnings (Synthesis Engine)**
+```
+You are the Synthesis Engine. Implementation is complete.
+
+Here is what diverged from the plan: [paste deviation log]
+
+What do these divergences reveal about the original design assumptions?
+What patterns emerged from the real implementation that the plan missed?
+Write this as "what we learned by actually building it."
+```
+
+---
+
+### Phase 6 Prompts
+
+**Prompt 6A — Troubleshooting Guide (Formalization Engine)**
+```
+You are the Formalization Engine. Implementation is complete. Tests pass.
+
+Here are the real errors that occurred during implementation: [paste Phase 4 log]
+
+Convert each failure into:
+- Exact error condition (what input triggers it)
+- Exact error message or symptom
+- Exact fix (code or config)
+- Verification step (how to confirm fix worked)
+
+This becomes the troubleshooting guide for other engineers.
+```
+
+---
+
+### Phase 7 Prompts (Code Review)
+
+**Prompt 7A — Synthesis Engine Code Review**
+```
+You are the Synthesis Engine performing a post-implementation code review.
+
+Read the actual code and the implementation log.
+Identify: architectural decisions implicit in the code, divergences from plan and what they reveal, cross-cutting concerns handled consistently vs. inconsistently.
+
+Files: [paste code]
+Implementation log: [paste]
+```
+
+**Prompt 7B — Formalization Engine Code Review**
+```
+You are the Formalization Engine performing a post-implementation code review.
+
+For every security, performance, and correctness claim: produce exact verification protocols.
+Map what is NOT tested. Provide the exact inputs that break each function.
+
+Files: [paste code]
+Synthesis code review: [paste 7A output]
+```
+
+**Prompt 7C — Skeptic Code Review**
+```
+You are the Controlled Opposition performing a post-implementation code review.
+
+Find every place where the implementation could silently fail, be bypassed, or produce incorrect results.
+
+If the Formalization Engine defined a success criterion — find an edge case that satisfies the criterion but still produces wrong behavior. Look for timing windows, race conditions, unhandled exceptions, and test coverage that passes but proves nothing.
+
+Files: [paste code]
+Synthesis code review: [paste 7A output]
+Formalization code review: [paste 7B output]
 ```
 
 ---
@@ -682,11 +1080,31 @@ Assume this will be used by other engineers. What could go wrong?
 ## Status
 
 ✅ **This workflow is production-tested** — Implemented for SQLCipher encryption in PinchPad
-✅ **Ready for adoption** — Use for all future features
-✅ **Extraction-ready** — Break into vibecheck prompts for your methodology
+✅ **Three-System Protocol incorporated** — v2.0 fully integrates triangulated verification
+✅ **Ready for adoption** — Use for all future features across ClawStack projects
+✅ **Extraction-ready** — Each phase maps to discrete vibecheck prompts (7 prompt pairs)
+
+---
+
+## Quick Reference
+
+```
+PHASE 1  → Human defines problem (prose)
+PHASE 2  → Synthesis Engine creates plan
+PHASE 3  → Three-System Protocol audits plan (3A → 3B → 3C, in order)
+PHASE 4  → Implementation + deviation log
+PHASE 5  → Synthesis Engine captures learnings
+PHASE 6  → Formalization Engine writes troubleshooting guide
+PHASE 7  → Three-System Protocol audits code (7A → 7B → 7C, in order)
+PHASE 8  → Final documentation pass — plan becomes canonical reference
+```
+
+**Rule**: Skeptic always runs last. Cannot dismiss criticism when Formalization has already defined what "working" means.
 
 ---
 
 *Maintained by CrustAgent©™ + Lucas (vibecheck collaboration)*
-*Canonical implementation: PinchPad©™ SQLCipher encryption (2026-03-16)*
-*Ready for: Full-cycle development, AI-human collaboration, knowledge capture*
+*v1.0 — Epistemic Loop base workflow (2026-03-16)*
+*v2.0 — Three-System Triangulated Verification integrated (2026-03-16)*
+*Canonical implementation: PinchPad©™ SQLCipher encryption*
+*Ready for: Full-cycle development, AI-human collaboration, knowledge capture, vibecheck extraction*
