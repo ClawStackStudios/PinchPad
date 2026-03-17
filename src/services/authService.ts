@@ -1,7 +1,6 @@
 import { getApiBaseUrl } from '../lib/api';
 import { apiFetch } from '../lib/apiFetch';
 import { generateBase62, hashToken } from '../lib/crypto';
-import { deriveShellKey, isShellCryptionAvailable } from '../lib/shellCryption';
 
 const SESSION_KEYS = {
   token: 'cc_api_token',
