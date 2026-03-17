@@ -21,8 +21,8 @@ describe('Lobster Key Rate Limiting', () => {
       const { id: lobsterKeyId } = createTestLobsterKey(db, userUuid, { canRead: true }, null);
       const token = createTestToken(db, userUuid, 'lobster', lobsterKeyId);
 
-      // Make 10 rapid requests — should all succeed
-      for (let i = 0; i < 10; i++) {
+      // Make 20 rapid requests — should all succeed
+      for (let i = 0; i < 20; i++) {
         const response = await request(app)
           .get('/api/notes')
           .set('Authorization', `Bearer ${token}`);
@@ -37,7 +37,7 @@ describe('Lobster Key Rate Limiting', () => {
       const token = createTestToken(db, userUuid, 'lobster', lobsterKeyId);
 
       // Should allow many requests
-      for (let i = 0; i < 10; i++) {
+      for (let i = 0; i < 20; i++) {
         const response = await request(app)
           .get('/api/notes')
           .set('Authorization', `Bearer ${token}`);
@@ -57,6 +57,79 @@ describe('Lobster Key Rate Limiting', () => {
           .set('Authorization', `Bearer ${token}`);
         expect(response.status).toBe(200);
       }
+    });
+  });
+
+  describe('Rate limit enforcement', () => {
+    it('allows requests up to the limit, then 429s', async () => {
+      const { id: lobsterKeyId } = createTestLobsterKey(db, userUuid, { canRead: true }, 3);
+      const token = createTestToken(db, userUuid, 'lobster', lobsterKeyId);
+
+      // First 3 requests should succeed
+      for (let i = 0; i < 3; i++) {
+        const response = await request(app)
+          .get('/api/notes')
+          .set('Authorization', `Bearer ${token}`);
+        expect(response.status).toBe(200);
+      }
+
+      // 4th request should be rate limited (429)
+      const blockedResponse = await request(app)
+        .get('/api/notes')
+        .set('Authorization', `Bearer ${token}`);
+      expect(blockedResponse.status).toBe(429);
+      expect(blockedResponse.body.error).toContain('carapace lacks the capacity');
+    });
+
+    it('enforces per-key rate limits independently', async () => {
+      const { id: keyId1 } = createTestLobsterKey(db, userUuid, { canRead: true }, 2);
+      const { id: keyId2 } = createTestLobsterKey(db, userUuid, { canRead: true }, 2);
+      const token1 = createTestToken(db, userUuid, 'lobster', keyId1);
+      const token2 = createTestToken(db, userUuid, 'lobster', keyId2);
+
+      // Key 1: use 2 requests
+      for (let i = 0; i < 2; i++) {
+        const response = await request(app)
+          .get('/api/notes')
+          .set('Authorization', `Bearer ${token1}`);
+        expect(response.status).toBe(200);
+      }
+
+      // Key 1: 3rd request blocked
+      const blocked1 = await request(app)
+        .get('/api/notes')
+        .set('Authorization', `Bearer ${token1}`);
+      expect(blocked1.status).toBe(429);
+
+      // Key 2: still has 2 requests available (independent limit)
+      for (let i = 0; i < 2; i++) {
+        const response = await request(app)
+          .get('/api/notes')
+          .set('Authorization', `Bearer ${token2}`);
+        expect(response.status).toBe(200);
+      }
+
+      // Key 2: 3rd request blocked
+      const blocked2 = await request(app)
+        .get('/api/notes')
+        .set('Authorization', `Bearer ${token2}`);
+      expect(blocked2.status).toBe(429);
+    });
+
+    it('includes rate limit headers in response', async () => {
+      const { id: lobsterKeyId } = createTestLobsterKey(db, userUuid, { canRead: true }, 5);
+      const token = createTestToken(db, userUuid, 'lobster', lobsterKeyId);
+
+      const response = await request(app)
+        .get('/api/notes')
+        .set('Authorization', `Bearer ${token}`);
+
+      expect(response.status).toBe(200);
+      expect(response.headers).toHaveProperty('ratelimit-limit');
+      expect(response.headers).toHaveProperty('ratelimit-remaining');
+      expect(response.headers).toHaveProperty('ratelimit-reset');
+      expect(response.headers['ratelimit-limit']).toBe('5');
+      expect(response.headers['ratelimit-remaining']).toBe('4');
     });
   });
 

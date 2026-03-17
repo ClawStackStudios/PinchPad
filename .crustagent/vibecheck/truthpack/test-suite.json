@@ -47,8 +47,8 @@
     "phase_4": {
       "name": "Rate Limiting & Performance",
       "files": ["test/server/middleware/rateLimiter.lobster.test.ts"],
-      "assertions": 4,
-      "coverage": ["per-key rate limiting for lobster keys", "unlimited keys (NULL rate_limit)", "rate_limit=0 treated as unlimited", "human tokens bypass rate limiting", "LRU cache maintains req.user.rateLimit and req.user.lobsterKeyId"],
+      "assertions": 7,
+      "coverage": ["per-key rate limiting with in-memory counter enforcement", "unlimited keys (NULL rate_limit)", "rate_limit=0 treated as unlimited", "human tokens bypass rate limiting", "rate limit enforcement (allows N, 429s on N+1)", "per-key independence (separate counters per lobster key)", "RateLimit-Limit/Remaining/Reset headers on all responses"],
       "status": "LOCKED"
     }
   },
@@ -102,8 +102,8 @@
     "command_run": "npm test (vitest run, exit after completion)",
     "command_watch": "npm run test:watch (vitest, re-run on file change)",
     "command_coverage": "npm run test:coverage (vitest run --coverage, generate v8 report)",
-    "pre_commit": "All tests must pass before commit (>144 tests PASS)",
-    "current_status": "144 tests passing across 10 files (Phase 1+2+3+4 complete)"
+    "pre_commit": "All tests must pass before commit (>147 tests PASS)",
+    "current_status": "147 tests passing across 10 files (Phase 1+2+3+4 complete, enhanced rate limiting coverage)"
   },
   "coverage_snapshot": {
     "overall_statements": "56.84%",
@@ -118,6 +118,6 @@
     "lib_shellCryption": "59.61% statements, 21.73% branches"
   },
   "verified": true,
-  "last_update": "2026-03-16T01:06:00Z",
+  "last_update": "2026-03-16T01:40:00Z",
   "maintained_by": "CrustAgent©™"
 }

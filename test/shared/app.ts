@@ -5,6 +5,7 @@ import authRoutes from '../../src/server/routes/auth';
 import notesRoutes from '../../src/server/routes/notes';
 import agentsRoutes from '../../src/server/routes/agents';
 import { requireAuth, requireHuman } from '../../src/server/middleware/auth';
+import { lobsterRateLimiter } from '../../src/server/middleware/rateLimiter';
 
 export function createTestApp(): { app: Express; db: Database.Database } {
   const db = new Database(':memory:');
@@ -73,8 +74,8 @@ export function createTestApp(): { app: Express; db: Database.Database } {
   // Mount auth routes (no auth required)
   app.use('/api/auth', authRoutes);
 
-  // Mount notes routes with auth middleware
-  app.use('/api/notes', requireAuth() as RequestHandler, notesRoutes);
+  // Mount notes routes with auth middleware + rate limiter (lobster keys only)
+  app.use('/api/notes', requireAuth() as RequestHandler, lobsterRateLimiter, notesRoutes);
 
   // Mount agents routes with auth + human-only middleware
   app.use('/api/agents', requireAuth() as RequestHandler, agentsRoutes);

@@ -1,69 +1,84 @@
 import { Request, Response, NextFunction } from 'express';
-import rateLimit, { RateLimitRequestHandler } from 'express-rate-limit';
 import { AuthRequest } from './auth';
 
 /**
  * Lobster Key Rate Limiting
  *
- * Per-key rate limiting for agent (lobster) keys with LRU-evicting cache.
+ * Per-key rate limiting for agent (lobster) keys with in-memory counter store.
  * - rate_limit = requests per minute (NULL = unlimited)
- * - Cache limited to MAX_CACHE_SIZE (100) with LRU eviction
+ * - Counter store limited to MAX_CACHE_SIZE (100) with LRU eviction
  * - Human keys bypass this limiter
  *
- * Why LRU cache:
- * Without it, the limiterCache Map would grow unbounded as you create/test
- * many agent keys. With 1000+ keys, you'd hold 1000+ RateLimit instances.
- * LRU eviction caps memory usage while keeping hot keys cached.
+ * Why in-memory counters instead of express-rate-limit library:
+ * The express-rate-limit library enforces that all limiters are created at app init,
+ * not per-request. This doesn't work for dynamic per-key limits where we discover the
+ * limit from the database. Instead, we manage request counters ourselves.
+ *
+ * Window-based approach:
+ * - Tracks request count per key per 60-second window
+ * - Resets counter when window expires
+ * - Resets are lazy (checked on next request)
  */
 
 const MAX_CACHE_SIZE = 100;
-const limiterCache = new Map<string, RateLimitRequestHandler>();
+
+interface RateLimitEntry {
+  count: number;
+  windowStart: number; // timestamp when window opened
+  limit: number; // requests per minute for this key
+}
+
+const counterStore = new Map<string, RateLimitEntry>();
 
 /**
- * Evict the oldest entry from the cache (FIFO — Map preserves insertion order)
+ * Evict the oldest entry from the counter store (FIFO — Map preserves insertion order)
  */
 function evictOldest() {
-  const oldestKey = limiterCache.keys().next().value;
+  const oldestKey = counterStore.keys().next().value;
   if (oldestKey) {
-    limiterCache.delete(oldestKey);
+    counterStore.delete(oldestKey);
   }
 }
 
 /**
- * Get or create a rate limiter for a specific lobster key
- * Uses express-rate-limit with a custom keyGenerator to track per-key
+ * Check and increment rate limit for a key
+ * Returns: { allowed: boolean; remaining: number; resetTime: number }
  */
-function getLimiterForKey(keyId: string, limit: number): RateLimitRequestHandler {
-  if (!limiterCache.has(keyId)) {
-    if (limiterCache.size >= MAX_CACHE_SIZE) {
+function checkRateLimit(keyId: string, limit: number): {
+  allowed: boolean;
+  remaining: number;
+  resetTime: number;
+} {
+  const now = Date.now();
+  const WINDOW_MS = 60 * 1000; // 1 minute
+
+  let entry = counterStore.get(keyId);
+
+  // Window expired or entry doesn't exist — create new window
+  if (!entry || now - entry.windowStart >= WINDOW_MS) {
+    entry = {
+      count: 0,
+      windowStart: now,
+      limit,
+    };
+
+    // Manage cache size
+    if (counterStore.size >= MAX_CACHE_SIZE) {
       evictOldest();
     }
 
-    limiterCache.set(
-      keyId,
-      rateLimit({
-        windowMs: 60 * 1000, // 1 minute
-        max: limit,
-        keyGenerator: (req) => {
-          // Use the lobster key ID as the rate limit key (not IP)
-          // This ensures per-key enforcement
-          return (req as AuthRequest).user?.lobsterKeyId || 'unknown';
-        },
-        skip: (req) => {
-          // Don't skip — always enforce
-          return false;
-        },
-        handler: (req, res) => {
-          res.status(429).json({
-            success: false,
-            error: 'Your carapace lacks the capacity! Agent rate limit exceeded.',
-          });
-        },
-      })
-    );
+    counterStore.set(keyId, entry);
   }
 
-  return limiterCache.get(keyId)!;
+  // Increment counter
+  entry.count++;
+
+  // Check if limit exceeded
+  const allowed = entry.count <= limit;
+  const remaining = Math.max(0, limit - entry.count);
+  const resetTime = entry.windowStart + WINDOW_MS;
+
+  return { allowed, remaining, resetTime };
 }
 
 /**
@@ -72,7 +87,8 @@ function getLimiterForKey(keyId: string, limit: number): RateLimitRequestHandler
  * Flow:
  * 1. Skip if not authenticated or not a lobster key
  * 2. Skip if rate_limit is NULL or 0 (unlimited)
- * 3. Otherwise, apply rate limiter keyed to lobster key ID
+ * 3. Check counter; if over limit, respond with 429
+ * 4. Otherwise, attach rate limit headers and continue
  */
 export const lobsterRateLimiter = (req: Request, res: Response, next: NextFunction) => {
   const authReq = req as AuthRequest;
@@ -92,7 +108,23 @@ export const lobsterRateLimiter = (req: Request, res: Response, next: NextFuncti
     return next();
   }
 
-  // Get or create limiter and apply it
-  const limiter = getLimiterForKey(authReq.user.lobsterKeyId, authReq.user.rateLimit);
-  return limiter(req, res, next);
+  // Check rate limit
+  const { allowed, remaining, resetTime } = checkRateLimit(
+    authReq.user.lobsterKeyId,
+    authReq.user.rateLimit
+  );
+
+  // Set rate limit headers
+  res.setHeader('RateLimit-Limit', authReq.user.rateLimit.toString());
+  res.setHeader('RateLimit-Remaining', remaining.toString());
+  res.setHeader('RateLimit-Reset', Math.ceil(resetTime / 1000).toString());
+
+  if (!allowed) {
+    return res.status(429).json({
+      success: false,
+      error: 'Your carapace lacks the capacity! Agent rate limit exceeded.',
+    });
+  }
+
+  return next();
 };
