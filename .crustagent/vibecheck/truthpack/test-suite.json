@@ -24,14 +24,14 @@
   },
   "test_phases": {
     "phase_1": {
-      "name": "Auth & Crypto Foundation",
+      "name": "Auth & Crypto Foundation — Unit Tests",
       "files": ["test/lib/crypto.lobster.test.ts", "test/lib/shellCryption.lobster.test.ts", "test/services/authService.lobster.test.ts", "test/server/routes/auth.lobster.test.ts"],
       "assertions": 30,
       "coverage": ["crypto.ts generateBase62()", "shellCryption.ts encryptField/decryptField/encryptRecord/decryptRecord", "authService.ts readSession()", "auth routes register/token/verify/logout"],
       "status": "LOCKED"
     },
     "phase_2": {
-      "name": "Routes & Middleware Expansion",
+      "name": "Routes & Middleware Expansion — Integration Tests",
       "files": ["test/server/routes/notes.lobster.test.ts", "test/server/routes/agents.lobster.test.ts", "test/server/middleware/auth.lobster.test.ts"],
       "assertions": 73,
       "coverage": ["notes CRUD (GET/POST/PUT/PATCH starred/pinned/DELETE)", "agents key CRUD (GET/POST/PUT revoke)", "auth middleware (requireAuth/requirePermission/requireHuman)", "permission enforcement", "cross-user isolation gates"],
@@ -50,6 +50,20 @@
       "assertions": 7,
       "coverage": ["per-key rate limiting with in-memory counter enforcement", "unlimited keys (NULL rate_limit)", "rate_limit=0 treated as unlimited", "human tokens bypass rate limiting", "rate limit enforcement (allows N, 429s on N+1)", "per-key independence (separate counters per lobster key)", "RateLimit-Limit/Remaining/Reset headers on all responses"],
       "status": "LOCKED"
+    },
+    "phase_hardshell_3": {
+      "name": "HardShell Phase 3 — Error Path Coverage",
+      "files": ["test/errors/auth.errors.lobster.test.ts"],
+      "assertions": 27,
+      "coverage": ["registration errors (missing fields, duplicates, empty username)", "login errors human keys (user not found, invalid hash, timing-safe comparison)", "login errors lobster keys (missing UUID, invalid/inactive keys, orphaned keys)", "token verification (missing/malformed header, invalid/expired tokens)", "logout (missing token, idempotent behavior)", "rate limiting (headers present, error messages clear)"],
+      "status": "LOCKED"
+    },
+    "phase_hardshell_4": {
+      "name": "HardShell Phase 4 — Security Testing",
+      "files": ["test/security/auth.security.lobster.test.ts"],
+      "assertions": 18,
+      "coverage": ["timing attack mitigation (constant-time comparison validation)", "brute force protection (rate limiting headers verification)", "token security (hash storage, no plaintext leak, old token invalidation, 24hr expiration)", "information disclosure prevention (user enumeration prevention, safe error messages)", "lobster key security (inactive key detection, cascade deletion, hash storage, last_used tracking)", "audit logging security (failed login logging, successful auth logging, IP capture for forensics)"],
+      "status": "LOCKED"
     }
   },
   "test_patterns": {
@@ -57,8 +71,20 @@
       "file": "test/shared/app.ts",
       "function": "createTestApp(): { app: Express, db: Database }",
       "database_isolation": "Fresh :memory: database per test file",
-      "schema_initialization": "All CREATE TABLE statements from src/server/db.ts",
+      "schema_initialization": "All CREATE TABLE statements from src/server/db.ts + audit_logs table",
       "dependency_injection": "req.db = test db via middleware, routes use fallback pattern"
+    },
+    "test_helpers_infrastructure": {
+      "test_db": {
+        "file": "test/helpers/testDb.ts",
+        "functions": ["createTestDatabase()", "resetTestDatabase(db)", "cleanupTestDatabase(db)", "countRows(db, table, whereClause)", "hasConstraintViolation(err, type)"],
+        "purpose": "Database lifecycle management, isolated in-memory SQLite per test"
+      },
+      "test_factories": {
+        "file": "test/helpers/testFactories.ts",
+        "functions": ["createTestUser(db, overrides)", "createTestLobsterKey(db, userId, overrides)", "createTestToken(db, ownerUuid, ownerType, overrides)", "createTestNote(db, userId, overrides)", "createTestAuditLog(db, eventType, overrides)"],
+        "purpose": "Domain-aware test data creation with realistic values and FK insertion"
+      }
     },
     "authentication_tests": {
       "token_extraction": "Authorization: Bearer <token> header parsing",
@@ -102,8 +128,8 @@
     "command_run": "npm test (vitest run, exit after completion)",
     "command_watch": "npm run test:watch (vitest, re-run on file change)",
     "command_coverage": "npm run test:coverage (vitest run --coverage, generate v8 report)",
-    "pre_commit": "All tests must pass before commit (>147 tests PASS)",
-    "current_status": "147 tests passing across 10 files (Phase 1+2+3+4 complete, enhanced rate limiting coverage)"
+    "pre_commit": "All tests must pass before commit (203/203 tests PASS)",
+    "current_status": "203/203 tests passing across 13 files (Phases 1+2+3+4 complete + HardShell Phases 3+4 comprehensive error/security coverage)"
   },
   "coverage_snapshot": {
     "overall_statements": "56.84%",
@@ -118,6 +144,6 @@
     "lib_shellCryption": "59.61% statements, 21.73% branches"
   },
   "verified": true,
-  "last_update": "2026-03-16T01:40:00Z",
+  "last_update": "2026-03-16T15:30:00Z",
   "maintained_by": "CrustAgent©™"
 }
