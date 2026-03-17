@@ -11,8 +11,11 @@ data-dev/
 
 # VibeCheck
 .vibecheck/
-.claude/
-.islstudio/
+.cursor/
 workflows/
+.github/copilot-instructions.md
+.cursorrules
+.islstudio/
+.claude/
 
 docker-compose.dev.yml
