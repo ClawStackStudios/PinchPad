@@ -328,7 +328,7 @@ See [SECURITY.md](./SECURITY.md) for vulnerability reporting and key security pr
 
 <div align="center">
 
-```
+```text
        _..._
      .'     '.      HATCH YOUR PINCHPAD.
     /  _   _  \     PROTECT YOUR IDEAS.
