@@ -43,6 +43,13 @@
       "assertions": 40,
       "coverage": ["token lifecycle (register→token→use→expire→auto-delete→logout)", "multi-step assertion chains", "cascading delete behavior", "cross-user data silos verified"],
       "status": "LOCKED"
+    },
+    "phase_4": {
+      "name": "Rate Limiting & Performance",
+      "files": ["test/server/middleware/rateLimiter.lobster.test.ts"],
+      "assertions": 4,
+      "coverage": ["per-key rate limiting for lobster keys", "unlimited keys (NULL rate_limit)", "rate_limit=0 treated as unlimited", "human tokens bypass rate limiting", "LRU cache maintains req.user.rateLimit and req.user.lobsterKeyId"],
+      "status": "LOCKED"
     }
   },
   "test_patterns": {
@@ -83,7 +90,9 @@
   },
   "coverage_targets": {
     "src/server/routes/": ">75%",
+    "src/server/middleware/": ">95%",
     "src/server/middleware/auth.ts": "100%",
+    "src/server/middleware/rateLimiter.ts": ">80%",
     "src/server/routes/notes.ts": ">90%",
     "src/server/routes/agents.ts": ">65%",
     "src/lib/crypto.ts": ">60%",
@@ -93,8 +102,8 @@
     "command_run": "npm test (vitest run, exit after completion)",
     "command_watch": "npm run test:watch (vitest, re-run on file change)",
     "command_coverage": "npm run test:coverage (vitest run --coverage, generate v8 report)",
-    "pre_commit": "All tests must pass before commit (>140 tests PASS)",
-    "current_status": "140 tests passing across 9 files (Phase 1+2+3 complete)"
+    "pre_commit": "All tests must pass before commit (>144 tests PASS)",
+    "current_status": "144 tests passing across 10 files (Phase 1+2+3+4 complete)"
   },
   "coverage_snapshot": {
     "overall_statements": "56.84%",
@@ -109,6 +118,6 @@
     "lib_shellCryption": "59.61% statements, 21.73% branches"
   },
   "verified": true,
-  "last_update": "2026-03-15T15:19:45Z",
+  "last_update": "2026-03-16T01:06:00Z",
   "maintained_by": "CrustAgent©™"
 }

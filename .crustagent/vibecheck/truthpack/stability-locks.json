@@ -21,7 +21,8 @@
       "required_middleware": [
         "requireAuth",
         "requireHuman",
-        "requirePermission"
+        "requirePermission",
+        "lobsterRateLimiter"
       ]
     },
     "database": {
@@ -46,6 +47,6 @@
     }
   },
   "status": "STABLE_LOCKED",
-  "last_lock_update": "2026-03-15T00:00:00Z",
+  "last_lock_update": "2026-03-16T01:06:30Z",
   "maintained_by": "CrustAgent©™"
 }

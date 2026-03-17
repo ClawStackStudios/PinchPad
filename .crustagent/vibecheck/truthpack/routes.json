@@ -6,9 +6,9 @@
   { "method": "GET",  "path": "/api/agents", "auth": true, "note": "requireHuman()", "rate_limited": false },
   { "method": "POST", "path": "/api/agents", "auth": true, "note": "requireHuman()", "rate_limited": false },
   { "method": "PUT",  "path": "/api/agents/:id/revoke", "auth": true, "note": "requireHuman()", "rate_limited": false },
-  { "method": "GET",  "path": "/api/notes", "auth": true, "permission": "canRead", "rate_limited": false },
-  { "method": "POST", "path": "/api/notes", "auth": true, "permission": "canWrite", "rate_limited": false },
-  { "method": "PUT",  "path": "/api/notes/:id", "auth": true, "permission": "canEdit", "rate_limited": false },
-  { "method": "DELETE", "path": "/api/notes/:id", "auth": true, "permission": "canDelete", "rate_limited": false },
+  { "method": "GET",  "path": "/api/notes", "auth": true, "permission": "canRead", "rate_limited": "lobster-only" },
+  { "method": "POST", "path": "/api/notes", "auth": true, "permission": "canWrite", "rate_limited": "lobster-only" },
+  { "method": "PUT",  "path": "/api/notes/:id", "auth": true, "permission": "canEdit", "rate_limited": "lobster-only" },
+  { "method": "DELETE", "path": "/api/notes/:id", "auth": true, "permission": "canDelete", "rate_limited": "lobster-only" },
   { "method": "GET",  "path": "/api/health", "auth": false, "rate_limited": false }
 ]
