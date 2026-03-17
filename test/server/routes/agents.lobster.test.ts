@@ -111,7 +111,7 @@ describe('Agents Routes (Lobster Keys)', () => {
           permissions: { canRead: true, canWrite: true, canDelete: false },
           expiration_type: 'never',
           api_key_hash: 'hash-abc123',
-          api_key_encrypted: 'encrypted-key-xyz'
+          api_key: 'encrypted-key-xyz'
         });
 
       expect(res.status).toBe(201);
@@ -139,7 +139,7 @@ describe('Agents Routes (Lobster Keys)', () => {
           permissions,
           expiration_type: 'never',
           api_key_hash: 'hash-test',
-          api_key_encrypted: 'encrypted'
+          api_key: 'encrypted'
         });
 
       expect(res.body.data.permissions).toEqual(permissions);
@@ -160,7 +160,7 @@ describe('Agents Routes (Lobster Keys)', () => {
           expiration_type: 'never',
           rate_limit: 100,
           api_key_hash: 'hash-rl',
-          api_key_encrypted: 'encrypted'
+          api_key: 'encrypted'
         });
 
       expect(res.status).toBe(201);
@@ -180,14 +180,14 @@ describe('Agents Routes (Lobster Keys)', () => {
           expiration_type: 'date',
           expiration_date: expirationDate,
           api_key_hash: 'hash-exp',
-          api_key_encrypted: 'encrypted'
+          api_key: 'encrypted'
         });
 
       expect(res.status).toBe(201);
       expect(res.body.data.expiration_date).toBe(expirationDate);
     });
 
-    it('requires id, name, permissions, expiration_type, api_key_hash, api_key_encrypted', async () => {
+    it('requires id, name, permissions, expiration_type, api_key_hash, api_key', async () => {
       const res = await request(app)
         .post('/api/agents')
         .set('Authorization', `Bearer ${token}`)
@@ -228,7 +228,7 @@ describe('Agents Routes (Lobster Keys)', () => {
           permissions: { canRead: true },
           expiration_type: 'never',
           api_key_hash: 'hash-fail',
-          api_key_encrypted: 'encrypted'
+          api_key: 'encrypted'
         });
 
       expect(res.status).toBe(403);
@@ -246,7 +246,7 @@ describe('Agents Routes (Lobster Keys)', () => {
           permissions: { canRead: true },
           expiration_type: 'never',
           api_key_hash: 'hash-test',
-          api_key_encrypted: encryptedKey
+          api_key: encryptedKey
         });
 
       expect(res.body.data.api_key).toBe(encryptedKey);
@@ -368,7 +368,7 @@ describe('Agents Routes (Lobster Keys)', () => {
           expiration_type: 'never',
           rate_limit: null,
           api_key_hash: 'hash-unlimited',
-          api_key_encrypted: 'encrypted'
+          api_key: 'encrypted'
         });
 
       expect(res.status).toBe(201);
@@ -387,7 +387,7 @@ describe('Agents Routes (Lobster Keys)', () => {
           expiration_type: 'never',
           rate_limit: rateLimit,
           api_key_hash: 'hash-limited',
-          api_key_encrypted: 'encrypted'
+          api_key: 'encrypted'
         });
 
       expect(res.body.data.rate_limit).toBe(rateLimit);
@@ -409,7 +409,7 @@ describe('Agents Routes (Lobster Keys)', () => {
           permissions: { canRead: true },
           expiration_type: 'never',
           api_key_hash: 'hash-never',
-          api_key_encrypted: 'encrypted'
+          api_key: 'encrypted'
         });
 
       expect(res.status).toBe(201);
@@ -430,7 +430,7 @@ describe('Agents Routes (Lobster Keys)', () => {
           expiration_type: 'date',
           expiration_date: expirationDate,
           api_key_hash: 'hash-date',
-          api_key_encrypted: 'encrypted'
+          api_key: 'encrypted'
         });
 
       expect(res.status).toBe(201);
@@ -449,7 +449,7 @@ describe('Agents Routes (Lobster Keys)', () => {
           expiration_type: 'never',
           expiration_date: null,
           api_key_hash: 'hash-noexp',
-          api_key_encrypted: 'encrypted'
+          api_key: 'encrypted'
         });
 
       expect(res.status).toBe(201);
@@ -469,7 +469,7 @@ describe('Agents Routes (Lobster Keys)', () => {
           permissions: { canRead: true },
           expiration_type: 'never',
           api_key_hash: 'hash-time',
-          api_key_encrypted: 'encrypted'
+          api_key: 'encrypted'
         });
       const afterTime = new Date();
 
@@ -524,7 +524,7 @@ describe('Agents Routes (Lobster Keys)', () => {
           permissions: { canRead: true },
           expiration_type: 'never',
           api_key_hash: 'hash-secret',
-          api_key_encrypted: 'encrypted-value'
+          api_key: 'encrypted-value'
         });
 
       expect(res.body.data.api_key_hash).toBeUndefined();
@@ -542,7 +542,7 @@ describe('Agents Routes (Lobster Keys)', () => {
           permissions: { canRead: true },
           expiration_type: 'never',
           api_key_hash: 'hash-backup',
-          api_key_encrypted: encryptedKey
+          api_key: encryptedKey
         });
 
       // POST returns encrypted key for user to save

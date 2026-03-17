@@ -274,7 +274,7 @@ describe('Cross-User Data Isolation', () => {
           permissions: { canRead: true, canWrite: true },
           expiration_type: 'never',
           api_key_hash: 'agent-a-hash-123',
-          api_key_encrypted: 'encrypted-key-a'
+          api_key: 'encrypted-key-a'
         });
 
       expect(response.status).toBe(201);

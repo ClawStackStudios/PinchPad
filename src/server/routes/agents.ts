@@ -27,9 +27,9 @@ router.get('/', requireAuth(), requireHuman(), (req: any, res: Response) => {
 
 router.post('/', requireAuth(), requireHuman(), (req: any, res: Response) => {
   const db = req.db || globalDb;
-  const { id, name, permissions, expiration_type, expiration_date, rate_limit, api_key_hash, api_key_encrypted } = req.body;
+  const { id, name, permissions, expiration_type, expiration_date, rate_limit, api_key_hash, api_key } = req.body;
 
-  if (!id || !name || !permissions || !expiration_type || !api_key_hash || !api_key_encrypted) {
+  if (!id || !name || !permissions || !expiration_type || !api_key_hash || !api_key) {
     return res.status(400).json({ error: 'Missing required fields for Lobster Key creation' });
   }
 
@@ -43,7 +43,7 @@ router.post('/', requireAuth(), requireHuman(), (req: any, res: Response) => {
       id,
       req.user!.uuid,
       name,
-      api_key_encrypted,
+      api_key,
       api_key_hash,
       JSON.stringify(permissions),
       expiration_type,
@@ -56,7 +56,7 @@ router.post('/', requireAuth(), requireHuman(), (req: any, res: Response) => {
       data: {
         id,
         name,
-        api_key: api_key_encrypted, // Server returns the encrypted pearl
+        api_key,
         permissions,
         expiration_type,
         expiration_date,

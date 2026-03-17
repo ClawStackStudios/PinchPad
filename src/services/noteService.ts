@@ -1,5 +1,4 @@
 import { restAdapter } from '../lib/api';
-import { encryptRecord, decryptRecord } from '../lib/shellCryption';
 
 // Browser-compatible UUID v4 generator
 function generateUUID(): string {
@@ -23,55 +22,45 @@ export interface Note {
 }
 
 export const noteService = {
-  async getAll(shellKey: CryptoKey): Promise<Note[]> {
+  async getAll(): Promise<Note[]> {
     const response = await restAdapter.GET('/api/notes');
-    const decryptedNotes = await Promise.all(
-      response.data.map((note: any) => decryptRecord(note, ['title', 'content'], shellKey, 'notes'))
-    );
-    return decryptedNotes.map(note => ({
+    return response.data.map((note: any) => ({
       ...note,
       starred: !!note.starred,
       pinned: !!note.pinned
     }));
   },
 
-  async create(title: string, content: string, shellKey: CryptoKey, starred = false, pinned = false): Promise<Note> {
+  async create(title: string, content: string, starred = false, pinned = false): Promise<Note> {
     const tempId = generateUUID();
-    const tempRecord = { id: tempId, title, content };
-    const encrypted = await encryptRecord(tempRecord, ['title', 'content'], shellKey, 'notes');
 
     const response = await restAdapter.POST('/api/notes', {
       id: tempId,
-      title: encrypted.title,
-      content: encrypted.content,
+      title,
+      content,
       starred: starred ? 1 : 0,
       pinned: pinned ? 1 : 0
     });
 
-    const note = await decryptRecord(response.data, ['title', 'content'], shellKey, 'notes');
     return {
-      ...note,
-      starred: !!note.starred,
-      pinned: !!note.pinned
+      ...response.data,
+      starred: !!response.data.starred,
+      pinned: !!response.data.pinned
     };
   },
 
-  async update(id: string, title: string, content: string, shellKey: CryptoKey, starred = false, pinned = false): Promise<Note> {
-    const tempRecord = { id, title, content };
-    const encrypted = await encryptRecord(tempRecord, ['title', 'content'], shellKey, 'notes');
-
+  async update(id: string, title: string, content: string, starred = false, pinned = false): Promise<Note> {
     const response = await restAdapter.PUT(`/api/notes/${id}`, {
-      title: encrypted.title,
-      content: encrypted.content,
+      title,
+      content,
       starred: starred ? 1 : 0,
       pinned: pinned ? 1 : 0
     });
 
-    const note = await decryptRecord(response.data, ['title', 'content'], shellKey, 'notes');
     return {
-      ...note,
-      starred: !!note.starred,
-      pinned: !!note.pinned
+      ...response.data,
+      starred: !!response.data.starred,
+      pinned: !!response.data.pinned
     };
   },
 
