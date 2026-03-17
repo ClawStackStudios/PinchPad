@@ -1,7 +1,7 @@
 import { getApiBaseUrl } from '../lib/api';
 import { apiFetch } from '../lib/apiFetch';
 import { generateBase62, hashToken } from '../lib/crypto';
-import { deriveShellKey } from '../lib/shellCryption';
+import { deriveShellKey, isShellCryptionAvailable } from '../lib/shellCryption';
 
 const SESSION_KEYS = {
   token: 'cc_api_token',
@@ -79,7 +79,7 @@ export const authService = {
     return { uuid, huKey };
   },
 
-  async loginWithKey(token: string, uuid?: string, username?: string): Promise<{ token: string, shellKey: CryptoKey, username: string, displayName: string | null, uuid: string }> {
+  async loginWithKey(token: string, uuid?: string, username?: string): Promise<{ token: string, shellKey: CryptoKey | null, username: string, displayName: string | null, uuid: string }> {
     if (!token || !token.startsWith('hu-')) {
       throw new Error('Invalid ClawKey©™ format');
     }
@@ -89,8 +89,8 @@ export const authService = {
     const response = await apiFetch(`${getApiBaseUrl()}/api/auth/token`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ 
-        keyHash, 
+      body: JSON.stringify({
+        keyHash,
         type: 'human',
         ...(uuid && { uuid }),
         ...(username && { username })
@@ -109,11 +109,13 @@ export const authService = {
     localStorage.setItem(SESSION_KEYS.uuid, pearl.uuid);
     localStorage.setItem(EXPIRY_KEY, String(Date.now() + 86400000)); // 24 hours
 
-    const shellKey = await deriveShellKey(token, pearl.uuid);
+    const shellKey = isShellCryptionAvailable()
+      ? await deriveShellKey(token, pearl.uuid)
+      : null;
     return { token: pearl.token, shellKey, username: pearl.username, displayName: pearl.displayName, uuid: pearl.uuid };
   },
 
-  async login(identityFileContent: string): Promise<{ token: string, shellKey: CryptoKey, username: string, displayName: string | null, uuid: string }> {
+  async login(identityFileContent: string): Promise<{ token: string, shellKey: CryptoKey | null, username: string, displayName: string | null, uuid: string }> {
     const identity = JSON.parse(identityFileContent);
     const huKey = identity.token || identity.huKey; // Handle both formats
     const uuid = identity.uuid;
@@ -142,7 +144,9 @@ export const authService = {
     localStorage.setItem(SESSION_KEYS.uuid, pearl.uuid);
     localStorage.setItem(EXPIRY_KEY, String(Date.now() + 86400000)); // 24 hours
 
-    const shellKey = await deriveShellKey(huKey, pearl.uuid);
+    const shellKey = isShellCryptionAvailable()
+      ? await deriveShellKey(huKey, pearl.uuid)
+      : null;
     return { token: pearl.token, shellKey, username: pearl.username, displayName: pearl.displayName, uuid: pearl.uuid };
   },
 

@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { authService, readSession } from '../services/authService';
-import { deriveShellKey } from '../lib/shellCryption';
+import { deriveShellKey, isShellCryptionAvailable } from '../lib/shellCryption';
 
 interface LobsterProfile {
   uuid: string;
@@ -98,6 +98,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const session = readSession();
     if (!session) {
       throw new Error('No active session');
+    }
+    if (!isShellCryptionAvailable()) {
+      setNeedsShellKey(false); // HTTP context — skip gracefully
+      return;
     }
     try {
       const key = await deriveShellKey(huKey, session.uuid);
