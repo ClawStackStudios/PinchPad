@@ -2,6 +2,32 @@ import { Request, Response, NextFunction } from 'express';
 import crypto from 'crypto';
 import globalDb from '../db';
 
+function logAudit(db: any, event: {
+  event_type: string;
+  actor?: string | null;
+  actor_type?: string | null;
+  ip_address?: string | null;
+  user_agent?: string | null;
+  details?: Record<string, unknown> | null;
+}) {
+  try {
+    db.prepare(`
+      INSERT INTO audit_logs (timestamp, event_type, actor, actor_type, ip_address, user_agent, details)
+      VALUES (?, ?, ?, ?, ?, ?, ?)
+    `).run(
+      new Date().toISOString(),
+      event.event_type,
+      event.actor ?? null,
+      event.actor_type ?? null,
+      event.ip_address ?? null,
+      event.user_agent ?? null,
+      event.details ? JSON.stringify(event.details) : null
+    );
+  } catch (e) {
+    console.error('[Audit] Failed to log event:', e);
+  }
+}
+
 export interface AuthRequest extends Request {
   db?: any;
   user?: {
@@ -30,6 +56,13 @@ export const requireAuth = () => {
     }
 
     if (session.expires_at && new Date(session.expires_at) < new Date()) {
+      logAudit(db, {
+        event_type: 'AUTH_TOKEN_EXPIRED',
+        actor: session.owner_uuid,
+        actor_type: session.owner_type,
+        ip_address: req.ip || 'unknown',
+        user_agent: req.headers['user-agent'] || null,
+      });
       db.prepare('DELETE FROM api_tokens WHERE key = ?').run(tokenHash);
       return res.status(401).json({ error: 'Token expired' });
     }
@@ -58,6 +91,7 @@ export const requireAuth = () => {
 
 export const requirePermission = (permission: string) => {
   return (req: AuthRequest, res: Response, next: NextFunction) => {
+    const db = req.db || globalDb;
     if (!req.user) return res.status(401).json({ error: 'Not authenticated' });
 
     if (req.user.keyType === 'human') {
@@ -66,6 +100,14 @@ export const requirePermission = (permission: string) => {
 
     const hasPermission = req.user.permissions && req.user.permissions[permission] === true;
     if (!hasPermission) {
+      logAudit(db, {
+        event_type: 'PERMISSION_DENIED',
+        actor: req.user.uuid,
+        actor_type: req.user.keyType,
+        ip_address: req.ip || 'unknown',
+        user_agent: (req.headers && req.headers['user-agent']) || null,
+        details: { required_permission: permission },
+      });
       return res.status(403).json({ error: 'Insufficient permissions' });
     }
     next();

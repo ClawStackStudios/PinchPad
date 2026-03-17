@@ -6,6 +6,58 @@ const router = Router();
 
 export const TOKEN_TTL_DEFAULT = 24 * 60 * 60 * 1000; // 24 Hours
 
+// Rate limiter state for /register (5 per 15 min per IP)
+const registerLimiters = new Map<string, { count: number; resetTime: number }>();
+const REGISTER_LIMIT = 5;
+const REGISTER_WINDOW = 15 * 60 * 1000;
+
+// Rate limiter state for /token (10 per 15 min per IP)
+const tokenLimiters = new Map<string, { count: number; resetTime: number }>();
+const TOKEN_LIMIT = 10;
+const TOKEN_WINDOW = 15 * 60 * 1000;
+
+function checkRateLimit(ip: string, limitersMap: Map<string, { count: number; resetTime: number }>, max: number, window: number): { allowed: boolean; remaining: number; resetTime: number } {
+  const now = Date.now();
+  const limiter = limitersMap.get(ip);
+
+  if (!limiter || now >= limiter.resetTime) {
+    limitersMap.set(ip, { count: 1, resetTime: now + window });
+    return { allowed: true, remaining: max - 1, resetTime: now + window };
+  }
+
+  if (limiter.count >= max) {
+    return { allowed: false, remaining: 0, resetTime: limiter.resetTime };
+  }
+
+  limiter.count++;
+  return { allowed: true, remaining: max - limiter.count, resetTime: limiter.resetTime };
+}
+
+function logAudit(db: any, event: {
+  event_type: string;
+  actor?: string | null;
+  actor_type?: string | null;
+  ip_address?: string | null;
+  user_agent?: string | null;
+  details?: Record<string, unknown> | null;
+}) {
+  try {
+    db.prepare(`
+      INSERT INTO audit_logs (timestamp, event_type, actor, actor_type, ip_address, user_agent, details)
+      VALUES (?, ?, ?, ?, ?, ?, ?)
+    `).run(
+      new Date().toISOString(),
+      event.event_type,
+      event.actor ?? null,
+      event.actor_type ?? null,
+      event.ip_address ?? null,
+      event.user_agent ?? null,
+      event.details ? JSON.stringify(event.details) : null
+    );
+  } catch (e) {
+    console.error('[Audit] Failed to log event:', e);
+  }
+}
 
 // Constant-time comparison
 function constantTimeCompare(a: string, b: string): boolean {
@@ -29,7 +81,25 @@ function generateBase62(length: number): string {
 
 router.post('/register', (req: any, res: Response) => {
   const db = req.db || globalDb;
+  const ip = req.ip || 'unknown';
+  const userAgent = req.headers['user-agent'] || null;
   const { uuid, username, displayName, keyHash } = req.body;
+
+  // Rate limiting: 5 per 15 min per IP
+  const rateLimitCheck = checkRateLimit(ip, registerLimiters, REGISTER_LIMIT, REGISTER_WINDOW);
+  res.setHeader('RateLimit-Limit', REGISTER_LIMIT);
+  res.setHeader('RateLimit-Remaining', rateLimitCheck.remaining);
+  res.setHeader('RateLimit-Reset', Math.ceil(rateLimitCheck.resetTime / 1000));
+
+  if (!rateLimitCheck.allowed) {
+    logAudit(db, {
+      event_type: 'AUTH_REGISTER_RATE_LIMITED',
+      ip_address: ip,
+      user_agent: userAgent,
+    });
+    return res.status(429).json({ error: 'Too many registration attempts. Try again later.' });
+  }
+
   if (!uuid || !username || !keyHash) {
     return res.status(400).json({ error: 'Missing required fields' });
   }
@@ -37,6 +107,12 @@ router.post('/register', (req: any, res: Response) => {
   try {
     const existing = db.prepare('SELECT * FROM users WHERE username = ?').get(username);
     if (existing) {
+      logAudit(db, {
+        event_type: 'AUTH_REGISTER_FAILURE',
+        ip_address: ip,
+        user_agent: userAgent,
+        details: { reason: 'username_taken', username },
+      });
       return res.status(400).json({ error: 'Username already taken' });
     }
 
@@ -48,6 +124,15 @@ router.post('/register', (req: any, res: Response) => {
       new Date().toISOString()
     );
 
+    logAudit(db, {
+      event_type: 'AUTH_REGISTER',
+      actor: uuid,
+      actor_type: 'human',
+      ip_address: ip,
+      user_agent: userAgent,
+      details: { username },
+    });
+
     res.status(201).json({ success: true });
   } catch (error) {
     res.status(500).json({ error: 'Failed to register' });
@@ -56,7 +141,24 @@ router.post('/register', (req: any, res: Response) => {
 
 router.post('/token', (req: any, res: Response) => {
   const db = req.db || globalDb;
+  const ip = req.ip || 'unknown';
+  const userAgent = req.headers['user-agent'] || null;
   const { uuid, username, keyHash, type = 'human' } = req.body;
+
+  // Rate limiting: 10 per 15 min per IP
+  const rateLimitCheck = checkRateLimit(ip, tokenLimiters, TOKEN_LIMIT, TOKEN_WINDOW);
+  res.setHeader('RateLimit-Limit', TOKEN_LIMIT);
+  res.setHeader('RateLimit-Remaining', rateLimitCheck.remaining);
+  res.setHeader('RateLimit-Reset', Math.ceil(rateLimitCheck.resetTime / 1000));
+
+  if (!rateLimitCheck.allowed) {
+    logAudit(db, {
+      event_type: 'AUTH_LOGIN_RATE_LIMITED',
+      ip_address: ip,
+      user_agent: userAgent,
+    });
+    return res.status(429).json({ error: 'Too many login attempts. Try again later.' });
+  }
 
   if (!keyHash) {
     return res.status(400).json({ error: 'keyHash is required' });
@@ -77,6 +179,12 @@ router.post('/token', (req: any, res: Response) => {
       }
 
       if (!user) {
+        logAudit(db, {
+          event_type: 'AUTH_LOGIN_FAILURE',
+          ip_address: ip,
+          user_agent: userAgent,
+          details: { reason: 'user_not_found', type },
+        });
         return res.status(401).json({
           error: 'Invalid identity or key'
         });
@@ -85,6 +193,12 @@ router.post('/token', (req: any, res: Response) => {
       const hashMatch = constantTimeCompare(keyHash, user.key_hash);
 
       if (!hashMatch) {
+        logAudit(db, {
+          event_type: 'AUTH_LOGIN_FAILURE',
+          ip_address: ip,
+          user_agent: userAgent,
+          details: { reason: 'invalid_key', type },
+        });
         return res.status(401).json({
           error: 'Invalid identity or key'
         });
@@ -95,6 +209,12 @@ router.post('/token', (req: any, res: Response) => {
       }
       user = db.prepare('SELECT * FROM users WHERE uuid = ?').get(uuid) as any;
       if (!user) {
+        logAudit(db, {
+          event_type: 'AUTH_LOGIN_FAILURE',
+          ip_address: ip,
+          user_agent: userAgent,
+          details: { reason: 'user_not_found', type },
+        });
         return res.status(401).json({ error: 'Invalid credentials' });
       }
     } else {
@@ -108,6 +228,12 @@ router.post('/token', (req: any, res: Response) => {
       const lobster = db.prepare('SELECT id FROM lobster_keys WHERE user_uuid = ? AND api_key_hash = ? AND is_active = 1').get(user.uuid, keyHash) as any;
 
       if (!lobster) {
+        logAudit(db, {
+          event_type: 'AUTH_LOGIN_FAILURE',
+          ip_address: ip,
+          user_agent: userAgent,
+          details: { reason: 'invalid_lobster_key', type },
+        });
         return res.status(401).json({ error: 'Invalid agent credentials' });
       }
 
@@ -130,6 +256,15 @@ router.post('/token', (req: any, res: Response) => {
       expiresAt,
       new Date().toISOString()
     );
+
+    logAudit(db, {
+      event_type: 'AUTH_LOGIN_SUCCESS',
+      actor: user.uuid,
+      actor_type: type,
+      ip_address: ip,
+      user_agent: userAgent,
+      details: { type, lobsterKeyId },
+    });
 
     res.json({ token, type, uuid: user.uuid, username: user.username, displayName: user.display_name });
   } catch (error) {
@@ -173,7 +308,10 @@ router.get('/verify', (req: any, res: Response) => {
  * POST /api/auth/logout
  * Manually revoke a session token.
  */
-router.post('/logout', (req, res) => {
+router.post('/logout', (req: any, res: Response) => {
+  const db = req.db || globalDb;
+  const ip = req.ip || 'unknown';
+  const userAgent = req.headers['user-agent'] || null;
   const authHeader = req.headers.authorization;
   if (!authHeader || !authHeader.startsWith('Bearer ')) {
     return res.status(401).json({ error: 'Missing token' });
@@ -183,8 +321,21 @@ router.post('/logout', (req, res) => {
   const tokenHash = crypto.createHash('sha256').update(token).digest('hex');
 
   try {
-    const testDb = (req as any).db || globalDb;
-    testDb.prepare('DELETE FROM api_tokens WHERE key = ?').run(tokenHash);
+    // Query to get owner info before deletion
+    const tokenRecord = db.prepare('SELECT owner_uuid, owner_type FROM api_tokens WHERE key = ?').get(tokenHash) as any;
+
+    const result = db.prepare('DELETE FROM api_tokens WHERE key = ?').run(tokenHash);
+
+    if (result.changes > 0 && tokenRecord) {
+      logAudit(db, {
+        event_type: 'AUTH_LOGOUT',
+        actor: tokenRecord.owner_uuid,
+        actor_type: tokenRecord.owner_type,
+        ip_address: ip,
+        user_agent: userAgent,
+      });
+    }
+
     res.json({ success: true });
   } catch (error) {
     res.status(500).json({ error: 'Logout failed' });

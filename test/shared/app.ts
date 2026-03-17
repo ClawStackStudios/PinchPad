@@ -60,6 +60,17 @@ export function createTestApp(): { app: Express; db: Database.Database } {
       updated_at TEXT NOT NULL,
       FOREIGN KEY (user_uuid) REFERENCES users(uuid) ON DELETE CASCADE
     );
+
+    CREATE TABLE IF NOT EXISTS audit_logs (
+      id         INTEGER PRIMARY KEY AUTOINCREMENT,
+      timestamp  TEXT NOT NULL,
+      event_type TEXT NOT NULL,
+      actor      TEXT,
+      actor_type TEXT,
+      ip_address TEXT,
+      user_agent TEXT,
+      details    TEXT
+    );
   `);
 
   const app = express();
