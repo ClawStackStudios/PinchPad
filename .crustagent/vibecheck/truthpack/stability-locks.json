@@ -3,8 +3,10 @@
   "project": "PinchPad",
   "locks": {
     "network": {
-      "ui_port": 8282,
-      "api_port": 8383
+      "dev_ui_port": 8282,
+      "dev_api_port": 8383,
+      "prod_unified_port": 8282,
+      "architecture_note": "Dev: two processes (Vite HMR on 8282 + Express API on 8383). Prod: single Express process on 8282 (serves both /api/* and static dist/ files)"
     },
     "crypto": {
       "char_set_size": 62,
@@ -21,8 +23,10 @@
       "required_middleware": [
         "requireAuth",
         "requireHuman",
-        "requirePermission"
-      ]
+        "requirePermission",
+        "lobsterRateLimiter"
+      ],
+      "audit_logging": "All auth events logged to audit_logs table (AUTH_REGISTER, AUTH_LOGIN_SUCCESS/FAILURE, AUTH_LOGOUT, AUTH_TOKEN_EXPIRED, PERMISSION_DENIED) with actor, ip_address, user_agent, timestamp"
     },
     "database": {
       "engine": "better-sqlite3",
@@ -46,6 +50,6 @@
     }
   },
   "status": "STABLE_LOCKED",
-  "last_lock_update": "2026-03-15T00:00:00Z",
+  "last_lock_update": "2026-03-16T15:35:00Z",
   "maintained_by": "CrustAgent©™"
 }

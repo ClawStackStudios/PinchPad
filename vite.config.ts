@@ -31,5 +31,10 @@ export default defineConfig(({mode}) => {
         ignored: ['**/data/**'],
       },
     },
+    preview: {
+      port: 8282,
+      host: true,
+      strictPort: true,
+    },
   };
 });

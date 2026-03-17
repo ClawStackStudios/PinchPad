@@ -1,13 +1,13 @@
 import express from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
-import rateLimit from 'express-rate-limit';
 import path from 'path';
 
 import authRoutes from './src/server/routes/auth';
 import notesRoutes from './src/server/routes/notes';
 import agentsRoutes from './src/server/routes/agents';
 import { purgeExpiredTokens } from './src/server/db';
+import { lobsterRateLimiter } from './src/server/middleware/rateLimiter';
 
 async function startServer() {
   const app = express();
@@ -36,16 +36,9 @@ async function startServer() {
   
   app.use(express.json());
 
-  // Rate limiting for auth
-  const authLimiter = rateLimit({
-    windowMs: 15 * 60 * 1000, // 15 minutes
-    max: 100, // Limit each IP to 100 requests per windowMs
-    message: 'Too many requests from this IP, please try again later.'
-  });
-
   // API Routes
-  app.use('/api/auth', authLimiter, authRoutes);
-  app.use('/api/notes', notesRoutes);
+  app.use('/api/auth', authRoutes);
+  app.use('/api/notes', lobsterRateLimiter, notesRoutes);
   app.use('/api/agents', agentsRoutes);
 
   app.get('/api/health', (req, res) => {

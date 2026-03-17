@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeAll, afterAll } from 'vitest';
-import Database from 'better-sqlite3';
+import Database from 'better-sqlite3-multiple-ciphers';
 import express from 'express';
 import request from 'supertest';
 import authRouter from '../../src/server/routes/auth';
@@ -274,7 +274,7 @@ describe('Cross-User Data Isolation', () => {
           permissions: { canRead: true, canWrite: true },
           expiration_type: 'never',
           api_key_hash: 'agent-a-hash-123',
-          api_key_encrypted: 'encrypted-key-a'
+          api_key: 'encrypted-key-a'
         });
 
       expect(response.status).toBe(201);

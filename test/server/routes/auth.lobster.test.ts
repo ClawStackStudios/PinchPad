@@ -3,7 +3,7 @@ import request from 'supertest';
 import { createTestApp, createTestUser, createTestToken } from '../../shared/app';
 import { hashToken } from '../../../src/lib/crypto';
 import { Express } from 'express';
-import Database from 'better-sqlite3';
+import Database from 'better-sqlite3-multiple-ciphers';
 
 describe('Auth Routes', () => {
   let app: Express;

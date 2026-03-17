@@ -1,7 +1,8 @@
 import { describe, it, expect, beforeAll, afterAll } from 'vitest';
-import Database from 'better-sqlite3';
+import Database from 'better-sqlite3-multiple-ciphers';
 import express from 'express';
 import request from 'supertest';
+import crypto from 'crypto';
 import authRouter, { TOKEN_TTL_DEFAULT } from '../../src/server/routes/auth';
 import notesRouter from '../../src/server/routes/notes';
 import { requireAuth } from '../../src/server/middleware/auth';
@@ -136,7 +137,8 @@ describe('Token Lifecycle Integration', () => {
       sessionToken = response.body.token;
 
       // Verify token exists in DB
-      const token = db.prepare('SELECT * FROM api_tokens WHERE key = ?').get(sessionToken);
+      const sessionTokenHash = crypto.createHash('sha256').update(sessionToken).digest('hex');
+      const token = db.prepare('SELECT * FROM api_tokens WHERE key = ?').get(sessionTokenHash);
       expect(token).toBeDefined();
       expect(token.owner_uuid).toBe(testUuid);
       expect(token.owner_type).toBe('human');
@@ -174,10 +176,11 @@ describe('Token Lifecycle Integration', () => {
 
     it('5. Simulate token expiry by manually expiring it', () => {
       const expiredTime = new Date(Date.now() - 1000).toISOString();
-      db.prepare('UPDATE api_tokens SET expires_at = ? WHERE key = ?').run(expiredTime, sessionToken);
+      const sessionTokenHash = crypto.createHash('sha256').update(sessionToken).digest('hex');
+      db.prepare('UPDATE api_tokens SET expires_at = ? WHERE key = ?').run(expiredTime, sessionTokenHash);
 
       // Verify token is marked expired
-      const token = db.prepare('SELECT expires_at FROM api_tokens WHERE key = ?').get(sessionToken);
+      const token = db.prepare('SELECT expires_at FROM api_tokens WHERE key = ?').get(sessionTokenHash);
       expect(new Date(token.expires_at).getTime()).toBeLessThan(Date.now());
     });
 
@@ -191,7 +194,8 @@ describe('Token Lifecycle Integration', () => {
     });
 
     it('7. Verify token was deleted after expiry check', () => {
-      const token = db.prepare('SELECT * FROM api_tokens WHERE key = ?').get(sessionToken);
+      const sessionTokenHash = crypto.createHash('sha256').update(sessionToken).digest('hex');
+      const token = db.prepare('SELECT * FROM api_tokens WHERE key = ?').get(sessionTokenHash);
       expect(token).toBeUndefined();
     });
 
@@ -230,7 +234,8 @@ describe('Token Lifecycle Integration', () => {
       expect(response.body.success).toBe(true);
 
       // Verify token was deleted
-      const token = db.prepare('SELECT * FROM api_tokens WHERE key = ?').get(sessionToken);
+      const sessionTokenHash = crypto.createHash('sha256').update(sessionToken).digest('hex');
+      const token = db.prepare('SELECT * FROM api_tokens WHERE key = ?').get(sessionTokenHash);
       expect(token).toBeUndefined();
     });
 
@@ -271,7 +276,8 @@ describe('Token Lifecycle Integration', () => {
       token1 = response.body.token;
 
       // Verify token exists
-      const token = db.prepare('SELECT * FROM api_tokens WHERE key = ?').get(token1);
+      const token1Hash = crypto.createHash('sha256').update(token1).digest('hex');
+      const token = db.prepare('SELECT * FROM api_tokens WHERE key = ?').get(token1Hash);
       expect(token).toBeDefined();
     });
 
@@ -289,11 +295,13 @@ describe('Token Lifecycle Integration', () => {
       expect(token2).not.toBe(token1);
 
       // Verify old token is deleted
-      const oldToken = db.prepare('SELECT * FROM api_tokens WHERE key = ?').get(token1);
+      const token1Hash = crypto.createHash('sha256').update(token1).digest('hex');
+      const oldToken = db.prepare('SELECT * FROM api_tokens WHERE key = ?').get(token1Hash);
       expect(oldToken).toBeUndefined();
 
       // Verify new token exists
-      const newToken = db.prepare('SELECT * FROM api_tokens WHERE key = ?').get(token2);
+      const token2Hash = crypto.createHash('sha256').update(token2).digest('hex');
+      const newToken = db.prepare('SELECT * FROM api_tokens WHERE key = ?').get(token2Hash);
       expect(newToken).toBeDefined();
     });
 

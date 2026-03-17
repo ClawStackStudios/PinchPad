@@ -281,6 +281,41 @@ PinchPad/
 
 ---
 
+## 🔐 Database Encryption (SQLCipher)
+
+PinchPad supports **full SQLite database encryption at rest** using SQLCipher (AES-256-CBC). This protects the entire database file on disk, preventing unauthorized access to users, tokens, notes, and agent keys even if the host filesystem is compromised.
+
+### Enabling Database Encryption
+
+**Generate a 256-bit encryption key:**
+```bash
+openssl rand -base64 32
+# → K7fGh2mNpQrXvYzA1bCdEfJkLnOpStUw+Xy9012/3==
+```
+
+**For npm development:**
+Add the key to `.env.local`:
+```bash
+DB_ENCRYPTION_KEY=K7fGh2mNpQrXvYzA1bCdEfJkLnOpStUw+Xy9012/3==
+npm run scuttle:dev-start
+```
+
+**For Docker deployment:**
+Uncomment and set the key in `docker-compose.yml` or `docker-compose.dev.yml`:
+```yaml
+environment:
+  - DB_ENCRYPTION_KEY=K7fGh2mNpQrXvYzA1bCdEfJkLnOpStUw+Xy9012/3==
+docker compose up -d
+```
+
+### Important Notes
+
+- **Key is required in production.** If `DB_ENCRYPTION_KEY` is not set, the database is stored in plaintext. The app will log a warning on startup.
+- **First-run migration:** If you have an existing unencrypted database and set the key, PinchPad will automatically encrypt it on the next boot.
+- **Key rotation:** There is no built-in key rotation mechanism. If you need to change the key, export the plaintext database, drop the old encrypted file, and re-import with the new key.
+
+---
+
 ## 🤝 Contributing
 
 See [CONTRIBUTING.md](./CONTRIBUTING.md) for the full guide.

@@ -9,4 +9,13 @@ data-dev/
 .env*
 !.env.example
 
+# VibeCheck
+.vibecheck/
+.cursor/
+workflows/
+.github/copilot-instructions.md
+.cursorrules
+.islstudio/
+.claude/
+
 docker-compose.dev.yml

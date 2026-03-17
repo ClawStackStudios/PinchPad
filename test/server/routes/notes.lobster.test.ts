@@ -3,7 +3,7 @@ import { describe, it, expect, beforeEach } from 'vitest';
 import request from 'supertest';
 import { createTestApp, createTestUser, createTestToken } from '../../shared/app';
 import { Express } from 'express';
-import Database from 'better-sqlite3';
+import Database from 'better-sqlite3-multiple-ciphers';
 
 describe('Notes Routes', () => {
   let app: Express;

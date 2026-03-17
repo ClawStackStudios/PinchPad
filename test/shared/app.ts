@@ -1,9 +1,11 @@
 import express, { Express, RequestHandler } from 'express';
-import Database from 'better-sqlite3';
+import Database from 'better-sqlite3-multiple-ciphers';
+import crypto from 'crypto';
 import authRoutes from '../../src/server/routes/auth';
 import notesRoutes from '../../src/server/routes/notes';
 import agentsRoutes from '../../src/server/routes/agents';
 import { requireAuth, requireHuman } from '../../src/server/middleware/auth';
+import { lobsterRateLimiter } from '../../src/server/middleware/rateLimiter';
 
 export function createTestApp(): { app: Express; db: Database.Database } {
   const db = new Database(':memory:');
@@ -58,6 +60,17 @@ export function createTestApp(): { app: Express; db: Database.Database } {
       updated_at TEXT NOT NULL,
       FOREIGN KEY (user_uuid) REFERENCES users(uuid) ON DELETE CASCADE
     );
+
+    CREATE TABLE IF NOT EXISTS audit_logs (
+      id         INTEGER PRIMARY KEY AUTOINCREMENT,
+      timestamp  TEXT NOT NULL,
+      event_type TEXT NOT NULL,
+      actor      TEXT,
+      actor_type TEXT,
+      ip_address TEXT,
+      user_agent TEXT,
+      details    TEXT
+    );
   `);
 
   const app = express();
@@ -72,8 +85,8 @@ export function createTestApp(): { app: Express; db: Database.Database } {
   // Mount auth routes (no auth required)
   app.use('/api/auth', authRoutes);
 
-  // Mount notes routes with auth middleware
-  app.use('/api/notes', requireAuth() as RequestHandler, notesRoutes);
+  // Mount notes routes with auth middleware + rate limiter (lobster keys only)
+  app.use('/api/notes', requireAuth() as RequestHandler, lobsterRateLimiter, notesRoutes);
 
   // Mount agents routes with auth + human-only middleware
   app.use('/api/agents', requireAuth() as RequestHandler, agentsRoutes);
@@ -95,8 +108,9 @@ export function createTestUser(db: Database.Database, username = 'testuser', key
 
 export function createTestToken(db: Database.Database, userUuid: string, type = 'human', lobsterKeyId: string | null = null): string {
   const token = `api-${Math.random().toString(36).slice(2, 34)}`;
+  const tokenHash = crypto.createHash('sha256').update(token).digest('hex');
   db.prepare('INSERT INTO api_tokens (key, owner_uuid, owner_type, lobster_key_id, expires_at, created_at) VALUES (?, ?, ?, ?, ?, ?)').run(
-    token,
+    tokenHash,
     userUuid,
     type,
     lobsterKeyId,
@@ -109,14 +123,15 @@ export function createTestToken(db: Database.Database, userUuid: string, type = 
 export function createTestLobsterKey(
   db: Database.Database,
   userUuid: string,
-  permissions: Record<string, boolean> = { canRead: true }
+  permissions: Record<string, boolean> = { canRead: true },
+  rateLimit: number | null = null
 ): { id: string; apiKeyHash: string } {
   const id = crypto.randomUUID();
   const apiKeyHash = `hash-${Math.random().toString(36).slice(2, 20)}`;
 
   db.prepare(`
-    INSERT INTO lobster_keys (id, user_uuid, name, api_key, api_key_hash, permissions, expiration_type, is_active, created_at)
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+    INSERT INTO lobster_keys (id, user_uuid, name, api_key, api_key_hash, permissions, expiration_type, rate_limit, is_active, created_at)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
   `).run(
     id,
     userUuid,
@@ -125,6 +140,7 @@ export function createTestLobsterKey(
     apiKeyHash,
     JSON.stringify(permissions),
     'never',
+    rateLimit,
     1,
     new Date().toISOString()
   );
