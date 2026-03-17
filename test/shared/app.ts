@@ -111,14 +111,15 @@ export function createTestToken(db: Database.Database, userUuid: string, type = 
 export function createTestLobsterKey(
   db: Database.Database,
   userUuid: string,
-  permissions: Record<string, boolean> = { canRead: true }
+  permissions: Record<string, boolean> = { canRead: true },
+  rateLimit: number | null = null
 ): { id: string; apiKeyHash: string } {
   const id = crypto.randomUUID();
   const apiKeyHash = `hash-${Math.random().toString(36).slice(2, 20)}`;
 
   db.prepare(`
-    INSERT INTO lobster_keys (id, user_uuid, name, api_key, api_key_hash, permissions, expiration_type, is_active, created_at)
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+    INSERT INTO lobster_keys (id, user_uuid, name, api_key, api_key_hash, permissions, expiration_type, rate_limit, is_active, created_at)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
   `).run(
     id,
     userUuid,
@@ -127,6 +128,7 @@ export function createTestLobsterKey(
     apiKeyHash,
     JSON.stringify(permissions),
     'never',
+    rateLimit,
     1,
     new Date().toISOString()
   );

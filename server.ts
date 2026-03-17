@@ -8,6 +8,7 @@ import authRoutes from './src/server/routes/auth';
 import notesRoutes from './src/server/routes/notes';
 import agentsRoutes from './src/server/routes/agents';
 import { purgeExpiredTokens } from './src/server/db';
+import { lobsterRateLimiter } from './src/server/middleware/rateLimiter';
 
 async function startServer() {
   const app = express();
@@ -45,7 +46,7 @@ async function startServer() {
 
   // API Routes
   app.use('/api/auth', authLimiter, authRoutes);
-  app.use('/api/notes', notesRoutes);
+  app.use('/api/notes', lobsterRateLimiter, notesRoutes);
   app.use('/api/agents', agentsRoutes);
 
   app.get('/api/health', (req, res) => {

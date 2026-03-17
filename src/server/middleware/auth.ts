@@ -8,6 +8,8 @@ export interface AuthRequest extends Request {
     uuid: string;
     keyType: 'human' | 'lobster';
     permissions?: Record<string, boolean>;
+    rateLimit?: number | null;
+    lobsterKeyId?: string | null;
   };
 }
 
@@ -33,17 +35,21 @@ export const requireAuth = () => {
     }
 
     let permissions = {};
+    let rateLimit: number | null = null;
     if (session.owner_type === 'lobster' && session.lobster_key_id) {
-      const lobster = db.prepare('SELECT permissions FROM lobster_keys WHERE id = ?').get(session.lobster_key_id) as any;
+      const lobster = db.prepare('SELECT permissions, rate_limit FROM lobster_keys WHERE id = ?').get(session.lobster_key_id) as any;
       if (lobster) {
         permissions = JSON.parse(lobster.permissions);
+        rateLimit = lobster.rate_limit ?? null;
       }
     }
 
     req.user = {
       uuid: session.owner_uuid,
       keyType: session.owner_type as 'human' | 'lobster',
-      permissions
+      permissions,
+      rateLimit,
+      lobsterKeyId: session.lobster_key_id ?? null
     };
 
     next();

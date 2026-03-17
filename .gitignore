@@ -9,4 +9,10 @@ data-dev/
 .env*
 !.env.example
 
+# VibeCheck
+.vibecheck/
+.claude/
+.islstudio/
+workflows/
+
 docker-compose.dev.yml
