@@ -13,7 +13,7 @@
     "scuttle:reset-dev": "npm run scuttle:dev-stop && rm -rf dist",
     "clean": "rm -rf dist",
     "dev": "vite",
-    "dev:server": "tsx --watch --ignore data/** server.ts",
+    "dev:server": "tsx --watch server.ts",
     "build": "vite build",
     "preview": "vite preview",
     "lint": "tsc --noEmit",
@@ -38,7 +38,8 @@
     "react-dom": "^19.0.0",
     "react-router-dom": "^7.13.1",
     "tailwind-merge": "^3.5.0",
-    "vite": "^6.2.0"
+    "vite": "^6.2.0",
+    "zod": "^4.3.6"
   },
   "devDependencies": {
     "@types/cors": "^2.8.19",

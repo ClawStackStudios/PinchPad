@@ -1,9 +1,13 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import request from 'supertest';
-import { createTestApp, createTestUser, createTestToken } from '../../shared/app';
-import { hashToken } from '../../../src/lib/crypto';
+import { createTestApp, createTestUser } from '../../shared/app';
 import { Express } from 'express';
 import Database from 'better-sqlite3-multiple-ciphers';
+import crypto from 'crypto';
+
+function mockHash() {
+  return crypto.createHash('sha256').update(crypto.randomUUID()).digest('hex');
+}
 
 describe('Auth Routes', () => {
   let app: Express;
@@ -16,16 +20,14 @@ describe('Auth Routes', () => {
     app = testSetup.app;
     db = testSetup.db;
 
-    testUuid = createTestUser(db, 'authuser');
-    testKeyHash = `hash-${crypto.randomUUID()}`;
-    // Update user with known keyHash for testing
-    db.prepare('UPDATE users SET key_hash = ? WHERE uuid = ?').run(testKeyHash, testUuid);
+    testKeyHash = mockHash();
+    testUuid = createTestUser(db, 'authuser', testKeyHash);
   });
 
   describe('POST /api/auth/register', () => {
     it('registers a new user with valid input', async () => {
       const newUuid = crypto.randomUUID();
-      const newKeyHash = `hash-${crypto.randomUUID()}`;
+      const newKeyHash = mockHash();
 
       const response = await request(app)
         .post('/api/auth/register')
@@ -40,14 +42,14 @@ describe('Auth Routes', () => {
       expect(response.body.success).toBe(true);
 
       // Verify user was created
-      const user = db.prepare('SELECT * FROM users WHERE uuid = ?').get(newUuid);
+      const user = db.prepare('SELECT * FROM users WHERE uuid = ?').get(newUuid) as any;
       expect(user).toBeDefined();
       expect(user.username).toBe('newuser');
     });
 
     it('rejects duplicate username', async () => {
       const newUuid = crypto.randomUUID();
-      const newKeyHash = `hash-${crypto.randomUUID()}`;
+      const newKeyHash = mockHash();
 
       const response = await request(app)
         .post('/api/auth/register')
@@ -58,7 +60,9 @@ describe('Auth Routes', () => {
           keyHash: newKeyHash
         });
 
-      expect(response.status).toBe(400);
+      // Zod validation should pass, but DB insert should fail (caught in handler)
+      expect(response.status).toBe(409);
+      expect(response.body.error).toBe('Username already taken.');
     });
 
     it('rejects missing uuid', async () => {
@@ -67,7 +71,7 @@ describe('Auth Routes', () => {
         .send({
           username: 'someuser',
           displayName: 'Some User',
-          keyHash: `hash-${crypto.randomUUID()}`
+          keyHash: mockHash()
         });
 
       expect(response.status).toBe(400);
@@ -84,7 +88,7 @@ describe('Auth Routes', () => {
           type: 'human'
         });
 
-      expect(response.status).toBe(200);
+      expect(response.status).toBe(201);
       expect(response.body.token).toBeDefined();
       expect(response.body.token).toMatch(/^api-/);
       expect(response.body.uuid).toBe(testUuid);
@@ -96,7 +100,7 @@ describe('Auth Routes', () => {
         .post('/api/auth/token')
         .send({
           uuid: testUuid,
-          keyHash: 'wrong-hash',
+          keyHash: mockHash(), // Wrong hash
           type: 'human'
         });
 
@@ -175,8 +179,9 @@ describe('Auth Routes', () => {
       expect(response.status).toBe(200);
       expect(response.body.success).toBe(true);
 
-      // Verify token was deleted from DB
-      const tokenRecord = db.prepare('SELECT * FROM api_tokens WHERE key = ?').get(token);
+      // Verify token was deleted from DB (hash it first)
+      const tokenHash = crypto.createHash('sha256').update(token).digest('hex');
+      const tokenRecord = db.prepare('SELECT * FROM api_tokens WHERE key = ?').get(tokenHash);
       expect(tokenRecord).toBeUndefined();
     });
 

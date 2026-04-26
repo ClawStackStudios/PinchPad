@@ -1,61 +1,131 @@
+import 'dotenv/config';
 import express from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
 import path from 'path';
+import { readFileSync } from 'fs';
+import { createServer as createHttpsServer } from 'https';
+
+import { getCorsConfig } from './src/config/corsConfig';
+import { generateSelfSignedCert, getCertPaths } from './src/server/ssl/generateCert';
+import { errorHandler } from './src/server/middleware/errorHandler';
+import { httpsRedirect } from './src/server/middleware/httpsRedirect';
+import { scheduleTokenCleanup } from './src/server/utils/tokenExpiry';
+import db from './src/server/database/index';
 
 import authRoutes from './src/server/routes/auth';
 import notesRoutes from './src/server/routes/notes';
 import agentsRoutes from './src/server/routes/agents';
-import { purgeExpiredTokens } from './src/server/db';
 import { lobsterRateLimiter } from './src/server/middleware/rateLimiter';
 
 async function startServer() {
   const app = express();
   const PORT = process.env.PORT ? parseInt(process.env.PORT, 10) : 8383;
 
-  // Initialize Reef: Purge expired tokens on startup
-  purgeExpiredTokens();
-  // Set interval to purge every hour
-  setInterval(purgeExpiredTokens, 60 * 60 * 1000);
+  // ─── Startup tasks ───────────────────────────────────────────────────────────
+  scheduleTokenCleanup(db);
 
-  // Security Middlewares
+  // ─── Security Middleware ──────────────────────────────────────────────────────
+  app.use(httpsRedirect);
+
   app.use(helmet({
-    contentSecurityPolicy: false, // Disabled for Vite HMR in dev
-    crossOriginEmbedderPolicy: false, // Don't restrict cross-origin resources
-    crossOriginResourcePolicy: false, // Don't restrict cross-origin resource loading
-    crossOriginOpenerPolicy: false, // Don't isolate — let crypto.subtle use JS fallback
-    originAgentCluster: false, // Don't force origin-keyed clusters (fixes console warning)
+    contentSecurityPolicy: {
+      directives: {
+        defaultSrc: ["'self'"],
+        scriptSrc: ["'self'", "'unsafe-inline'", "'unsafe-eval'"],
+        styleSrc: ["'self'", "'unsafe-inline'", 'https://fonts.googleapis.com'],
+        fontSrc: ["'self'", 'https://fonts.gstatic.com'],
+        imgSrc: ["'self'", 'data:', 'https:'],
+        connectSrc: ["'self'", 'wss:', 'ws:'],
+      },
+    },
+    crossOriginEmbedderPolicy: false,
+    crossOriginResourcePolicy: false,
+    crossOriginOpenerPolicy: false,
+    originAgentCluster: false,
   }));
 
-  app.use(cors({
-    origin: process.env.CORS_ORIGIN
-      ? process.env.CORS_ORIGIN.split(',').map(o => o.trim())
-      : true, // 'true' = mirror request origin — allows any LAN IP without configuration
-    credentials: true,
-  }));
-  
+  app.use(cors(getCorsConfig()));
   app.use(express.json());
 
-  // API Routes
+  // Request logger
+  app.use((req, _res, next) => {
+    console.log(`[${new Date().toISOString()}] ${req.method} ${req.path}`);
+    next();
+  });
+
+  // ─── API Routes ───────────────────────────────────────────────────────────────
   app.use('/api/auth', authRoutes);
   app.use('/api/notes', lobsterRateLimiter, notesRoutes);
   app.use('/api/agents', agentsRoutes);
 
   app.get('/api/health', (req, res) => {
-    res.json({ status: 'ok' });
+    res.json({ 
+      success: true, 
+      status: 'ok', 
+      service: 'PinchPad API',
+      mode: 'sqlite',
+      uptime: process.uptime() 
+    });
   });
 
-  // In production (or when decoupling frontend/backend), serve static files if dist exists
+  // ─── Static Files (Production) ────────────────────────────────────────────────
   if (process.env.NODE_ENV === 'production') {
     const distPath = path.join(process.cwd(), 'dist');
-    app.use(express.static(distPath));
+    app.use(express.static(distPath, {
+      maxAge: '1y',
+      immutable: true,
+      setHeaders(res, filePath) {
+        if (filePath.endsWith('index.html')) {
+          res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+        }
+      },
+    }));
+    
     app.get('*', (req, res) => {
       res.sendFile(path.join(distPath, 'index.html'));
     });
   }
 
-  app.listen(PORT, '0.0.0.0', () => {
-    console.log(`Server running on http://localhost:${PORT}`);
+  // ─── Error Handling ───────────────────────────────────────────────────────────
+  app.use(errorHandler);
+
+  // ─── Start ────────────────────────────────────────────────────────────────────
+  const ENABLE_HTTPS = process.env.ENABLE_HTTPS === 'true';
+
+  if (ENABLE_HTTPS) {
+    generateSelfSignedCert();
+    const certs = getCertPaths();
+
+    if (certs) {
+      try {
+        const options = {
+          cert: readFileSync(certs.cert),
+          key: readFileSync(certs.key),
+        };
+
+        createHttpsServer(options, app).listen(PORT, '0.0.0.0', () => {
+          console.log(`\n🔒 PinchPad API running securely (HTTPS) on port ${PORT}`);
+          console.log(`   Health: https://localhost:${PORT}/api/health\n`);
+        });
+      } catch (err: any) {
+        console.error('❌ Failed to start HTTPS server:', err.message);
+        console.log('🔗 Falling back to HTTP...');
+        startHttp(app, PORT);
+      }
+    } else {
+      console.error('❌ HTTPS requested but no certificates found. Falling back to HTTP.');
+      startHttp(app, PORT);
+    }
+  } else {
+    startHttp(app, PORT);
+  }
+}
+
+function startHttp(app: express.Express, port: number) {
+  app.listen(port, '0.0.0.0', () => {
+    console.log(`\n🦞 PinchPad API running on port ${port} (HTTP)`);
+    console.log(`   Health: http://localhost:${port}/api/health\n`);
   });
 }
 

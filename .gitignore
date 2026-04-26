@@ -9,6 +9,8 @@ data-dev/
 .env*
 !.env.example
 
+.crustagent/internal/
+
 # VibeCheck
 .vibecheck/
 .cursor/
