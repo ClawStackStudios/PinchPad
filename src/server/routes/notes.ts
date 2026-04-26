@@ -1,4 +1,5 @@
 import { Router, Response } from 'express';
+import crypto from 'crypto';
 import singletonDb from '../database/index';
 import { requireAuth, requirePermission } from '../middleware/auth';
 import { validateBody } from '../middleware/validate';
@@ -165,6 +166,101 @@ router.delete('/:id', requireAuth(), requirePermission('canDelete'), (req: any, 
   } catch (error) {
     res.status(500).json({ error: 'Failed to delete note' });
   }
+});
+
+/** POST /api/notes/bulk — Bulk import pearls/notes */
+router.post('/bulk', requireAuth(), requirePermission('canWrite'), (req: any, res: Response) => {
+  const db = req.db || singletonDb;
+  const audit = createAuditLogger(db);
+  const { notes } = req.body;
+  const sessionId = req.headers['x-session-id'];
+
+  if (!Array.isArray(notes)) {
+    return res.status(400).json({ error: 'Body must contain "notes" array' });
+  }
+
+  const results = {
+    imported: 0,
+    failed: 0,
+    errors: [] as { url: string; reason: string }[]
+  };
+
+  const now = new Date().toISOString();
+
+  for (const note of notes) {
+    try {
+      const parsed = NoteSchemas.create.safeParse(note);
+      if (!parsed.success) {
+        results.failed++;
+        results.errors.push({
+          url: note.title || 'Untitled',
+          reason: parsed.error.issues[0]?.message || 'Validation failed'
+        });
+        continue;
+      }
+
+      const { id = crypto.randomUUID(), title, content, starred = 0, pinned = 0 } = parsed.data;
+
+      db.prepare(`
+        INSERT INTO notes (id, user_uuid, title, content, starred, pinned, created_at, updated_at)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+      `).run(
+        id,
+        req.user!.uuid,
+        title,
+        content,
+        starred ? 1 : 0,
+        pinned ? 1 : 0,
+        now,
+        now
+      );
+      results.imported++;
+    } catch (e: any) {
+      results.failed++;
+      results.errors.push({
+        url: note.title || 'Untitled',
+        reason: e.message || 'Database error'
+      });
+    }
+  }
+
+  // If session ID provided, update the session record
+  if (sessionId && typeof sessionId === 'string') {
+    try {
+      const session = db.prepare(
+        'SELECT id, errors_json, error_count FROM import_sessions WHERE id = ? AND user_uuid = ? AND closed_at IS NULL'
+      ).get(sessionId, req.user!.uuid) as any;
+
+      if (session) {
+        const existingErrors = JSON.parse(session.errors_json || '[]');
+        const updatedErrors = [...existingErrors, ...results.errors];
+        db.prepare('UPDATE import_sessions SET errors_json = ?, error_count = ? WHERE id = ?')
+          .run(JSON.stringify(updatedErrors), updatedErrors.length, sessionId);
+      }
+    } catch (err) {
+      console.error('[Notes Bulk] Failed to update session:', err);
+    }
+  }
+
+  audit.log('NOTES_BULK_IMPORT', {
+    actor: req.user!.uuid,
+    actor_type: req.user!.keyType,
+    action: 'bulk_create',
+    outcome: 'success',
+    resource: 'notes',
+    details: { 
+      imported: results.imported, 
+      failed: results.failed, 
+      sessionId: sessionId || null 
+    },
+    ip_address: req.ip,
+    user_agent: req.headers['user-agent'] as string
+  });
+
+  res.status(results.failed > 0 ? 207 : 201).json({
+    success: true,
+    data: results
+  });
 });
 
 export default router;

@@ -1,14 +1,15 @@
 import { Router } from 'express';
-import db from '../database/index.js';
-import { generateId, generateString } from '../utils/crypto.js';
-import { requireAuth, requireHuman, AuthRequest } from '../middleware/auth.js';
-import { createAuditLogger } from '../utils/auditLogger.js';
+import crypto from 'crypto';
+import db from '../database/index';
+import { generateId, generateString } from '../utils/crypto';
+import { requireAuth, requireHuman, AuthRequest } from '../middleware/auth';
+import { createAuditLogger } from '../utils/auditLogger';
 
 const router = Router();
 const audit = createAuditLogger(db);
 
 /** POST /api/lobster-session/start — Generate ephemeral session key */
-router.post('/start', requireAuth, requireHuman, (req, res) => {
+router.post('/start', requireAuth(), requireHuman(), (req, res) => {
   const authReq = req as AuthRequest;
 
   const sessionId = generateId();
@@ -18,20 +19,28 @@ router.post('/start', requireAuth, requireHuman, (req, res) => {
 
   // Set expiration to 15 minutes from now
   const expiryDate = new Date(Date.now() + 15 * 60 * 1000).toISOString();
+  const ephemeralKeyHash = crypto.createHash('sha256').update(ephemeralKey).digest('hex');
 
   try {
     // Insert ephemeral key into lobster_keys
     db.prepare(`
       INSERT INTO lobster_keys (
-        id, user_uuid, name, api_key, permissions,
+        id, user_uuid, name, api_key, api_key_hash, permissions,
         expiration_type, expiration_date, rate_limit, is_active, created_at, last_used
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `).run(
       keyId,
       authReq.user!.uuid,
       '__ephemeral__',
       ephemeralKey,
-      JSON.stringify({ canRead: false, canWrite: true, canEdit: false, canDelete: false }),
+      ephemeralKeyHash,
+      JSON.stringify({ 
+        canRead: true, 
+        canWrite: true, 
+        canEdit: true, 
+        canMove: true, 
+        canDelete: true 
+      }),
       'expires',
       expiryDate,
       null, // unlimited rate_limit on bulk endpoint (already bypassed)
@@ -91,7 +100,7 @@ router.post('/start', requireAuth, requireHuman, (req, res) => {
 });
 
 /** POST /api/lobster-session/:id/close — Close session and revoke key */
-router.post('/:id/close', requireAuth, requireHuman, (req, res) => {
+router.post('/:id/close', requireAuth(), requireHuman(), (req, res) => {
   const authReq = req as AuthRequest;
   const sessionId = req.params.id;
 

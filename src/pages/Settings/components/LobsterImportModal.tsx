@@ -12,7 +12,7 @@
 
 import React, { useState } from 'react';
 import { Upload, X, Copy, CheckCircle, AlertTriangle } from 'lucide-react';
-import { apiFetch } from '../../../lib/apiFetch';
+import { restAdapter } from '../../../lib/api';
 
 type ImportStep = 'idle' | 'session' | 'done';
 
@@ -29,6 +29,7 @@ export function LobsterImportModal({ isOpen, onClose }: LobsterImportModalProps)
   const [error, setError] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
   const [importCount, setImportCount] = useState<number>(0);
+  const [sessionErrors, setSessionErrors] = useState<any[]>([]);
 
   if (!isOpen) return null;
 
@@ -38,6 +39,7 @@ export function LobsterImportModal({ isOpen, onClose }: LobsterImportModalProps)
     setSessionId(null);
     setError(null);
     setImportCount(0);
+    setSessionErrors([]);
   };
 
   const handleClose = () => {
@@ -49,11 +51,10 @@ export function LobsterImportModal({ isOpen, onClose }: LobsterImportModalProps)
     setIsLoading(true);
     setError(null);
     try {
-      const res = await apiFetch('/api/lobster-session/start', { method: 'POST' });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || 'Failed to start session');
-      setSessionId(data.sessionId);
-      setSessionKey(data.sessionKey);
+      const json = await restAdapter.POST('/api/lobster-session/start', {});
+      const { sessionId, sessionKey } = json.data;
+      setSessionId(sessionId);
+      setSessionKey(sessionKey);
       setStep('session');
     } catch (e: any) {
       setError(e.message || 'Failed to start import session');
@@ -67,10 +68,10 @@ export function LobsterImportModal({ isOpen, onClose }: LobsterImportModalProps)
     setIsLoading(true);
     setError(null);
     try {
-      const res = await apiFetch(`/api/lobster-session/${sessionId}/close`, { method: 'POST' });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || 'Failed to close session');
-      setImportCount(data.importedCount ?? 0);
+      const json = await restAdapter.POST(`/api/lobster-session/${sessionId}/close`, {});
+      const { errorCount, errors } = json.data;
+      setImportCount(errorCount);
+      setSessionErrors(errors || []);
       setStep('done');
     } catch (e: any) {
       setError(e.message || 'Failed to close session');
@@ -82,7 +83,7 @@ export function LobsterImportModal({ isOpen, onClose }: LobsterImportModalProps)
   const handleCancel = async () => {
     if (sessionId) {
       try {
-        await apiFetch(`/api/lobster-session/${sessionId}/close`, { method: 'POST' });
+        await restAdapter.POST(`/api/lobster-session/${sessionId}/close`, {});
       } catch { /* best effort */ }
     }
     handleClose();
@@ -104,8 +105,14 @@ export function LobsterImportModal({ isOpen, onClose }: LobsterImportModalProps)
     : 'text-amber-600 dark:text-amber-400';
 
   return (
-    <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-      <div className="bg-white dark:bg-slate-900 border-2 border-amber-500/50 dark:border-amber-500/60 rounded-2xl shadow-2xl w-full max-w-lg overflow-hidden">
+    <div 
+      className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4"
+      onClick={handleCancel}
+    >
+      <div 
+        className="bg-white dark:bg-slate-900 border-2 border-amber-500/50 dark:border-amber-500/60 rounded-2xl shadow-2xl w-full max-w-lg overflow-hidden"
+        onClick={(e) => e.stopPropagation()}
+      >
 
         {/* Header */}
         <div className="flex items-center justify-between px-6 py-5 border-b border-amber-500/30">
@@ -175,13 +182,31 @@ export function LobsterImportModal({ isOpen, onClose }: LobsterImportModalProps)
           )}
 
           {step === 'done' && (
-            <div className="text-center py-4 space-y-3">
+            <div className="text-center py-4 space-y-4">
               <div className="w-14 h-14 bg-amber-100 dark:bg-amber-900/30 rounded-full flex items-center justify-center mx-auto">
                 <CheckCircle className="w-7 h-7 text-amber-600 dark:text-amber-400" />
               </div>
-              <p className="text-slate-700 dark:text-slate-200 font-medium">
-                Import session closed. <span className="text-amber-600 dark:text-amber-400">{importCount} pearl(s)</span> arrived in the reef.
-              </p>
+              <div>
+                <p className="text-slate-700 dark:text-slate-200 font-medium">
+                  Import session closed.
+                </p>
+                {importCount === 0 ? (
+                  <p className="text-sm text-green-600 dark:text-green-400 mt-1">No errors reported by the agent.</p>
+                ) : (
+                  <p className="text-sm text-amber-600 dark:text-amber-400 mt-1">{importCount} error(s) encountered.</p>
+                )}
+              </div>
+
+              {sessionErrors.length > 0 && (
+                <div className="text-left bg-slate-50 dark:bg-slate-800/50 rounded-xl border border-slate-200 dark:border-slate-700 max-h-40 overflow-y-auto p-3 space-y-2">
+                  {sessionErrors.map((err, i) => (
+                    <div key={i} className="text-xs">
+                      <p className="text-slate-600 dark:text-slate-300 font-mono truncate">{err.url}</p>
+                      <p className="text-amber-600 dark:text-amber-400 ml-2">→ {err.reason}</p>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
           )}
 
