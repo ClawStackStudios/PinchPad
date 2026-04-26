@@ -5,6 +5,15 @@ export function getApiBaseUrl(): string {
   return import.meta.env.VITE_API_URL || '';
 }
 
+async function parseErrorResponse(response: Response, endpoint: string, method: string): Promise<never> {
+  let errorMsg = `${method} ${endpoint} failed: ${response.status} ${response.statusText}`;
+  try {
+    const body = await response.json();
+    if (body.error) errorMsg = body.error;
+  } catch { /* non-JSON response — use status text */ }
+  throw new Error(errorMsg);
+}
+
 export const restAdapter = {
   async GET(endpoint: string): Promise<any> {
     const token = localStorage.getItem('cc_api_token');
@@ -25,10 +34,7 @@ export const restAdapter = {
       },
       body: JSON.stringify(body)
     });
-    if (!response.ok) {
-      const err = await response.json();
-      throw new Error(err.error || `POST ${endpoint} failed: ${response.statusText}`);
-    }
+    if (!response.ok) return parseErrorResponse(response, endpoint, 'POST');
     return response.json();
   },
 
@@ -42,7 +48,7 @@ export const restAdapter = {
       },
       body: JSON.stringify(body)
     });
-    if (!response.ok) throw new Error(`PUT ${endpoint} failed: ${response.statusText}`);
+    if (!response.ok) return parseErrorResponse(response, endpoint, 'PUT');
     return response.json();
   },
 
@@ -56,7 +62,7 @@ export const restAdapter = {
       },
       body: JSON.stringify(body)
     });
-    if (!response.ok) throw new Error(`PATCH ${endpoint} failed: ${response.statusText}`);
+    if (!response.ok) return parseErrorResponse(response, endpoint, 'PATCH');
     return response.json();
   },
 

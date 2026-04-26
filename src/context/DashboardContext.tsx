@@ -2,6 +2,7 @@ import React, { createContext, useContext, useState } from 'react';
 import { Note } from '../services/noteService';
 
 interface DashboardContextType {
+  isAddPearlOpen: boolean;
   openAddPearl: (editNote?: Note) => void;
   closeAddPearl: () => void;
   lastCreatedNote: Note | null;
@@ -37,6 +38,7 @@ export function DashboardProvider({ children }: { children: React.ReactNode }) {
   return (
     <DashboardContext.Provider
       value={{
+        isAddPearlOpen,
         openAddPearl,
         closeAddPearl,
         lastCreatedNote,

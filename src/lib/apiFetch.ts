@@ -1,8 +1,10 @@
 /**
- * API Fetch Wrapper
+ * apiFetch — PinchPad©™
  *
- * Wraps the standard fetch() and intercepts 401 responses.
- * When a 401 occurs, dispatches 'auth:expired' event so useAuth can auto-logout.
+ * A specialized fetch wrapper that automatically handles
+ * authentication errors and common API patterns.
+ *
+ * Maintained by CrustAgent©™
  */
 
 export async function apiFetch(url: string, options: RequestInit = {}): Promise<Response> {

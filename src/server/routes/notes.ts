@@ -65,6 +65,7 @@ router.post('/', requireAuth(), requirePermission('canWrite'), validateBody(Note
     const newNote = db.prepare('SELECT * FROM notes WHERE id = ? AND user_uuid = ?').get(id, req.user!.uuid);
     res.status(201).json({ data: newNote });
   } catch (error) {
+    console.error('[Notes POST] Error:', error);
     res.status(500).json({ error: 'Failed to create note' });
   }
 });
@@ -104,6 +105,7 @@ router.put('/:id', requireAuth(), requirePermission('canEdit'), validateBody(Not
     const updatedNote = db.prepare('SELECT * FROM notes WHERE id = ? AND user_uuid = ?').get(id, req.user!.uuid);
     res.json({ data: updatedNote });
   } catch (error) {
+    console.error('[Notes PUT] Error:', error);
     res.status(500).json({ error: 'Failed to update note' });
   }
 });
