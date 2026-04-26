@@ -8,7 +8,6 @@ import { Register } from './pages/Auth/Register';
 import { Login } from './pages/Auth/Login';
 import { Dashboard } from './pages/Dashboard/Dashboard';
 import { Notes } from './pages/Pot/Notes';
-import { Agents } from './pages/Agents/Agents';
 import { Settings } from './pages/Settings/Settings';
 import { Loader2 } from 'lucide-react';
 
@@ -52,8 +51,8 @@ function AppContent() {
     );
   }
 
-  const hideNavbar = ['/login', '/register', '/dashboard', '/settings', '/notes', '/agents'].includes(location.pathname);
-  const isDashboard = ['/dashboard', '/notes', '/settings', '/agents'].includes(location.pathname);
+  const hideNavbar = ['/login', '/register', '/dashboard', '/settings', '/notes'].includes(location.pathname);
+  const isDashboard = ['/dashboard', '/notes', '/settings'].includes(location.pathname);
 
   return (
     <div className="min-h-screen bg-white dark:bg-[#0f1419] text-slate-900 dark:text-[#faf8f6] font-sans transition-colors duration-500">
@@ -73,12 +72,6 @@ function AppContent() {
         <Route path="/notes" element={
           <ProtectedRoute>
             <DashboardLayout><Notes /></DashboardLayout>
-          </ProtectedRoute>
-        } />
-
-        <Route path="/agents" element={
-          <ProtectedRoute>
-            <DashboardLayout><Agents /></DashboardLayout>
           </ProtectedRoute>
         } />
 

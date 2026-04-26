@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
 import { X, Loader2, Star } from 'lucide-react';
-import { useAuth } from '../../context/AuthContext';
 import { noteService, Note } from '../../services/noteService';
 
 interface AddPearlModalProps {
@@ -11,7 +10,6 @@ interface AddPearlModalProps {
 }
 
 export function AddPearlModal({ isOpen, onClose, onSuccess, editNote }: AddPearlModalProps) {
-  const { shellKey } = useAuth();
   const [title, setTitle] = useState('');
   const [content, setContent] = useState('');
   const [starred, setStarred] = useState(false);
@@ -47,11 +45,6 @@ export function AddPearlModal({ isOpen, onClose, onSuccess, editNote }: AddPearl
       return;
     }
 
-    if (!shellKey) {
-      setError('Encryption key is missing. Please re-enter your ClawKey.');
-      return;
-    }
-
     setIsSubmitting(true);
     setError('');
 
@@ -59,11 +52,9 @@ export function AddPearlModal({ isOpen, onClose, onSuccess, editNote }: AddPearl
       let note: Note;
 
       if (editNote) {
-        // Update existing note
-        note = await noteService.update(editNote.id, title.trim(), content.trim(), shellKey, starred, pinned);
+        note = await noteService.update(editNote.id, title.trim(), content.trim(), starred, pinned);
       } else {
-        // Create new note
-        note = await noteService.create(title.trim(), content.trim(), shellKey, starred, pinned);
+        note = await noteService.create(title.trim(), content.trim(), starred, pinned);
       }
 
       onSuccess(note);

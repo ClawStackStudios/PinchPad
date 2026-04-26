@@ -1,30 +1,14 @@
 import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
 import {
-  ArrowLeft,
-  User,
-  Palette,
-  Shield,
-  Database,
-  Upload,
-  Save,
-  Download,
-  LogOut,
-  Sun,
-  Moon,
-  Monitor,
-  List,
-  LayoutGrid,
-  Key,
-  Plus,
-  FileText,
-  FileSpreadsheet,
+  User, Palette, Shield, Database, Upload, Save, Download,
+  Sun, Moon, Monitor, List, LayoutGrid, FileText, FileSpreadsheet,
   CheckCircle,
-  Loader2
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { useViewTransitionTheme } from '../../components/Theme/ThemeToggle';
-import { InteractiveBrand } from '../../components/Branding/InteractiveBrand';
+import { useSettings } from '../../context/SettingsContext';
+import { LobsterKeysTab } from './components/LobsterKeysTab';
+import { LobsterImportModal } from './components/LobsterImportModal';
 import { clsx, type ClassValue } from 'clsx';
 import { twMerge } from 'tailwind-merge';
 
@@ -32,20 +16,11 @@ function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
 }
 
-type TabId = 'profile' | 'appearance' | 'agents' | 'import-export';
-
-const SIDEBAR_TABS: { id: TabId; label: string; icon: React.ElementType }[] = [
-  { id: 'profile', label: 'Profile', icon: User },
-  { id: 'appearance', label: 'Appearance', icon: Palette },
-  { id: 'agents', label: 'Lobster Permits', icon: Shield },
-  { id: 'import-export', label: 'Import / Export', icon: Database },
-];
-
 export function Settings() {
-  const [activeTab, setActiveTab] = useState<TabId>('profile');
-  const navigate = useNavigate();
-  const { lobster, clawOut } = useAuth();
+  const { activeTab } = useSettings();
+  const { lobster } = useAuth();
   const { themeSetting, moltTheme } = useViewTransitionTheme();
+  const [lobsterImportOpen, setLobsterImportOpen] = useState(false);
 
   // Set page title
   React.useEffect(() => {
@@ -149,35 +124,14 @@ export function Settings() {
   };
 
   return (
-    <div className="bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-50 antialiased p-6">
+    <div className="bg-slate-50 dark:bg-[#0f1419] text-slate-900 dark:text-slate-50 antialiased p-6 min-h-full">
+      <div className="max-w-7xl mx-auto">
+        <header className="mb-8">
+          <h1 className="text-3xl font-bold text-slate-900 dark:text-white">Settings</h1>
+          <p className="text-slate-500 dark:text-slate-400 mt-1">Configure your PinchPad experience and manage your Lobster identity.</p>
+        </header>
 
-
-      <div className="max-w-6xl mx-auto p-6">
-        <div className="flex gap-6 flex-col md:flex-row">
-
-          {/* ── Sidebar ──────────────────────────────────────────────────── */}
-          <aside className="w-full md:w-64 flex-shrink-0">
-            <nav className="bg-white dark:bg-slate-900 rounded-xl border-2 border-amber-500/30 dark:border-amber-500/50 p-2 space-y-1 md:sticky md:top-24 transition-colors">
-              {SIDEBAR_TABS.map(({ id, label, icon: Icon }) => (
-                <button
-                  key={id}
-                  onClick={() => setActiveTab(id)}
-                  className={cn(
-                    'w-full flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium transition-colors border',
-                    activeTab === id
-                      ? 'bg-amber-50 dark:bg-amber-950 text-amber-700 dark:text-amber-400 border-amber-200 dark:border-amber-800'
-                      : 'text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 border-transparent'
-                  )}
-                >
-                  <Icon className="w-4 h-4" />
-                  {label}
-                </button>
-              ))}
-            </nav>
-          </aside>
-
-          {/* ── Main Content ──────────────────────────────────────────────── */}
-          <main className="flex-1 space-y-6">
+        <main className="space-y-6">
 
             {/* ════════════════════════════════════════════════════════════ */}
             {/* ── TAB: Profile ─────────────────────────────────────────── */}
@@ -399,39 +353,12 @@ export function Settings() {
             )}
 
             {/* ════════════════════════════════════════════════════════════ */}
-            {/* ── TAB: Lobster Permits ─────────────────────────────────── */}
+            {/* ── TAB: Lobster Keys ────────────────────────────────────── */}
             {/* ════════════════════════════════════════════════════════════ */}
             {activeTab === 'agents' && (
-              <>
-                <div className="flex items-center justify-between mt-2 mb-4">
-                  <div>
-                    <h3 className="text-lg font-semibold text-amber-600 dark:text-amber-400">Lobster Permits©™</h3>
-                    <p className="text-sm text-slate-600 dark:text-slate-300">Manage ClawKeys©™ for external agents and automation</p>
-                  </div>
-                  <button
-                    onClick={() => navigate('/agents')}
-                    className="inline-flex items-center justify-center px-4 py-2 bg-slate-900 dark:bg-slate-100 hover:bg-slate-800 dark:hover:bg-slate-200 text-white dark:text-slate-900 text-sm font-medium rounded-md transition-colors gap-2"
-                  >
-                    <Plus className="w-4 h-4" />
-                    Manage Permits
-                  </button>
-                </div>
-
-                <div className="bg-white dark:bg-slate-900 rounded-xl border-2 border-amber-500/20 border-dashed transition-colors">
-                  <div className="p-12 flex flex-col items-center justify-center">
-                    <Key className="w-12 h-12 text-slate-400 mb-4" />
-                    <h4 className="text-lg font-medium text-slate-700 dark:text-slate-300 mb-2">Lobster Permits</h4>
-                    <p className="text-sm text-slate-500 text-center mb-4">Hatch a ClawKey©™ to allow external agents to interact with your Pearls</p>
-                    <button
-                      onClick={() => navigate('/agents')}
-                      className="inline-flex items-center justify-center px-4 py-2 border border-slate-300 dark:border-slate-700 text-sm font-medium rounded-md text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
-                    >
-                      <Plus className="w-4 h-4 mr-2" />
-                      Go to Lobster Permits
-                    </button>
-                  </div>
-                </div>
-              </>
+              <div className="bg-white dark:bg-slate-900 rounded-xl border-2 border-amber-500/30 dark:border-amber-500/50 shadow-sm transition-colors p-6">
+                <LobsterKeysTab />
+              </div>
             )}
 
             {/* ════════════════════════════════════════════════════════════ */}
@@ -439,6 +366,23 @@ export function Settings() {
             {/* ════════════════════════════════════════════════════════════ */}
             {activeTab === 'import-export' && (
               <>
+                {/* Lobster Import */}
+                <div className="bg-white dark:bg-slate-900 rounded-xl border-2 border-amber-500/30 dark:border-amber-500/50 shadow-sm transition-colors">
+                  <div className="p-6 border-b border-slate-200 dark:border-slate-800">
+                    <h3 className="text-lg font-semibold text-amber-600 dark:text-amber-400 mb-1">Lobster Import</h3>
+                    <p className="text-sm text-slate-500 dark:text-slate-400">Bulk import Pearls via agent key — rate limiting suspended for <span className="font-mono text-xs">lb-</span> Lobster Keys</p>
+                  </div>
+                  <div className="p-6">
+                    <button
+                      onClick={() => setLobsterImportOpen(true)}
+                      className="inline-flex items-center gap-2 px-4 py-2 bg-amber-600 hover:bg-amber-700 text-white text-sm font-bold rounded-lg shadow-lg shadow-amber-500/20 transition-all"
+                    >
+                      <Upload className="w-4 h-4" />
+                      Open Lobster Import
+                    </button>
+                  </div>
+                </div>
+
                 {/* Import */}
                 <div className="bg-white dark:bg-slate-900 rounded-xl border-2 border-amber-500/30 dark:border-amber-500/50 shadow-sm transition-colors">
                   <div className="p-6 border-b border-slate-200 dark:border-slate-800">
@@ -533,7 +477,11 @@ export function Settings() {
 
           </main>
         </div>
-      </div>
+
+      <LobsterImportModal
+        isOpen={lobsterImportOpen}
+        onClose={() => setLobsterImportOpen(false)}
+      />
     </div>
   );
 }

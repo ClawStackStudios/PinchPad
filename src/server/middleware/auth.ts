@@ -17,6 +17,7 @@ export interface AuthRequest extends Request {
     type: 'human' | 'lobster';
     id: string;
   };
+  db?: any; // Injected in tests; production uses singleton
 }
 
 export const requireAuth = () => {

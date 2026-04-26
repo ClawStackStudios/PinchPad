@@ -116,7 +116,8 @@ describe('Auth Routes', () => {
           type: 'human'
         });
 
-      expect(response.status).toBe(401);
+      // Non-existent user returns 404 "Identity not registered on this node"
+      expect(response.status).toBe(404);
     });
   });
 
