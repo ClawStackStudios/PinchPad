@@ -16,6 +16,7 @@ import db from './src/server/database/index';
 import authRoutes from './src/server/routes/auth';
 import notesRoutes from './src/server/routes/notes';
 import agentsRoutes from './src/server/routes/agents';
+import lobsterSessionRoutes from './src/server/routes/lobsterSession';
 import { lobsterRateLimiter } from './src/server/middleware/rateLimiter';
 
 async function startServer() {
@@ -58,6 +59,7 @@ async function startServer() {
   app.use('/api/auth', authRoutes);
   app.use('/api/notes', lobsterRateLimiter, notesRoutes);
   app.use('/api/agents', agentsRoutes);
+  app.use('/api/lobster-session', lobsterSessionRoutes);
 
   app.get('/api/health', (req, res) => {
     res.json({ 

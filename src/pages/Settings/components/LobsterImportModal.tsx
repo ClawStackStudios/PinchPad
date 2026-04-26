@@ -49,7 +49,7 @@ export function LobsterImportModal({ isOpen, onClose }: LobsterImportModalProps)
     setIsLoading(true);
     setError(null);
     try {
-      const res = await apiFetch('/api/import/session', { method: 'POST' });
+      const res = await apiFetch('/api/lobster-session/start', { method: 'POST' });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Failed to start session');
       setSessionId(data.sessionId);
@@ -67,7 +67,7 @@ export function LobsterImportModal({ isOpen, onClose }: LobsterImportModalProps)
     setIsLoading(true);
     setError(null);
     try {
-      const res = await apiFetch(`/api/import/session/${sessionId}`, { method: 'DELETE' });
+      const res = await apiFetch(`/api/lobster-session/${sessionId}/close`, { method: 'POST' });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Failed to close session');
       setImportCount(data.importedCount ?? 0);
@@ -82,7 +82,7 @@ export function LobsterImportModal({ isOpen, onClose }: LobsterImportModalProps)
   const handleCancel = async () => {
     if (sessionId) {
       try {
-        await apiFetch(`/api/import/session/${sessionId}`, { method: 'DELETE' });
+        await apiFetch(`/api/lobster-session/${sessionId}/close`, { method: 'POST' });
       } catch { /* best effort */ }
     }
     handleClose();

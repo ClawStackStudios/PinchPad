@@ -150,12 +150,30 @@ export function LobsterKeyCard({ lobster, onRevoke, onDelete }: LobsterKeyCardPr
 
       {/* ── Meta ────────────────────────────────────────────────────────── */}
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-4 text-sm">
-        <div className="flex items-center gap-2 text-slate-600 dark:text-slate-300">
-          <Shield className="w-4 h-4 text-slate-400" />
-          <span>Permissions:</span>
-          <span className="font-medium text-slate-900 dark:text-slate-50">
-            {permKeys.length > 0 ? permKeys.map((k) => k.replace('can', '')).join(', ') : 'None'}
-          </span>
+        <div className="flex items-start gap-2 text-slate-600 dark:text-slate-300 sm:col-span-2">
+          <Shield className="w-4 h-4 text-slate-400 mt-0.5 flex-shrink-0" />
+          <span className="mt-0.5">Permissions:</span>
+          <div className="flex flex-wrap gap-1.5 ml-1">
+            {permKeys.length > 0 ? (
+              permKeys.map((k) => {
+                const permName = k.replace('can', '');
+                let colorClass = 'bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300';
+                if (permName === 'Read') colorClass = 'bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300';
+                if (permName === 'Write') colorClass = 'bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-300';
+                if (permName === 'Edit') colorClass = 'bg-orange-100 text-orange-700 dark:bg-orange-900/40 dark:text-orange-300';
+                if (permName === 'Move') colorClass = 'bg-purple-100 text-purple-700 dark:bg-purple-900/40 dark:text-purple-300';
+                if (permName === 'Delete') colorClass = 'bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300';
+                
+                return (
+                  <span key={k} className={cn("px-2 py-0.5 text-xs font-medium rounded-full", colorClass)}>
+                    {permName}
+                  </span>
+                );
+              })
+            ) : (
+              <span className="font-medium text-slate-900 dark:text-slate-50 mt-0.5">None</span>
+            )}
+          </div>
         </div>
         <div className="flex items-center gap-2 text-slate-600 dark:text-slate-300">
           <Clock className="w-4 h-4 text-slate-400" />

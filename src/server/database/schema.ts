@@ -47,6 +47,18 @@ export function initializeSchema(db: Database) {
       FOREIGN KEY(user_uuid) REFERENCES users(uuid) ON DELETE CASCADE
     );
 
+    CREATE TABLE IF NOT EXISTS import_sessions (
+      id TEXT PRIMARY KEY,
+      user_uuid TEXT NOT NULL,
+      key_id TEXT NOT NULL,
+      started_at TEXT NOT NULL,
+      closed_at TEXT,
+      error_count INTEGER DEFAULT 0,
+      errors_json TEXT DEFAULT '[]',
+      FOREIGN KEY(user_uuid) REFERENCES users(uuid) ON DELETE CASCADE,
+      FOREIGN KEY(key_id) REFERENCES lobster_keys(id) ON DELETE CASCADE
+    );
+
     CREATE TABLE IF NOT EXISTS audit_logs (
       id         INTEGER PRIMARY KEY AUTOINCREMENT,
       timestamp  TEXT NOT NULL,

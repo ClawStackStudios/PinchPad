@@ -19,11 +19,22 @@ function cn(...inputs: any[]) { return twMerge(clsx(inputs)); }
 
 type WizardStep = 'details' | 'permissions' | 'expiration' | 'review' | 'generated';
 
+export type PermissionLevel = "READ" | "WRITE" | "EDIT" | "MOVE" | "FULL" | "CUSTOM";
+
+export interface AgentPermission {
+  level: PermissionLevel;
+  canRead: boolean;
+  canWrite: boolean;
+  canEdit: boolean;
+  canMove: boolean;
+  canDelete: boolean;
+}
+
 interface FormData {
   name: string;
   description: string;
-  canRead: boolean;
-  canWrite: boolean;
+  permissionLevel: PermissionLevel;
+  customPermissions?: AgentPermission;
   expirationType: 'never' | '30d' | '60d' | '90d' | 'custom';
   customExpirationDate: string;
   rateLimit: number;
@@ -36,8 +47,29 @@ const STEP_LABELS: Record<WizardStep, string> = {
 };
 
 const INITIAL_FORM: FormData = {
-  name: '', description: '', canRead: true, canWrite: false,
+  name: '', description: '', permissionLevel: 'READ',
+  customPermissions: { level: 'CUSTOM', canRead: false, canWrite: false, canEdit: false, canMove: false, canDelete: false },
   expirationType: 'never', customExpirationDate: '', rateLimit: 0,
+};
+
+export const PERMISSION_CONFIGS: Record<PermissionLevel, AgentPermission> = {
+  READ: { level: "READ", canRead: true, canWrite: false, canEdit: false, canMove: false, canDelete: false },
+  WRITE: { level: "WRITE", canRead: true, canWrite: true, canEdit: false, canMove: false, canDelete: false },
+  EDIT: { level: "EDIT", canRead: true, canWrite: true, canEdit: true, canMove: false, canDelete: false },
+  MOVE: { level: "MOVE", canRead: true, canWrite: true, canEdit: true, canMove: true, canDelete: false },
+  FULL: { level: "FULL", canRead: true, canWrite: true, canEdit: true, canMove: true, canDelete: true },
+  CUSTOM: { level: "CUSTOM", canRead: false, canWrite: false, canEdit: false, canMove: false, canDelete: false },
+};
+
+export const PERMISSION_INFO: Record<PermissionLevel, {
+  label: string; description: string; color: string; bgColor: string; borderColor: string; icon: string;
+}> = {
+  READ: { label: "Read Only", description: "Can read bookmarks and folders. Cannot create, modify, or delete.", color: "text-blue-600", bgColor: "bg-blue-50 dark:bg-blue-900/20", borderColor: "border-blue-200 dark:border-blue-800", icon: "📖" },
+  WRITE: { label: "Write", description: "Can create new bookmarks and folders. Cannot modify or delete.", color: "text-green-600", bgColor: "bg-green-50 dark:bg-green-900/20", borderColor: "border-green-200 dark:border-green-800", icon: "✏️" },
+  EDIT: { label: "Edit", description: "Can read, write, and modify bookmarks/folders. Cannot delete.", color: "text-orange-600", bgColor: "bg-orange-50 dark:bg-orange-900/20", borderColor: "border-orange-200 dark:border-orange-800", icon: "🔧" },
+  MOVE: { label: "Move", description: "Can read, write, edit, and move items. Cannot permanently delete.", color: "text-purple-600", bgColor: "bg-purple-50 dark:bg-purple-900/20", borderColor: "border-purple-200 dark:border-purple-800", icon: "📁" },
+  FULL: { label: "Full Access", description: "Complete control over all bookmark operations.", color: "text-red-600", bgColor: "bg-red-50 dark:bg-red-900/20", borderColor: "border-red-200 dark:border-red-800", icon: "🔑" },
+  CUSTOM: { label: "Custom", description: "Granular control over specific actions.", color: "text-slate-700 dark:text-slate-300", bgColor: "bg-slate-50 dark:bg-slate-800/50", borderColor: "border-slate-300 dark:border-slate-600", icon: "⚙️" },
 };
 
 interface LobsterKeyWizardProps {
@@ -66,7 +98,13 @@ export function LobsterKeyWizard({ isOpen, onClose, onKeyGenerated }: LobsterKey
 
   const isStepValid = (): boolean => {
     if (step === 'details') return form.name.trim().length >= 2;
-    if (step === 'permissions') return form.canRead || form.canWrite;
+    if (step === 'permissions') {
+      if (form.permissionLevel === 'CUSTOM') {
+        const c = form.customPermissions;
+        return !!c && (c.canRead || c.canWrite || c.canEdit || c.canMove || c.canDelete);
+      }
+      return true;
+    }
     if (step === 'expiration') {
       if (form.expirationType === 'custom') return form.customExpirationDate.length > 0;
       return true;
@@ -91,7 +129,13 @@ export function LobsterKeyWizard({ isOpen, onClose, onKeyGenerated }: LobsterKey
     setIsGenerating(true);
     setError(null);
     try {
-      const permissions = { canRead: form.canRead, canWrite: form.canWrite };
+      let permissions: Record<string, boolean> = {};
+      if (form.permissionLevel === 'CUSTOM' && form.customPermissions) {
+        permissions = { ...form.customPermissions };
+      } else {
+        permissions = { ...PERMISSION_CONFIGS[form.permissionLevel] };
+      }
+
       const expirationDate = form.expirationType === 'custom' ? form.customExpirationDate
         : form.expirationType === 'never' ? null
         : new Date(Date.now() + parseInt(form.expirationType) * 24 * 60 * 60 * 1000).toISOString();
@@ -219,33 +263,83 @@ export function LobsterKeyWizard({ isOpen, onClose, onKeyGenerated }: LobsterKey
           {/* ── Permissions ───────────────────────────────────────────────── */}
           {step === 'permissions' && (
             <div className="space-y-4">
-              <p className="text-sm text-slate-600 dark:text-slate-400">Select what this Lobster Key is allowed to do.</p>
-              {[
-                { key: 'canRead' as const, label: 'Read', desc: 'Agent can read and list your Pearls', icon: '👁️' },
-                { key: 'canWrite' as const, label: 'Write', desc: 'Agent can create and update Pearls', icon: '✍️' },
-              ].map(({ key, label, desc, icon }) => (
-                <button
-                  key={key}
-                  onClick={() => setForm(f => ({ ...f, [key]: !f[key] }))}
-                  className={cn(
-                    'w-full p-4 rounded-xl border-2 text-left transition-all',
-                    form[key]
-                      ? 'border-amber-500 bg-amber-50 dark:bg-amber-900/20'
-                      : 'border-slate-200 dark:border-slate-700 hover:border-slate-300 dark:hover:border-slate-600',
-                  )}
-                >
-                  <div className="flex items-center gap-3">
-                    <span className="text-xl">{icon}</span>
-                    <div className="flex-1">
-                      <div className="flex items-center gap-2">
-                        <span className={cn('font-semibold text-sm', form[key] ? 'text-amber-700 dark:text-amber-400' : 'text-slate-700 dark:text-slate-300')}>{label}</span>
-                        {form[key] && <Check className="w-4 h-4 text-amber-600" />}
+              <p className="text-sm text-slate-600 dark:text-slate-400">
+                Select the permission level for this agent. Choose the minimum level required.
+              </p>
+              <div className="grid grid-cols-1 gap-3">
+                {(Object.keys(PERMISSION_INFO) as PermissionLevel[]).map((level) => {
+                  const info = PERMISSION_INFO[level];
+                  const isSelected = form.permissionLevel === level;
+                  
+                  return (
+                    <div
+                      key={level}
+                      className={cn(
+                        'cursor-pointer transition-all rounded-xl p-4 border-2',
+                        isSelected
+                          ? `${info.bgColor} ${info.borderColor} ring-1 ring-amber-500/50 shadow-sm`
+                          : "border-slate-200 dark:border-slate-700 hover:border-slate-300 dark:hover:border-slate-600 bg-white dark:bg-slate-800"
+                      )}
+                      onClick={() => setForm(f => ({ ...f, permissionLevel: level }))}
+                    >
+                      <div className="flex items-start gap-4">
+                        <div className={cn('text-2xl', isSelected ? "" : "opacity-50 grayscale transition-all")}>
+                          {info.icon}
+                        </div>
+                        <div className="flex-1">
+                          <div className="flex items-center gap-2">
+                            <h3 className={cn('font-semibold', info.color)}>
+                              {info.label}
+                            </h3>
+                            {isSelected && (
+                              <Check className="w-5 h-5 text-amber-500 ml-auto" />
+                            )}
+                          </div>
+                          <p className="text-sm text-slate-600 dark:text-slate-400 mt-1">
+                            {info.description}
+                          </p>
+                          <div className="flex flex-wrap gap-2 mt-3">
+                            {PERMISSION_CONFIGS[level].canRead && <span className="px-2 py-1 bg-blue-100 dark:bg-blue-900/40 text-blue-700 dark:text-blue-300 text-xs font-medium rounded-full">Read</span>}
+                            {PERMISSION_CONFIGS[level].canWrite && <span className="px-2 py-1 bg-green-100 dark:bg-green-900/40 text-green-700 dark:text-green-300 text-xs font-medium rounded-full">Write</span>}
+                            {PERMISSION_CONFIGS[level].canEdit && <span className="px-2 py-1 bg-orange-100 dark:bg-orange-900/40 text-orange-700 dark:text-orange-300 text-xs font-medium rounded-full">Edit</span>}
+                            {PERMISSION_CONFIGS[level].canMove && <span className="px-2 py-1 bg-purple-100 dark:bg-purple-900/40 text-purple-700 dark:text-purple-300 text-xs font-medium rounded-full">Move</span>}
+                            {PERMISSION_CONFIGS[level].canDelete && <span className="px-2 py-1 bg-red-100 dark:bg-red-900/40 text-red-700 dark:text-red-300 text-xs font-medium rounded-full">Delete</span>}
+                          </div>
+                        </div>
                       </div>
-                      <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">{desc}</p>
                     </div>
+                  );
+                })}
+              </div>
+
+              {form.permissionLevel === "CUSTOM" && form.customPermissions && (
+                <div className="mt-4 p-5 bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-xl space-y-4">
+                  <h4 className="font-semibold text-slate-700 dark:text-slate-200 text-sm">Custom Permissions</h4>
+                  <div className="grid grid-cols-2 gap-3">
+                    {(["canRead", "canWrite", "canEdit", "canMove", "canDelete"] as const).map((flag) => (
+                      <label key={flag} className="flex items-center gap-3 cursor-pointer">
+                        <input
+                          type="checkbox"
+                          checked={form.customPermissions![flag]}
+                          onChange={(e) =>
+                            setForm(f => ({
+                              ...f,
+                              customPermissions: {
+                                ...f.customPermissions!,
+                                [flag]: e.target.checked,
+                              },
+                            }))
+                          }
+                          className="w-5 h-5 rounded border-slate-300 text-amber-500 focus:ring-amber-500/20 bg-white dark:bg-slate-900"
+                        />
+                        <span className="text-sm font-medium text-slate-700 dark:text-slate-300 capitalize">
+                          {flag.replace("can", "")}
+                        </span>
+                      </label>
+                    ))}
                   </div>
-                </button>
-              ))}
+                </div>
+              )}
             </div>
           )}
 
@@ -326,7 +420,7 @@ export function LobsterKeyWizard({ isOpen, onClose, onKeyGenerated }: LobsterKey
                 {[
                   { label: 'Name', value: form.name },
                   { label: 'Description', value: form.description || '—' },
-                  { label: 'Permissions', value: [form.canRead && 'Read', form.canWrite && 'Write'].filter(Boolean).join(', ') || 'None' },
+                  { label: 'Permissions', value: form.permissionLevel === 'CUSTOM' ? 'Custom' : PERMISSION_INFO[form.permissionLevel].label },
                   { label: 'Expiration', value: formatExpirationDate() },
                   { label: 'Rate Limit', value: form.rateLimit === 0 ? 'Unlimited' : `${form.rateLimit} req/min` },
                 ].map(({ label, value }) => (

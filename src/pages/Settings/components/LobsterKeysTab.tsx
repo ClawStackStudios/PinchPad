@@ -16,6 +16,7 @@ import { Plus, Key, Loader2 } from 'lucide-react';
 import { agentService, LobsterKey } from '../../../services/agentService';
 import { LobsterKeyCard } from './LobsterKeyCard';
 import { LobsterKeyWizard } from './LobsterKeyWizard';
+import { ConfirmModal } from '../../../components/Modals/ConfirmModal';
 
 export function LobsterKeysTab() {
   const [keys, setKeys] = useState<LobsterKey[]>([]);
@@ -42,13 +43,14 @@ export function LobsterKeysTab() {
     setKeys((prev) => prev.map((k) => k.id === id ? { ...k, is_active: 0 } : k));
   };
 
-  const handleDelete = async (id: string) => {
-    if (!window.confirm('Delete this Lobster Key permanently? Any agents using it will lose access.')) return;
+  const executeDelete = async (id: string) => {
     try {
       await agentService.revoke(id); // revoke acts as delete for now
       setKeys((prev) => prev.filter((k) => k.id !== id));
     } catch (err) {
       console.error('[LobsterKeysTab] Delete failed:', err);
+    } finally {
+      setConfirmDeleteId(null);
     }
   };
 
@@ -109,17 +111,28 @@ export function LobsterKeysTab() {
               key={lobster.id}
               lobster={lobster}
               onRevoke={handleRevoke}
-              onDelete={handleDelete}
+              onDelete={setConfirmDeleteId}
             />
           ))}
         </div>
       )}
 
-      {/* Wizard */}
       <LobsterKeyWizard
         isOpen={isWizardOpen}
         onClose={() => setIsWizardOpen(false)}
         onKeyGenerated={handleKeyGenerated}
+      />
+
+      {/* Confirm Delete Modal */}
+      <ConfirmModal
+        isOpen={!!confirmDeleteId}
+        onClose={() => setConfirmDeleteId(null)}
+        onConfirm={() => { if (confirmDeleteId) executeDelete(confirmDeleteId); }}
+        title="Delete Lobster Key?"
+        message="Are you sure you want to delete this Lobster Key? Any external agents using it will permanently lose access."
+        confirmLabel="Delete Key"
+        cancelLabel="Keep it"
+        variant="danger"
       />
     </div>
   );

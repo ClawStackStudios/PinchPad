@@ -11,7 +11,7 @@ router.get('/', requireAuth(), requireHuman(), (req: any, res: Response) => {
   const db = req.db || singletonDb;
   try {
     const keys = db.prepare(`
-      SELECT id, name, permissions, expiration_type, expiration_date, rate_limit, is_active, created_at, last_used 
+      SELECT id, name, api_key, permissions, expiration_type, expiration_date, rate_limit, is_active, created_at, last_used 
       FROM lobster_keys 
       WHERE user_uuid = ? 
       ORDER BY created_at DESC
