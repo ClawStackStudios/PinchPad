@@ -47,6 +47,18 @@ export function initializeSchema(db: Database) {
       FOREIGN KEY(user_uuid) REFERENCES users(uuid) ON DELETE CASCADE
     );
 
+    CREATE TABLE IF NOT EXISTS pearl_photos (
+      id TEXT PRIMARY KEY,
+      pearl_id TEXT NOT NULL,
+      user_uuid TEXT NOT NULL,
+      filename TEXT NOT NULL,
+      mime_type TEXT NOT NULL,
+      data BLOB NOT NULL,
+      created_at TEXT NOT NULL,
+      FOREIGN KEY(pearl_id) REFERENCES notes(id) ON DELETE CASCADE,
+      FOREIGN KEY(user_uuid) REFERENCES users(uuid) ON DELETE CASCADE
+    );
+
     CREATE TABLE IF NOT EXISTS import_sessions (
       id TEXT PRIMARY KEY,
       user_uuid TEXT NOT NULL,

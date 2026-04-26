@@ -1,6 +1,7 @@
 import { Router, Response } from 'express';
 import crypto from 'crypto';
 import singletonDb from '../database/index';
+import JSZip from 'jszip';
 import { requireAuth, requirePermission } from '../middleware/auth';
 import { validateBody } from '../middleware/validate';
 import { NoteSchemas } from '../validation/schemas';
@@ -11,9 +12,23 @@ const router = Router();
 router.get('/', requireAuth(), requirePermission('canRead'), (req: any, res: Response) => {
   const db = req.db || singletonDb;
   try {
-    const notes = db.prepare('SELECT * FROM notes WHERE user_uuid = ? ORDER BY updated_at DESC').all(req.user!.uuid);
-    res.json({ data: notes });
+    const notes = db.prepare('SELECT * FROM notes WHERE user_uuid = ? ORDER BY updated_at DESC').all(req.user!.uuid) as any[];
+    
+    // Fetch photos for each note
+    const notesWithPhotos = notes.map(note => {
+      const photos = db.prepare('SELECT id, filename, mime_type FROM pearl_photos WHERE pearl_id = ?').all(note.id) as any[];
+      return {
+        ...note,
+        photos: photos.map(p => ({
+          ...p,
+          url: `/api/photos/${p.id}`
+        }))
+      };
+    });
+
+    res.json({ data: notesWithPhotos });
   } catch (error) {
+    console.error('[Notes] Fetch error:', error);
     res.status(500).json({ error: 'Failed to fetch notes' });
   }
 });
@@ -261,6 +276,59 @@ router.post('/bulk', requireAuth(), requirePermission('canWrite'), (req: any, re
     success: true,
     data: results
   });
+});
+
+/** GET /api/notes/export — Export all pearls as a ZIP or MD */
+router.get('/export', requireAuth(), async (req: any, res: Response) => {
+  const db = req.db || singletonDb;
+  const format = req.query.format || 'json';
+  const notes = db.prepare('SELECT * FROM notes WHERE user_uuid = ?').all(req.user!.uuid) as any[];
+
+  if (notes.length === 0) {
+    return res.status(404).json({ error: 'No pearls found to export' });
+  }
+
+  try {
+    const zip = new JSZip();
+    const photosFolder = zip.folder('photos');
+    let hasPhotos = false;
+
+    for (const note of notes) {
+      const photos = db.prepare('SELECT id, filename, data, mime_type FROM pearl_photos WHERE pearl_id = ?').all(note.id) as any[];
+      
+      let noteContent = note.content;
+      if (photos.length > 0) {
+        hasPhotos = true;
+        for (const photo of photos) {
+          photosFolder?.file(`${photo.id}-${photo.filename}`, photo.data);
+          // Optionally update links in content to point to local relative path
+          const remoteUrl = `/api/photos/${photo.id}`;
+          const localPath = `photos/${photo.id}-${photo.filename}`;
+          noteContent = noteContent.split(remoteUrl).join(localPath);
+        }
+      }
+
+      if (format === 'md') {
+        const header = `# ${note.title}\n\n**Created:** ${note.created_at}\n**Starred:** ${!!note.starred}\n\n---\n\n`;
+        zip.file(`${note.id}-${note.title.replace(/[^a-z0-9]/gi, '_')}.md`, header + noteContent);
+      }
+    }
+
+    if (format === 'json') {
+      zip.file('pearls-export.json', JSON.stringify({
+        metadata: { brand: 'ClawStack Studios©™', application: 'PinchPad©™', exported_at: new Date().toISOString() },
+        data: notes
+      }, null, 2));
+    }
+
+    const content = await zip.generateAsync({ type: 'nodebuffer' });
+    res.setHeader('Content-Type', 'application/zip');
+    res.setHeader('Content-Disposition', 'attachment; filename="pinchpad-burrow-export.zip"');
+    res.send(content);
+  } catch (error) {
+    console.error('[Export] Error:', error);
+    res.status(500).json({ error: 'Failed to generate export' });
+  }
 });
 
 export default router;

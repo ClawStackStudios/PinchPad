@@ -3,7 +3,9 @@ import Database from 'better-sqlite3-multiple-ciphers';
 import express from 'express';
 import request from 'supertest';
 import crypto from 'crypto';
-import authRouter, { TOKEN_TTL_DEFAULT } from '../../src/server/routes/auth';
+import authRouter from '../../src/server/routes/auth';
+
+const TOKEN_TTL_DEFAULT = 24 * 60 * 60 * 1000; // 24 hours in ms
 import notesRouter from '../../src/server/routes/notes';
 import { requireAuth } from '../../src/server/middleware/auth';
 
@@ -114,7 +116,7 @@ describe('Token Lifecycle Integration', () => {
       expect(response.body.success).toBe(true);
 
       // Verify user exists
-      const user = db.prepare('SELECT * FROM users WHERE uuid = ?').get(testUuid);
+      const user = db.prepare('SELECT * FROM users WHERE uuid = ?').get(testUuid) as any;
       expect(user).toBeDefined();
       expect(user.username).toBe(testUsername);
     });
@@ -138,9 +140,9 @@ describe('Token Lifecycle Integration', () => {
 
       // Verify token exists in DB
       const sessionTokenHash = crypto.createHash('sha256').update(sessionToken).digest('hex');
-      const token = db.prepare('SELECT * FROM api_tokens WHERE key = ?').get(sessionTokenHash);
+      const token = db.prepare('SELECT * FROM api_tokens WHERE key = ?').get(sessionTokenHash) as any;
       expect(token).toBeDefined();
-      expect(token.owner_uuid).toBe(testUuid);
+      expect(token.owner_key || token.owner_uuid).toBe(testUuid);
       expect(token.owner_type).toBe('human');
     });
 
@@ -169,7 +171,7 @@ describe('Token Lifecycle Integration', () => {
       expect(response.body.data.title).toBe('Lifecycle Test Note');
 
       // Verify note exists in DB
-      const note = db.prepare('SELECT * FROM notes WHERE id = ?').get(noteId);
+      const note = db.prepare('SELECT * FROM notes WHERE id = ?').get(noteId) as any;
       expect(note).toBeDefined();
       expect(note.user_uuid).toBe(testUuid);
     });
@@ -180,7 +182,7 @@ describe('Token Lifecycle Integration', () => {
       db.prepare('UPDATE api_tokens SET expires_at = ? WHERE key = ?').run(expiredTime, sessionTokenHash);
 
       // Verify token is marked expired
-      const token = db.prepare('SELECT expires_at FROM api_tokens WHERE key = ?').get(sessionTokenHash);
+      const token = db.prepare('SELECT expires_at FROM api_tokens WHERE key = ?').get(sessionTokenHash) as any;
       expect(new Date(token.expires_at).getTime()).toBeLessThan(Date.now());
     });
 

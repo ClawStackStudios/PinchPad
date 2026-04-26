@@ -107,7 +107,7 @@ describe('Auth Security — Attack Vector Testing', () => {
       const plainToken = createTestToken(db, user.uuid).key;
 
       // Token should never be stored in plaintext
-      const stored = db.prepare('SELECT key FROM api_tokens WHERE owner_uuid = ?').get(user.uuid);
+      const stored = db.prepare('SELECT key FROM api_tokens WHERE owner_key = ?').get(user.uuid) as any;
 
       // The stored key should be a hash, not the plain token
       expect(stored.key).not.toBe(plainToken);
@@ -281,7 +281,7 @@ describe('Auth Security — Attack Vector Testing', () => {
       const key = createTestLobsterKey(db, user.uuid);
 
       // Verify the stored key is hashed
-      const stored = db.prepare('SELECT api_key_hash FROM lobster_keys WHERE id = ?').get(key.id);
+      const stored = db.prepare('SELECT api_key_hash FROM lobster_keys WHERE id = ?').get(key.id) as any;
 
       expect(stored.api_key_hash).not.toBe(key.apiKey);
       expect(stored.api_key_hash).toHaveLength(64); // SHA-256
@@ -334,7 +334,7 @@ describe('Auth Security — Attack Vector Testing', () => {
       });
 
       if (response.status === 200) {
-        const auditLog = db.prepare('SELECT * FROM audit_logs WHERE event_type = ? AND actor = ? ORDER BY timestamp DESC LIMIT 1').get('AUTH_LOGIN_SUCCESS', user.uuid);
+        const auditLog = db.prepare('SELECT * FROM audit_logs WHERE event_type = ? AND actor = ? ORDER BY timestamp DESC LIMIT 1').get('AUTH_LOGIN_SUCCESS', user.uuid) as any;
         expect(auditLog).toBeDefined();
         expect(auditLog.actor).toBe(user.uuid);
       }

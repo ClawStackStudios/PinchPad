@@ -75,40 +75,29 @@ export function Settings() {
     moltTheme(setting, x, y);
   };
 
-  // ── Export Mock ────────────────────────────────────────────────────
-  const exportMock = (format: string) => {
-    const payload = {
-      metadata: { brand: 'ClawStack Studios©™', application: 'PinchPad©™' },
-      data: '[mock Pearls data] — (placeholder)',
-    };
+  // ── Export Real ────────────────────────────────────────────────────
+  const exportData = async (format: string) => {
+    try {
+      const token = localStorage.getItem('cc_api_token');
+      const response = await fetch(`${import.meta.env.VITE_API_URL || ''}/api/notes/export?format=${format}`, {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
 
-    let content = '';
-    let filename = '';
-    let mimeType = '';
+      if (!response.ok) throw new Error('Export failed');
 
-    if (format === 'json') {
-      content = JSON.stringify(payload, null, 2);
-      filename = 'pinchpad-pearls-export.json';
-      mimeType = 'application/json';
-    } else if (format === 'md') {
-      content = `# PinchPad©™ Export\n\n**Brand:** ${payload.metadata.brand}\n**Application:** ${payload.metadata.application}\n\n## Pearls\n\n${payload.data}`;
-      filename = 'pinchpad-pearls-export.md';
-      mimeType = 'text/markdown';
-    } else if (format === 'csv') {
-      content = `"Brand","Application","Data"\n"${payload.metadata.brand}","${payload.metadata.application}","${payload.data}"`;
-      filename = 'pinchpad-pearls-export.csv';
-      mimeType = 'text/csv';
+      const blob = await response.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `pinchpad-export-${new Date().toISOString().split('T')[0]}.zip`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    } catch (err) {
+      console.error('Export failed:', err);
+      alert('Failed to export pearls. Please try again.');
     }
-
-    const blob = new Blob([content], { type: mimeType });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = filename;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
   };
 
   // ── Import Mock ────────────────────────────────────────────────────
@@ -441,7 +430,7 @@ export function Settings() {
                       ].map(({ format, label, desc, icon: Icon }) => (
                         <button
                           key={format}
-                          onClick={() => exportMock(format)}
+                          onClick={() => exportData(format)}
                           className="flex flex-col items-center gap-3 p-6 rounded-lg border-2 border-slate-200 dark:border-slate-800 hover:border-amber-500 dark:hover:border-amber-500 hover:bg-amber-50 dark:hover:bg-amber-950/30 transition-all text-left w-full h-full bg-transparent"
                         >
                           <div className="w-full flex justify-start">

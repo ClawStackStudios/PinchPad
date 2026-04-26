@@ -10,6 +10,13 @@ function generateUUID(): string {
   return `${hex.slice(0, 8)}-${hex.slice(8, 12)}-${hex.slice(12, 16)}-${hex.slice(16, 20)}-${hex.slice(20)}`;
 }
 
+export interface PearlPhoto {
+  id: string;
+  filename: string;
+  mimeType: string;
+  url: string;
+}
+
 export interface Note {
   id: string;
   user_uuid: string;
@@ -19,6 +26,7 @@ export interface Note {
   pinned: boolean;
   created_at: string;
   updated_at: string;
+  photos?: PearlPhoto[];
 }
 
 export const noteService = {
@@ -86,5 +94,30 @@ export const noteService = {
 
   async delete(id: string): Promise<void> {
     await restAdapter.DELETE(`/api/notes/${id}`);
+  },
+
+  async uploadPhoto(pearlId: string, file: File): Promise<PearlPhoto> {
+    const formData = new FormData();
+    formData.append('photo', file);
+    formData.append('pearlId', pearlId);
+
+    const token = localStorage.getItem('cc_api_token');
+    const response = await fetch(`${import.meta.env.VITE_API_URL || ''}/api/photos/upload`, {
+      method: 'POST',
+      headers: { 'Authorization': `Bearer ${token}` },
+      body: formData
+    });
+
+    if (!response.ok) {
+      const err = await response.json();
+      throw new Error(err.error || 'Upload failed');
+    }
+
+    const json = await response.json();
+    return json.data;
+  },
+
+  async deletePhoto(photoId: string): Promise<void> {
+    await restAdapter.DELETE(`/api/photos/${photoId}`);
   }
 };

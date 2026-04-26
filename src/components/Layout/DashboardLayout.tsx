@@ -24,30 +24,22 @@ interface DashboardLayoutProps {
 }
 
 function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
-  const { openAddPearl, closeAddPearl, notifyNoteCreated } = useDashboard();
+  const { isAddPearlOpen, editingNote, openAddPearl, closeAddPearl, notifyNoteCreated } = useDashboard();
   const { prependPearlToReef } = useReef();
   const { activeTab, setActiveTab } = useSettings();
   const location = useLocation();
-  const [isAddPearlOpen, setIsAddPearlOpen] = useState(false);
-  const [editingNote, setEditingNote] = useState<Note | null>(null);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
   const isOnSettings = location.pathname === '/settings';
 
-  const handleOpenAddPearl = (editNote?: Note) => {
-    setEditingNote(editNote || null);
-    setIsAddPearlOpen(true);
-  };
-
-  const handleCloseAddPearl = () => {
-    setIsAddPearlOpen(false);
-    setEditingNote(null);
+  const handlePearlUpdate = (note: Note) => {
+    notifyNoteCreated(note);
+    prependPearlToReef(note);
   };
 
   const handlePearlSuccess = (note: Note) => {
-    notifyNoteCreated(note);       // Dashboard context (for existing Dashboard.tsx consumers)
-    prependPearlToReef(note);      // ReefContext (for Notes.tsx + sidebar counts)
-    handleCloseAddPearl();
+    handlePearlUpdate(note);
+    closeAddPearl();
   };
 
   return (
@@ -74,7 +66,7 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
           />
 
           <main className="flex-1 flex flex-col min-w-0">
-            {!isOnSettings && <AppHeader onAddPearl={handleOpenAddPearl} />}
+            {!isOnSettings && <AppHeader onAddPearl={openAddPearl} />}
             <div className="flex-1 overflow-auto">
               {children}
             </div>
@@ -84,8 +76,9 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
 
       <AddPearlModal
         isOpen={isAddPearlOpen}
-        onClose={handleCloseAddPearl}
+        onClose={closeAddPearl}
         onSuccess={handlePearlSuccess}
+        onAutosave={handlePearlUpdate}
         editNote={editingNote || undefined}
       />
     </>

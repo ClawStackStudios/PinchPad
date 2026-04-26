@@ -49,6 +49,7 @@ function parsePermissions(raw: string): Record<string, boolean> {
 // ── Component ─────────────────────────────────────────────────────────────────
 
 interface LobsterKeyCardProps {
+  key?: string;
   lobster: LobsterKey;
   onRevoke: (id: string) => void;
   onDelete: (id: string) => void;

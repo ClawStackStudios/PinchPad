@@ -198,7 +198,7 @@ describe('Cross-User Data Isolation', () => {
       expect(response.body.error).toBe('Note not found');
 
       // Verify note was not modified
-      const note = db.prepare('SELECT * FROM notes WHERE id = ?').get(noteAId);
+      const note = db.prepare('SELECT * FROM notes WHERE id = ?').get(noteAId) as any;
       expect(note.title).toBe('User A Private Note');
     });
 
@@ -308,7 +308,7 @@ describe('Cross-User Data Isolation', () => {
       expect(response.status).toBe(404);
 
       // Verify key is still active
-      const key = db.prepare('SELECT is_active FROM lobster_keys WHERE id = ?').get(agentKeyAId);
+      const key = db.prepare('SELECT is_active FROM lobster_keys WHERE id = ?').get(agentKeyAId) as any;
       expect(key.is_active).toBe(1);
     });
 
@@ -320,7 +320,7 @@ describe('Cross-User Data Isolation', () => {
       expect(response.status).toBe(200);
 
       // Verify key is revoked
-      const key = db.prepare('SELECT is_active FROM lobster_keys WHERE id = ?').get(agentKeyAId);
+      const key = db.prepare('SELECT is_active FROM lobster_keys WHERE id = ?').get(agentKeyAId) as any;
       expect(key.is_active).toBe(0);
     });
   });
@@ -416,7 +416,7 @@ describe('Cross-User Data Isolation', () => {
       expect(user).toBeUndefined();
 
       // Verify cascading delete worked (with foreign key constraints)
-      const tokens = db.prepare('SELECT * FROM api_tokens WHERE owner_uuid = ?').all(deleteUserUuid);
+      const tokens = db.prepare('SELECT * FROM api_tokens WHERE owner_key = ?').all(deleteUserUuid);
       expect(tokens).toHaveLength(0);
 
       const notes = db.prepare('SELECT * FROM notes WHERE user_uuid = ?').all(deleteUserUuid);

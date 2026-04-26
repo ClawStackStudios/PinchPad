@@ -106,7 +106,7 @@ export function LobsterKeysTab() {
         </div>
       ) : (
         <div className="space-y-4">
-          {keys.map((lobster) => (
+          {keys.map((lobster: LobsterKey) => (
             <LobsterKeyCard
               key={lobster.id}
               lobster={lobster}
