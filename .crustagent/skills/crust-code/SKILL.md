@@ -47,9 +47,13 @@ Data structures are reefs; objects are crustaceans.
 2. **Library Props**: React props like `children`, `className`, `style` MUST NOT CHANGE.
 3. **External Dependencies**: Don't rename methods on `express.Response` or `better-sqlite3`.
 
-## ✍️ The Expert Signature
-Every file refactored with this skill should maintain the **ClawStack Studios** professional aesthetic:
-- **Concise Logic**: No bloat.
-- **Themed Clarity**: The names must still be intuitive. `isMolting` instead of `isLoading` is clear; `isSalty` instead of `isActive` is too vague.
+## 🛡️ UI Security Patterns (Pincer Protocol)
+
+Every destructive action that impacts the **Secure Reef** (deleting pearls, dropping pots, revoking keys) must be gated by a **ConfirmModal**.
+
+### The Pincer Confirm
+- **Pattern**: `window.confirm()` is soft tissue. Replace with `ConfirmModal.tsx`.
+- **Logic**: Use the `danger` variant for deletions. The message must clearly state the blast radius (e.g., "This pearl cannot be recovered").
+- **State**: The confirm button must show `isMolting` (processing) state during the scuttle to prevent double-clicks.
 
 *verified by vibecheck, stay grounded while you crustcode©™*

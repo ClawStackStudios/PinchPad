@@ -8,12 +8,13 @@
  * Maintained by CrustAgent©™
  */
 
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Loader2, AlertCircle, Calendar, Star, Trash2, Pin } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useDashboard } from '../../context/DashboardContext';
 import { useReef } from '../../context/ReefContext';
 import { usePot } from '../../context/PotContext';
+import { ConfirmModal } from '../../components/Modals/ConfirmModal';
 import { noteService, Note } from '../../services/noteService';
 
 // ── Filter label map ──────────────────────────────────────────────────────────
@@ -27,6 +28,11 @@ export function Notes() {
   const { openAddPearl } = useDashboard();
   const { reef, isLoading, activeFilter, removePearlFromReef, updatePearlInReef } = useReef();
   const { activePot, pots } = usePot();
+
+  // Deletion state
+  const [deleteModalOpen, setDeleteModalOpen] = useState(false);
+  const [pearlToDelete, setPearlToDelete] = useState<Note | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   const activePotName = activePot ? pots.find((p) => p.id === activePot)?.name : null;
 
@@ -54,13 +60,23 @@ export function Notes() {
   );
 
   // ── Handlers ─────────────────────────────────────────────────────────────
-  const handleDelete = async (pearl: Note) => {
-    if (!window.confirm('Discard this pearl? It cannot be recovered.')) return;
+  const openDeleteConfirm = (pearl: Note) => {
+    setPearlToDelete(pearl);
+    setDeleteModalOpen(true);
+  };
+
+  const handleConfirmDelete = async () => {
+    if (!pearlToDelete) return;
+    setIsDeleting(true);
     try {
-      await noteService.delete(pearl.id);
-      removePearlFromReef(pearl.id);
+      await noteService.delete(pearlToDelete.id);
+      removePearlFromReef(pearlToDelete.id);
+      console.log(`[Notes] 🗑️ Discarded pearl: ${pearlToDelete.id}`);
     } catch (err) {
       console.error('[Notes] Delete failed:', err);
+    } finally {
+      setIsDeleting(false);
+      setPearlToDelete(null);
     }
   };
 
@@ -186,7 +202,7 @@ export function Notes() {
                       )}
                     </button>
                     <button
-                      onClick={() => handleDelete(pearl)}
+                      onClick={() => openDeleteConfirm(pearl)}
                       className="text-slate-400 hover:text-red-500 p-1 transition-colors opacity-0 group-hover:opacity-100"
                       title="Discard pearl"
                     >
@@ -246,6 +262,23 @@ export function Notes() {
           </AnimatePresence>
         </div>
       )}
+      {/* Delete Confirmation Modal */}
+      <ConfirmModal
+        isOpen={deleteModalOpen}
+        onClose={() => {
+          if (!isDeleting) {
+            setDeleteModalOpen(false);
+            setPearlToDelete(null);
+          }
+        }}
+        onConfirm={handleConfirmDelete}
+        title="Discard Pearl?"
+        message={pearlToDelete ? `Are you sure you want to discard "${pearlToDelete.title}"? This action is permanent and the pearl cannot be recovered.` : ''}
+        confirmText="Discard Pearl"
+        cancelText="Keep Pearl"
+        variant="danger"
+        isLoading={isDeleting}
+      />
     </div>
   );
 }

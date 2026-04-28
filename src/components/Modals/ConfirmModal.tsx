@@ -1,9 +1,15 @@
-import React from 'react';
-import { X, AlertTriangle } from 'lucide-react';
-import { clsx } from 'clsx';
-import { twMerge } from 'tailwind-merge';
+/**
+ * ConfirmModal.tsx — PinchPad©™
+ *
+ * A reusable confirmation modal for destructive actions.
+ * Mirrored from ClawChives with PinchPad amber aesthetics.
+ *
+ * Maintained by CrustAgent©™
+ */
 
-function cn(...inputs: any[]) { return twMerge(clsx(inputs)); }
+import React from 'react';
+import { AlertTriangle, X } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
 
 interface ConfirmModalProps {
   isOpen: boolean;
@@ -11,9 +17,10 @@ interface ConfirmModalProps {
   onConfirm: () => void;
   title: string;
   message: string;
-  confirmLabel?: string;
-  cancelLabel?: string;
-  variant?: "danger" | "warning";
+  confirmText?: string;
+  cancelText?: string;
+  variant?: 'danger' | 'warning' | 'info';
+  isLoading?: boolean;
 }
 
 export function ConfirmModal({
@@ -22,70 +29,97 @@ export function ConfirmModal({
   onConfirm,
   title,
   message,
-  confirmLabel = "Confirm",
-  cancelLabel = "Cancel",
-  variant = "danger",
+  confirmText = 'Confirm',
+  cancelText = 'Cancel',
+  variant = 'danger',
+  isLoading = false,
 }: ConfirmModalProps) {
   if (!isOpen) return null;
 
-  const confirmBtn =
-    variant === "danger"
-      ? "bg-red-600 hover:bg-red-700 text-white shadow-lg shadow-red-600/20"
-      : "bg-amber-600 hover:bg-amber-700 text-white shadow-lg shadow-amber-600/20";
+  const iconColors = {
+    danger: 'bg-red-100 text-red-600 dark:bg-red-900/30 dark:text-red-400',
+    warning: 'bg-amber-100 text-amber-600 dark:bg-amber-900/30 dark:text-amber-400',
+    info: 'bg-blue-100 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400',
+  };
 
-  const iconBg =
-    variant === "danger"
-      ? "bg-red-100 dark:bg-red-900/30"
-      : "bg-amber-100 dark:bg-amber-900/30";
-
-  const iconColor =
-    variant === "danger"
-      ? "text-red-600 dark:text-red-400"
-      : "text-amber-600 dark:text-amber-400";
+  const buttonColors = {
+    danger: 'bg-red-600 hover:bg-red-700 text-white shadow-red-500/20',
+    warning: 'bg-amber-600 hover:bg-amber-700 text-white shadow-amber-500/20',
+    info: 'bg-blue-600 hover:bg-blue-700 text-white shadow-blue-500/20',
+  };
 
   return (
-    <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4" onClick={(e) => { e.stopPropagation(); onClose(); }}>
-      <div 
-        className="bg-white dark:bg-slate-900 border-2 border-amber-500/50 dark:border-amber-500/60 rounded-2xl shadow-2xl shadow-amber-500/10 w-full max-w-md overflow-hidden flex flex-col"
-        onClick={(e) => e.stopPropagation()}
-      >
-        {/* Header */}
-        <div className="flex items-center justify-between px-6 py-5 border-b border-amber-500/30">
-          <div className="flex items-center gap-3">
-            <div className={cn("p-2 rounded-lg", iconBg)}>
-              <AlertTriangle className={cn("w-5 h-5", iconColor)} />
+    <AnimatePresence>
+      {isOpen && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+          {/* Overlay */}
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            onClick={onClose}
+            className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm"
+          />
+
+          {/* Modal */}
+          <motion.div
+            initial={{ opacity: 0, scale: 0.95, y: 20 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            exit={{ opacity: 0, scale: 0.95, y: 20 }}
+            className="relative w-full max-w-md bg-white dark:bg-slate-900 rounded-2xl shadow-2xl border border-slate-200 dark:border-slate-800 overflow-hidden"
+          >
+            {/* Close Button */}
+            <button
+              onClick={onClose}
+              className="absolute top-4 right-4 p-1 rounded-lg text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+            >
+              <X className="w-5 h-5" />
+            </button>
+
+            <div className="p-6">
+              {/* Icon */}
+              <div className={`w-12 h-12 rounded-2xl ${iconColors[variant]} flex items-center justify-center mb-4 shadow-sm`}>
+                <AlertTriangle className="w-6 h-6" />
+              </div>
+
+              {/* Text */}
+              <h3 className="text-xl font-bold text-slate-900 dark:text-slate-50 mb-2">
+                {title}
+              </h3>
+              <p className="text-slate-600 dark:text-slate-400">
+                {message}
+              </p>
             </div>
-            <h2 className="text-xl font-bold text-slate-900 dark:text-slate-50">{title}</h2>
-          </div>
-          <button
-            onClick={(e) => { e.stopPropagation(); onClose(); }}
-            className="p-1.5 rounded-lg text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition-colors"
-          >
-            <X className="w-5 h-5" />
-          </button>
-        </div>
 
-        {/* Body */}
-        <div className="p-6">
-          <p className="text-sm text-slate-600 dark:text-slate-300 leading-relaxed">{message}</p>
+            {/* Actions */}
+            <div className="bg-slate-50 dark:bg-slate-800/50 px-6 py-4 flex flex-col sm:flex-row justify-end gap-3 border-t border-slate-100 dark:border-slate-800">
+              <button
+                onClick={onClose}
+                className="px-4 py-2 text-sm font-medium text-slate-700 dark:text-slate-300 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors order-2 sm:order-1"
+              >
+                {cancelText}
+              </button>
+              <button
+                onClick={() => {
+                  onConfirm();
+                  onClose();
+                }}
+                disabled={isLoading}
+                className={`px-6 py-2 text-sm font-bold rounded-xl shadow-lg transition-all active:scale-95 disabled:opacity-50 disabled:pointer-events-none order-1 sm:order-2 ${buttonColors[variant]}`}
+              >
+                {isLoading ? (
+                  <div className="flex items-center gap-2">
+                    <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                    Processing...
+                  </div>
+                ) : (
+                  confirmText
+                )}
+              </button>
+            </div>
+          </motion.div>
         </div>
-
-        {/* Footer */}
-        <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-amber-500/20 bg-slate-50 dark:bg-slate-800/50">
-          <button
-            onClick={(e) => { e.stopPropagation(); onClose(); }}
-            className="px-4 py-2 text-sm font-medium border border-slate-300 dark:border-slate-700 text-slate-700 dark:text-slate-300 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
-          >
-            {cancelLabel}
-          </button>
-          <button
-            onClick={(e) => { e.stopPropagation(); onConfirm(); onClose(); }}
-            className={cn("px-6 py-2 text-sm font-bold rounded-lg transition-colors", confirmBtn)}
-          >
-            {confirmLabel}
-          </button>
-        </div>
-      </div>
-    </div>
+      )}
+    </AnimatePresence>
   );
 }

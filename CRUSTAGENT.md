@@ -24,10 +24,13 @@ PinchPad is a sovereign lobster pot designed for the modern web. It protects ide
 - **Backend**: Express, Node.js + TSX
 - **Database**: Better-SQLite3
 - **Containerization**: Docker & Docker Compose (Exposing 8383)
-- **Scuttle Ecosystem**: Standardized dual-port start/stop (`npm run scuttle`)
+- **Scuttle Ecosystem**: Standardized dual-port start/stop protocol. 
+  - `npm run scuttle:run-dev` (Localhost)
+  - `npm run scuttle:prod-start` (Full LAN + Build)
 
 ## 🦀 Agent Operational Directives
 - Always adhere to the **CrustCode©™ Rules** defined in `.crustagent/skills/crust-code/SKILL.md`.
+- Adhere to the **Scuttle Lifecycle** protocol defined in `.crustagent/skills/scuttle/SKILL.md`.
 - Maintain a highly modular code structure with a clean separation of concerns by feature.
 - Plan thoroughly before implementation. Code must be robust, properly tested, and well-documented.
 - Direct answers, practical solutions. Tell Lucas what he needs to hear.
@@ -54,8 +57,11 @@ PinchPad is a sovereign lobster pot designed for the modern web. It protects ide
   - `security.json` - Security standards and compliance
   - `stability-locks.json` - Project stability constraints
 - **.crustagent/crustaudits/** - Automated audit reports and validation results
+- **.crustagent/skills/** - Modular capabilities and protocols
+  - `scuttle/SKILL.md` - Lifecycle management (dev/prod scripts)
+  - `crust-code/SKILL.md` - Core coding standards
 - **.crustagent/knowledge/** - Project knowledge base and documentation
-  - `scuttle-architecture.md` - Dual-port dev/prod model and scuttle scripts
+  - `scuttle-architecture.md` - Dual-port dev/prod model architecture
 
 ### AI Agent Context Access
 When working on ClawChives, AI agents should read these files in order:
