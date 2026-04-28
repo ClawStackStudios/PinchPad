@@ -10,14 +10,18 @@ import { createAuditLogger } from '../utils/auditLogger';
 const router = Router();
 const audit = createAuditLogger(db);
 
+/**
+ * GET /
+ * Scuttles all pearls (notes) in the lobster's habitat.
+ */
 router.get('/', requireAuth, requirePermission('canRead'), (req: AuthRequest, res: Response) => {
   try {
-    const notes = db.prepare('SELECT * FROM notes WHERE user_uuid = ? ORDER BY updated_at DESC').all(req.userUuid) as any[];
+    const reef = db.prepare('SELECT * FROM notes WHERE user_uuid = ? ORDER BY updated_at DESC').all(req.userUuid) as any[];
 
-    const notesWithPhotos = notes.map(note => {
-      const photos = db.prepare('SELECT id, filename, mime_type FROM pearl_photos WHERE pearl_id = ?').all(note.id) as any[];
+    const reefWithPhotos = reef.map(polyP => {
+      const photos = db.prepare('SELECT id, filename, mime_type FROM pearl_photos WHERE pearl_id = ?').all(polyP.id) as any[];
       return {
-        ...note,
+        ...polyP,
         photos: photos.map(p => ({
           ...p,
           url: `/api/photos/${p.id}`
@@ -25,13 +29,17 @@ router.get('/', requireAuth, requirePermission('canRead'), (req: AuthRequest, re
       };
     });
 
-    res.json({ data: notesWithPhotos });
-  } catch (error) {
-    console.error('[Notes] Fetch error:', error);
+    res.json({ data: reefWithPhotos });
+  } catch (isCracked: any) {
+    console.error('[Notes] ❌ Scuttle error:', isCracked.message);
     res.status(500).json({ error: 'Failed to fetch notes' });
   }
 });
 
+/**
+ * POST /
+ * Locks a new pearl into the claw.
+ */
 router.post('/', requireAuth, requirePermission('canWrite'), validateBody(NoteSchemas.create), (req: AuthRequest, res: Response) => {
   const { id, title, content, starred = 0, pinned = 0 } = req.body;
   const now = new Date().toISOString();
@@ -59,20 +67,24 @@ router.post('/', requireAuth, requirePermission('canWrite'), validateBody(NoteSc
       user_agent: (req.headers?.['user-agent'] as string) || 'unknown'
     });
 
-    const newNote = db.prepare('SELECT * FROM notes WHERE id = ? AND user_uuid = ?').get(id, req.userUuid);
-    res.status(201).json({ data: newNote });
-  } catch (error) {
-    console.error('[Notes POST] Error:', error);
+    const newPolyP = db.prepare('SELECT * FROM notes WHERE id = ? AND user_uuid = ?').get(id, req.userUuid);
+    res.status(201).json({ data: newPolyP });
+  } catch (isCracked: any) {
+    console.error('[Notes POST] ❌ Molt failed:', isCracked.message);
     res.status(500).json({ error: 'Failed to create note' });
   }
 });
 
+/**
+ * PUT /:id
+ * Molt update an existing pearl.
+ */
 router.put('/:id', requireAuth, requirePermission('canEdit'), validateBody(NoteSchemas.update), (req: AuthRequest, res: Response) => {
   const { title, content, starred, pinned } = req.body;
   const { id } = req.params;
 
   try {
-    const result = db.prepare('UPDATE notes SET title = coalesce(?, title), content = coalesce(?, content), starred = coalesce(?, starred), pinned = coalesce(?, pinned), updated_at = ? WHERE id = ? AND user_uuid = ?').run(
+    const lockResult = db.prepare('UPDATE notes SET title = coalesce(?, title), content = coalesce(?, content), starred = coalesce(?, starred), pinned = coalesce(?, pinned), updated_at = ? WHERE id = ? AND user_uuid = ?').run(
       title || null,
       content || null,
       starred !== undefined ? (starred ? 1 : 0) : null,
@@ -82,7 +94,7 @@ router.put('/:id', requireAuth, requirePermission('canEdit'), validateBody(NoteS
       req.userUuid
     );
 
-    if (result.changes === 0) {
+    if (lockResult.changes === 0) {
       return res.status(404).json({ error: 'Note not found' });
     }
 
@@ -97,65 +109,77 @@ router.put('/:id', requireAuth, requirePermission('canEdit'), validateBody(NoteS
       user_agent: (req.headers?.['user-agent'] as string) || 'unknown'
     });
 
-    const updatedNote = db.prepare('SELECT * FROM notes WHERE id = ? AND user_uuid = ?').get(id, req.userUuid);
-    res.json({ data: updatedNote });
-  } catch (error) {
-    console.error('[Notes PUT] Error:', error);
+    const updatedPolyP = db.prepare('SELECT * FROM notes WHERE id = ? AND user_uuid = ?').get(id, req.userUuid);
+    res.json({ data: updatedPolyP });
+  } catch (isCracked: any) {
+    console.error('[Notes PUT] ❌ Molt update failed:', isCracked.message);
     res.status(500).json({ error: 'Failed to update note' });
   }
 });
 
+/**
+ * PATCH /:id/starred
+ * Pinches the starred state of a pearl.
+ */
 router.patch('/:id/starred', requireAuth, requirePermission('canEdit'), (req: AuthRequest, res: Response) => {
   const { starred } = req.body;
   const { id } = req.params;
 
   try {
-    const result = db.prepare('UPDATE notes SET starred = ?, updated_at = ? WHERE id = ? AND user_uuid = ?').run(
+    const lockResult = db.prepare('UPDATE notes SET starred = ?, updated_at = ? WHERE id = ? AND user_uuid = ?').run(
       starred ? 1 : 0,
       new Date().toISOString(),
       id,
       req.userUuid
     );
 
-    if (result.changes === 0) {
+    if (lockResult.changes === 0) {
       return res.status(404).json({ error: 'Note not found' });
     }
 
     res.json({ data: { success: true } });
-  } catch (error) {
+  } catch (isCracked: any) {
     res.status(500).json({ error: 'Failed to toggle starred' });
   }
 });
 
+/**
+ * PATCH /:id/pinned
+ * Pinches the pinned state of a pearl.
+ */
 router.patch('/:id/pinned', requireAuth, requirePermission('canEdit'), (req: AuthRequest, res: Response) => {
   const { pinned } = req.body;
   const { id } = req.params;
 
   try {
-    const result = db.prepare('UPDATE notes SET pinned = ?, updated_at = ? WHERE id = ? AND user_uuid = ?').run(
+    const lockResult = db.prepare('UPDATE notes SET pinned = ?, updated_at = ? WHERE id = ? AND user_uuid = ?').run(
       pinned ? 1 : 0,
       new Date().toISOString(),
       id,
       req.userUuid
     );
 
-    if (result.changes === 0) {
+    if (lockResult.changes === 0) {
       return res.status(404).json({ error: 'Note not found' });
     }
 
     res.json({ data: { success: true } });
-  } catch (error) {
+  } catch (isCracked: any) {
     res.status(500).json({ error: 'Failed to toggle pinned' });
   }
 });
 
+/**
+ * DELETE /:id
+ * Purges a pearl from the reef.
+ */
 router.delete('/:id', requireAuth, requirePermission('canDelete'), (req: AuthRequest, res: Response) => {
   const { id } = req.params;
 
   try {
-    const result = db.prepare('DELETE FROM notes WHERE id = ? AND user_uuid = ?').run(id, req.userUuid);
+    const lockResult = db.prepare('DELETE FROM notes WHERE id = ? AND user_uuid = ?').run(id, req.userUuid);
 
-    if (result.changes === 0) {
+    if (lockResult.changes === 0) {
       return res.status(404).json({ error: 'Note not found' });
     }
 
@@ -171,11 +195,15 @@ router.delete('/:id', requireAuth, requirePermission('canDelete'), (req: AuthReq
     });
 
     res.json({ data: { success: true } });
-  } catch (error) {
+  } catch (isCracked: any) {
     res.status(500).json({ error: 'Failed to delete note' });
   }
 });
 
+/**
+ * POST /bulk
+ * Bulk locks multiple pearls into the habitat.
+ */
 router.post('/bulk', requireAuth, requirePermission('canWrite'), (req: AuthRequest, res: Response) => {
   const { notes } = req.body;
   const sessionId = req.headers['x-session-id'];
@@ -192,19 +220,19 @@ router.post('/bulk', requireAuth, requirePermission('canWrite'), (req: AuthReque
 
   const now = new Date().toISOString();
 
-  for (const note of notes) {
+  for (const polyPData of notes) {
     try {
-      const parsed = NoteSchemas.create.safeParse(note);
-      if (!parsed.success) {
+      const isHardShell = NoteSchemas.create.safeParse(polyPData);
+      if (!isHardShell.success) {
         results.failed++;
         results.errors.push({
-          url: note.title || 'Untitled',
-          reason: parsed.error.issues[0]?.message || 'Validation failed'
+          url: polyPData.title || 'Untitled',
+          reason: isHardShell.error.issues[0]?.message || 'Validation failed'
         });
         continue;
       }
 
-      const { id = crypto.randomUUID(), title, content, starred = 0, pinned = 0 } = parsed.data;
+      const { id = crypto.randomUUID(), title, content, starred = 0, pinned = 0 } = isHardShell.data;
 
       db.prepare(`
         INSERT INTO notes (id, user_uuid, title, content, starred, pinned, created_at, updated_at)
@@ -220,29 +248,29 @@ router.post('/bulk', requireAuth, requirePermission('canWrite'), (req: AuthReque
         now
       );
       results.imported++;
-    } catch (e: any) {
+    } catch (isCracked: any) {
       results.failed++;
       results.errors.push({
-        url: note.title || 'Untitled',
-        reason: e.message || 'Database error'
+        url: polyPData.title || 'Untitled',
+        reason: isCracked.message || 'Database error'
       });
     }
   }
 
   if (sessionId && typeof sessionId === 'string') {
     try {
-      const session = db.prepare(
+      const sessionPearl = db.prepare(
         'SELECT id, errors_json, error_count FROM import_sessions WHERE id = ? AND user_uuid = ? AND closed_at IS NULL'
       ).get(sessionId, req.userUuid) as any;
 
-      if (session) {
-        const existingErrors = JSON.parse(session.errors_json || '[]');
+      if (sessionPearl) {
+        const existingErrors = JSON.parse(sessionPearl.errors_json || '[]');
         const updatedErrors = [...existingErrors, ...results.errors];
         db.prepare('UPDATE import_sessions SET errors_json = ?, error_count = ? WHERE id = ?')
           .run(JSON.stringify(updatedErrors), updatedErrors.length, sessionId);
       }
-    } catch (err) {
-      console.error('[Notes Bulk] Failed to update session:', err);
+    } catch (isCracked: any) {
+      console.error('[Notes Bulk] ❌ Failed to update session pearl:', isCracked.message);
     }
   }
 
@@ -267,11 +295,15 @@ router.post('/bulk', requireAuth, requirePermission('canWrite'), (req: AuthReque
   });
 });
 
+/**
+ * GET /export
+ * Exports the entire habitat as a hardened zip file.
+ */
 router.get('/export', requireAuth, async (req: AuthRequest, res: Response) => {
   const format = req.query.format || 'json';
-  const notes = db.prepare('SELECT * FROM notes WHERE user_uuid = ?').all(req.userUuid) as any[];
+  const reef = db.prepare('SELECT * FROM notes WHERE user_uuid = ?').all(req.userUuid) as any[];
 
-  if (notes.length === 0) {
+  if (reef.length === 0) {
     return res.status(404).json({ error: 'No pearls found to export' });
   }
 
@@ -280,41 +312,42 @@ router.get('/export', requireAuth, async (req: AuthRequest, res: Response) => {
     const photosFolder = zip.folder('photos');
     let hasPhotos = false;
 
-    for (const note of notes) {
-      const photos = db.prepare('SELECT id, filename, data, mime_type FROM pearl_photos WHERE pearl_id = ?').all(note.id) as any[];
+    for (const polyP of reef) {
+      const photos = db.prepare('SELECT id, filename, data, mime_type FROM pearl_photos WHERE pearl_id = ?').all(polyP.id) as any[];
 
-      let noteContent = note.content;
+      let polyPContent = polyP.content;
       if (photos.length > 0) {
         hasPhotos = true;
         for (const photo of photos) {
           photosFolder?.file(`${photo.id}-${photo.filename}`, photo.data);
           const remoteUrl = `/api/photos/${photo.id}`;
           const localPath = `photos/${photo.id}-${photo.filename}`;
-          noteContent = noteContent.split(remoteUrl).join(localPath);
+          polyPContent = polyPContent.split(remoteUrl).join(localPath);
         }
       }
 
       if (format === 'md') {
-        const header = `# ${note.title}\n\n**Created:** ${note.created_at}\n**Starred:** ${!!note.starred}\n\n---\n\n`;
-        zip.file(`${note.id}-${note.title.replace(/[^a-z0-9]/gi, '_')}.md`, header + noteContent);
+        const header = `# ${polyP.title}\n\n**Created:** ${polyP.created_at}\n**Starred:** ${!!polyP.starred}\n\n---\n\n`;
+        zip.file(`${polyP.id}-${polyP.title.replace(/[^a-z0-9]/gi, '_')}.md`, header + polyPContent);
       }
     }
 
     if (format === 'json') {
       zip.file('pearls-export.json', JSON.stringify({
         metadata: { brand: 'ClawStack Studios©™', application: 'PinchPad©™', exported_at: new Date().toISOString() },
-        data: notes
+        data: reef
       }, null, 2));
     }
 
-    const content = await zip.generateAsync({ type: 'nodebuffer' });
+    const binaryPearl = await zip.generateAsync({ type: 'nodebuffer' });
     res.setHeader('Content-Type', 'application/zip');
     res.setHeader('Content-Disposition', 'attachment; filename="pinchpad-burrow-export.zip"');
-    res.send(content);
-  } catch (error) {
-    console.error('[Export] Error:', error);
+    res.send(binaryPearl);
+  } catch (isCracked: any) {
+    console.error('[Export] ❌ Shell failure:', isCracked.message);
     res.status(500).json({ error: 'Failed to generate export' });
   }
 });
 
 export default router;
+

@@ -10,7 +10,7 @@ import { getCorsConfig } from './src/config/corsConfig';
 import { generateSelfSignedCert, getCertPaths } from './src/server/ssl/generateCert';
 import { errorHandler } from './src/server/middleware/errorHandler';
 import { httpsRedirect } from './src/server/middleware/httpsRedirect';
-import { scheduleTokenCleanup } from './src/server/utils/tokenExpiry';
+import { scheduleMoltCleanup } from './src/server/utils/tokenExpiry';
 import db from './src/server/database/index';
 
 import authRoutes from './src/server/routes/auth';
@@ -25,7 +25,7 @@ async function startServer() {
   const PORT = process.env.PORT ? parseInt(process.env.PORT, 10) : 8383;
 
   // ─── Startup tasks ───────────────────────────────────────────────────────────
-  scheduleTokenCleanup(db);
+  scheduleMoltCleanup(db);
 
   // ─── Trust proxy ─────────────────────────────────────────────────────────────
   if (process.env.TRUST_PROXY === 'true') app.set('trust proxy', 1);

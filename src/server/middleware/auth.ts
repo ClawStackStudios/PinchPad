@@ -1,7 +1,7 @@
 import { Request, Response, NextFunction } from 'express';
 import db from '../database/index';
 import { createAuditLogger } from '../utils/auditLogger';
-import { checkTokenExpiry } from '../utils/tokenExpiry';
+import { checkMoltExpiry } from '../utils/tokenExpiry';
 import { createAgentKeyRateLimiter } from './rateLimiter';
 
 const audit = createAuditLogger(db);
@@ -53,7 +53,7 @@ export function requireAuth(req: Request, res: Response, next: NextFunction): vo
       res.status(401).json({ success: false, error: 'Invalid or revoked API token' });
       return;
     }
-    if (!checkTokenExpiry(row.expires_at)) {
+    if (!checkMoltExpiry(row.expires_at)) {
       db.prepare('DELETE FROM api_tokens WHERE key = ?').run(key);
       audit.log('AUTH_FAILURE', { actor: row.owner_key, action: 'validate_token', outcome: 'failure', resource: 'api_token', details: { reason: 'Token expired' } });
       res.status(401).json({ success: false, error: 'Token expired. Please authenticate again.' });

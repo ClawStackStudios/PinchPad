@@ -1,5 +1,4 @@
 import { Router } from 'express';
-import crypto from 'crypto';
 import db from '../database/index';
 import { generateId, generateString } from '../utils/crypto';
 import { requireAuth, requireHuman, type AuthRequest } from '../middleware/auth';
@@ -8,6 +7,10 @@ import { createAuditLogger } from '../utils/auditLogger';
 const router = Router();
 const audit = createAuditLogger(db);
 
+/**
+ * POST /start
+ * Initializes an ephemeral import session.
+ */
 router.post('/start', requireAuth, requireHuman, (req, res) => {
   const authReq = req as AuthRequest;
 
@@ -18,13 +21,15 @@ router.post('/start', requireAuth, requireHuman, (req, res) => {
   const expiryDate = new Date(Date.now() + 15 * 60 * 1000).toISOString();
 
   try {
+    // 🏛️ Reinforced INSERT: Added user_uuid to prevent shell collapse (NOT NULL constraint)
     db.prepare(`
       INSERT INTO agent_keys (
-        id, name, description, api_key, permissions,
+        id, user_uuid, name, description, api_key, permissions,
         expiration_type, expiration_date, rate_limit, is_active, created_at, last_used
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `).run(
       keyId,
+      authReq.userUuid,
       '__ephemeral__',
       'Ephemeral import session',
       ephemeralKey,
@@ -66,8 +71,8 @@ router.post('/start', requireAuth, requireHuman, (req, res) => {
         sessionKey: ephemeralKey
       }
     });
-  } catch (e: any) {
-    console.error('[Lobster Session] Error starting session:', e.message);
+  } catch (isCracked: any) {
+    console.error('[Lobster Session] ❌ Molt failed starting session:', isCracked.message);
     audit.log('LOBSTER_SESSION_STARTED', {
       actor: authReq.userUuid,
       actor_type: 'human',
@@ -76,26 +81,30 @@ router.post('/start', requireAuth, requireHuman, (req, res) => {
       outcome: 'failure',
       ip_address: Array.isArray(req.ip) ? req.ip[0] : req.ip,
       user_agent: String(req.headers['user-agent'] ?? ''),
-      details: { error: e.message }
+      details: { error: isCracked.message }
     });
     res.status(500).json({ success: false, error: 'Failed to start session' });
   }
 });
 
+/**
+ * POST /:id/close
+ * Closes and invalidates the session.
+ */
 router.post('/:id/close', requireAuth, requireHuman, (req, res) => {
   const authReq = req as AuthRequest;
   const sessionId = req.params.id;
 
   try {
-    const session = db.prepare(
+    const pearl = db.prepare(
       'SELECT id, user_uuid, key_id, errors_json, error_count FROM import_sessions WHERE id = ?'
     ).get(sessionId) as any;
 
-    if (!session) {
+    if (!pearl) {
       return res.status(404).json({ success: false, error: 'Session not found' });
     }
 
-    if (session.user_uuid !== authReq.userUuid) {
+    if (pearl.user_uuid !== authReq.userUuid) {
       return res.status(403).json({ success: false, error: 'Forbidden: not your session' });
     }
 
@@ -113,9 +122,9 @@ router.post('/:id/close', requireAuth, requireHuman, (req, res) => {
       .run(now, sessionId);
 
     db.prepare('UPDATE agent_keys SET is_active = 0 WHERE id = ?')
-      .run(session.key_id);
+      .run(pearl.key_id);
 
-    const errors = JSON.parse(session.errors_json || '[]');
+    const errors = JSON.parse(pearl.errors_json || '[]');
 
     audit.log('LOBSTER_SESSION_CLOSED', {
       actor: authReq.userUuid,
@@ -125,20 +134,21 @@ router.post('/:id/close', requireAuth, requireHuman, (req, res) => {
       outcome: 'success',
       ip_address: Array.isArray(req.ip) ? req.ip[0] : req.ip,
       user_agent: String(req.headers['user-agent'] ?? ''),
-      details: { sessionId, errorCount: session.error_count }
+      details: { sessionId, errorCount: pearl.error_count }
     });
 
     res.json({
       success: true,
       data: {
-        errorCount: session.error_count,
+        errorCount: pearl.error_count,
         errors
       }
     });
-  } catch (e: any) {
-    console.error('[Lobster Session] Error closing session:', e.message);
+  } catch (isCracked: any) {
+    console.error('[Lobster Session] ❌ Molt failed closing session:', isCracked.message);
     res.status(500).json({ success: false, error: 'Failed to close session' });
   }
 });
 
 export default router;
+

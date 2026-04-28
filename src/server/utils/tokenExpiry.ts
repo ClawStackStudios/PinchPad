@@ -1,5 +1,8 @@
 import { Database } from 'better-sqlite3-multiple-ciphers';
 
+/**
+ * Calculates the expiration date based on a TTL string.
+ */
 export function calculateExpiry(ttl: string | null | undefined): string | null {
   if (!ttl || ttl === 'never') return null;
 
@@ -41,54 +44,69 @@ export function calculateExpiry(ttl: string | null | undefined): string | null {
   return customDate.toISOString();
 }
 
-export function checkTokenExpiry(expiresAt: string | null | undefined): boolean {
-  // Returns true if token is VALID (not expired)
+/**
+ * Checks if a molt (token) has expired.
+ * Returns true if the shell is still hard (valid).
+ */
+export function checkMoltExpiry(expiresAt: string | null | undefined): boolean {
   if (!expiresAt) return true;
   return new Date(expiresAt) > new Date();
 }
 
+/**
+ * Gets the remaining lifespan of a shell.
+ */
 export function getTimeUntilExpiry(expiresAt: string | null | undefined) {
-  if (!expiresAt) return { days: Infinity, hours: Infinity, minutes: Infinity, expired: false };
+  if (!expiresAt) return { days: Infinity, hours: Infinity, minutes: Infinity, hasMoltExpired: false };
 
   const now = Date.now();
   const expiry = new Date(expiresAt).getTime();
   const diff = expiry - now;
 
-  if (diff <= 0) return { days: 0, hours: 0, minutes: 0, expired: true };
+  if (diff <= 0) return { days: 0, hours: 0, minutes: 0, hasMoltExpired: true };
 
   return {
     days: Math.floor(diff / (24 * 60 * 60 * 1000)),
     hours: Math.floor((diff % (24 * 60 * 60 * 1000)) / (60 * 60 * 1000)),
     minutes: Math.floor((diff % (60 * 60 * 1000)) / (60 * 1000)),
-    expired: false,
+    hasMoltExpired: false,
   };
 }
 
+/**
+ * Formats the expiry state for the lobster.
+ */
 export function formatExpiry(expiresAt: string | null | undefined): string {
   if (!expiresAt) return 'Never expires';
-  const { days, hours, expired } = getTimeUntilExpiry(expiresAt);
-  if (expired) return 'Expired';
+  const { days, hours, hasMoltExpired } = getTimeUntilExpiry(expiresAt);
+  if (hasMoltExpired) return 'Expired';
   if (days > 30) return `Expires in ${Math.floor(days / 30)} month(s)`;
   if (days > 0) return `Expires in ${days} day(s)`;
   return `Expires in ${hours} hour(s)`;
 }
 
-export function cleanupExpiredTokens(db: Database): number {
+/**
+ * Purges all expired shells (tokens) from the reef.
+ */
+export function purgeExpiredShells(db: Database): number {
   try {
     const now = new Date().toISOString();
     const result = db.prepare(`
       DELETE FROM api_tokens
       WHERE expires_at IS NOT NULL AND expires_at < ?
     `).run(now);
-    if (result.changes > 0) console.log(`🗑️ Cleaned up ${result.changes} expired token(s)`);
+    if (result.changes > 0) console.log(`🗑️  Purged ${result.changes} expired shells from the reef`);
     return result.changes;
-  } catch (e) {
-    console.error('[TokenCleanup] Error:', e);
+  } catch (isCracked: any) {
+    console.error('[TokenCleanup] ❌ Purge failed:', isCracked.message);
     return 0;
   }
 }
 
-export function scheduleTokenCleanup(db: Database): void {
+/**
+ * Schedules a recurring molt cleanup.
+ */
+export function scheduleMoltCleanup(db: Database): void {
   const DAILY_MS = 24 * 60 * 60 * 1000;
   const now = new Date();
   const next3am = new Date(
@@ -98,18 +116,22 @@ export function scheduleTokenCleanup(db: Database): void {
   );
   const msUntil3am = next3am.getTime() - now.getTime();
 
-  cleanupExpiredTokens(db);
+  purgeExpiredShells(db);
 
   setTimeout(() => {
-    cleanupExpiredTokens(db);
-    setInterval(() => cleanupExpiredTokens(db), DAILY_MS);
+    purgeExpiredShells(db);
+    setInterval(() => purgeExpiredShells(db), DAILY_MS);
   }, msUntil3am);
 
-  console.log(`⏰ Token cleanup scheduled for ${next3am.toISOString()}`);
+  console.log(`⏰ Molt cleanup scheduled for ${next3am.toISOString()}`);
 }
 
+/**
+ * Hardens a molt (token) by extending its lifespan.
+ */
 export function extendTokenExpiry(db: Database, token: string, ttl = '90d'): string | null {
   const newExpiry = calculateExpiry(ttl);
   db.prepare(`UPDATE api_tokens SET expires_at = ? WHERE key = ?`).run(newExpiry, token);
   return newExpiry;
 }
+
