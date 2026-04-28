@@ -32,6 +32,25 @@ export function runMigrations(db: Database) {
     }
   }
 
+  // ── Pots table (existing installs) ──────────────────────────────────────────
+  try {
+    db.exec(`
+      CREATE TABLE IF NOT EXISTS pots (
+        id         TEXT PRIMARY KEY,
+        user_uuid  TEXT NOT NULL,
+        name       TEXT NOT NULL,
+        color      TEXT NOT NULL DEFAULT '#f59e0b',
+        created_at TEXT NOT NULL,
+        FOREIGN KEY(user_uuid) REFERENCES users(uuid) ON DELETE CASCADE
+      );
+    `);
+    console.log('[DB Migration] ✅ pots table ensured');
+  } catch (e: any) {
+    console.warn('[DB Migration] ⚠️  pots table migration warning:', e.message);
+  }
+
+  runColumnMigration("ALTER TABLE notes ADD COLUMN pot_id TEXT REFERENCES pots(id) ON DELETE SET NULL", 'notes.pot_id');
+
   // Indexes
   db.exec(`
     CREATE UNIQUE INDEX IF NOT EXISTS idx_users_key_hash ON users(key_hash);
@@ -45,6 +64,8 @@ export function runMigrations(db: Database) {
     CREATE INDEX IF NOT EXISTS idx_agent_keys_api_key ON agent_keys(api_key);
     CREATE INDEX IF NOT EXISTS idx_agent_keys_active ON agent_keys(is_active);
     CREATE INDEX IF NOT EXISTS idx_notes_user_created ON notes(user_uuid, created_at DESC);
+    CREATE INDEX IF NOT EXISTS idx_pots_user ON pots(user_uuid);
+    CREATE INDEX IF NOT EXISTS idx_notes_pot_id ON notes(pot_id);
   `);
   
   console.log('[Database] Migrations complete.');

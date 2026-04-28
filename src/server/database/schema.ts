@@ -17,6 +17,15 @@ export function initializeSchema(db: Database) {
       expires_at TEXT
     );
 
+    CREATE TABLE IF NOT EXISTS pots (
+      id         TEXT PRIMARY KEY,
+      user_uuid  TEXT NOT NULL,
+      name       TEXT NOT NULL,
+      color      TEXT NOT NULL DEFAULT '#f59e0b',
+      created_at TEXT NOT NULL,
+      FOREIGN KEY(user_uuid) REFERENCES users(uuid) ON DELETE CASCADE
+    );
+
     CREATE TABLE IF NOT EXISTS notes (
       id          TEXT PRIMARY KEY,
       user_uuid   TEXT NOT NULL,
@@ -24,9 +33,11 @@ export function initializeSchema(db: Database) {
       content     TEXT NOT NULL,
       starred     INTEGER DEFAULT 0,
       pinned      INTEGER DEFAULT 0,
+      pot_id      TEXT,
       created_at  TEXT NOT NULL,
       updated_at  TEXT NOT NULL,
-      FOREIGN KEY(user_uuid) REFERENCES users(uuid) ON DELETE CASCADE
+      FOREIGN KEY(user_uuid) REFERENCES users(uuid) ON DELETE CASCADE,
+      FOREIGN KEY(pot_id) REFERENCES pots(id) ON DELETE SET NULL
     );
 
     CREATE TABLE IF NOT EXISTS pearl_photos (

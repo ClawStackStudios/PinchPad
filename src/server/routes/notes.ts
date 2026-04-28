@@ -136,7 +136,8 @@ router.patch('/:id/starred', requireAuth, requirePermission('canEdit'), (req: Au
       return res.status(404).json({ error: 'Note not found' });
     }
 
-    res.json({ data: { success: true } });
+    const updatedNote = db.prepare('SELECT * FROM notes WHERE id = ? AND user_uuid = ?').get(id, req.userUuid);
+    res.json({ data: updatedNote });
   } catch (isCracked: any) {
     res.status(500).json({ error: 'Failed to toggle starred' });
   }
@@ -162,7 +163,8 @@ router.patch('/:id/pinned', requireAuth, requirePermission('canEdit'), (req: Aut
       return res.status(404).json({ error: 'Note not found' });
     }
 
-    res.json({ data: { success: true } });
+    const updatedNote = db.prepare('SELECT * FROM notes WHERE id = ? AND user_uuid = ?').get(id, req.userUuid);
+    res.json({ data: updatedNote });
   } catch (isCracked: any) {
     res.status(500).json({ error: 'Failed to toggle pinned' });
   }

@@ -1,29 +1,26 @@
 /**
  * Sidebar — PinchPad©™
  *
- * Full sidebar layout: brand, search, nav items with counts, Pots section.
+ * Full sidebar layout: brand, nav items with counts, Pots section.
  * Mirrors the ClawChives Sidebar architecture adapted for PinchPad.
  *
  * Maintained by CrustAgent©™
  */
 
 import React, { useState } from 'react';
-import { Plus, X, Search } from 'lucide-react';
+import { X } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { InteractiveBrand } from '../Branding/InteractiveBrand';
 import { SidebarNav } from './SidebarNav';
+import { PotList } from './PotList';
+import { PotModal } from '../Modals/PotModal';
+import { usePot } from '../../context/PotContext';
+import { Pot } from '../../services/potService';
 import { clsx } from 'clsx';
 import { twMerge } from 'tailwind-merge';
 
 function cn(...inputs: any[]) {
   return twMerge(clsx(inputs));
-}
-
-// ── Pot item type (placeholder — no backend yet) ──────────────────────────────
-interface PotItem {
-  id: string;
-  name: string;
-  count: number;
 }
 
 interface SidebarProps {
@@ -34,17 +31,49 @@ interface SidebarProps {
   onSettingsTabChange?: (tab: any) => void;
 }
 
-export function Sidebar({ 
-  isOpen, 
-  onClose, 
-  settingsMode = false, 
-  activeSettingsTab, 
-  onSettingsTabChange 
+export function Sidebar({
+  isOpen,
+  onClose,
+  settingsMode = false,
+  activeSettingsTab,
+  onSettingsTabChange,
 }: SidebarProps) {
   const navigate = useNavigate();
+  const { createPot, updatePot, deletePot } = usePot();
 
-  // Placeholder pots — will be wired to backend when Pots feature ships
-  const [pots] = useState<PotItem[]>([]);
+  const [modalOpen, setModalOpen] = useState(false);
+  const [editingPot, setEditingPot] = useState<Pot | null>(null);
+
+  const openCreate = () => {
+    setEditingPot(null);
+    setModalOpen(true);
+  };
+
+  const openEdit = (pot: Pot) => {
+    setEditingPot(pot);
+    setModalOpen(true);
+  };
+
+  const handleSave = async (data: { name: string; color: string }) => {
+    try {
+      if (editingPot) {
+        await updatePot(editingPot.id, data);
+      } else {
+        await createPot(data.name, data.color);
+      }
+    } catch (err) {
+      console.error('[Sidebar] Pot save failed:', err);
+    }
+  };
+
+  const handleDelete = async () => {
+    if (!editingPot) return;
+    try {
+      await deletePot(editingPot.id);
+    } catch (err) {
+      console.error('[Sidebar] Pot delete failed:', err);
+    }
+  };
 
   return (
     <>
@@ -80,11 +109,11 @@ export function Sidebar({
         </div>
 
         {/* ── Scrollable Body ─────────────────────────────────────────────── */}
-        <div className="flex-1 overflow-y-auto p-3 space-y-6">
+        <div className="flex-1 overflow-y-auto p-3 flex flex-col gap-2">
 
           {/* ── Navigation ────────────────────────────────────────────────── */}
-          <SidebarNav 
-            onClose={onClose} 
+          <SidebarNav
+            onClose={onClose}
             settingsMode={settingsMode}
             activeSettingsTab={activeSettingsTab}
             onSettingsTabChange={onSettingsTabChange}
@@ -92,46 +121,22 @@ export function Sidebar({
 
           {/* ── Pots Section ──────────────────────────────────────────────── */}
           {!settingsMode && (
-            <div>
-              <div className="flex items-center justify-between px-3 mb-2">
-                <span className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
-                  Pots
-                </span>
-                <button
-                  title="New Pot (coming soon)"
-                  className="p-1 text-slate-400 hover:text-amber-600 dark:hover:text-amber-400 rounded-md transition-colors"
-                >
-                  <Plus className="w-4 h-4" />
-                </button>
-              </div>
-
-              {pots.length > 0 ? (
-                <div className="space-y-0.5">
-                  {pots.map((pot) => (
-                    <button
-                      key={pot.id}
-                      className="w-full flex items-center justify-between px-3 py-2 rounded-lg text-sm text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
-                    >
-                      <span>{pot.name}</span>
-                      <span className="text-xs bg-slate-200 dark:bg-slate-700 text-slate-600 dark:text-slate-300 px-2 py-0.5 rounded-full">
-                        {pot.count}
-                      </span>
-                    </button>
-                  ))}
-                </div>
-              ) : (
-                <button
-                  title="New Pot (coming soon)"
-                  className="w-full flex items-center gap-2 px-3 py-2 rounded-lg text-sm text-slate-400 dark:text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors border border-dashed border-slate-300 dark:border-slate-700"
-                >
-                  <Plus className="w-4 h-4" />
-                  New Pot
-                </button>
-              )}
-            </div>
+            <PotList
+              onOpenCreate={openCreate}
+              onOpenEdit={openEdit}
+            />
           )}
         </div>
       </aside>
+
+      {/* ── Pot Create / Edit Modal ───────────────────────────────────────── */}
+      <PotModal
+        isOpen={modalOpen}
+        onClose={() => { setModalOpen(false); setEditingPot(null); }}
+        pot={editingPot}
+        onSave={handleSave}
+        onDelete={editingPot ? handleDelete : undefined}
+      />
     </>
   );
 }

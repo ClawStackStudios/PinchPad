@@ -13,6 +13,7 @@ import { Loader2, AlertCircle, Calendar, Star, Trash2, Pin } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion';
 import { useDashboard } from '../../context/DashboardContext';
 import { useReef } from '../../context/ReefContext';
+import { usePot } from '../../context/PotContext';
 import { noteService, Note } from '../../services/noteService';
 
 // ── Filter label map ──────────────────────────────────────────────────────────
@@ -25,13 +26,22 @@ const FILTER_LABELS: Record<string, string> = {
 export function Notes() {
   const { openAddPearl } = useDashboard();
   const { reef, isLoading, activeFilter, removePearlFromReef, updatePearlInReef } = useReef();
+  const { activePot, pots } = usePot();
+
+  const activePotName = activePot ? pots.find((p) => p.id === activePot)?.name : null;
 
   useEffect(() => {
-    document.title = `${FILTER_LABELS[activeFilter] ?? 'Pearls'} | PinchPad`;
-  }, [activeFilter]);
+    if (activePotName) {
+      document.title = `${activePotName} | PinchPad`;
+    } else {
+      document.title = `${FILTER_LABELS[activeFilter] ?? 'Pearls'} | PinchPad`;
+    }
+  }, [activeFilter, activePotName]);
 
   // ── Apply filter ─────────────────────────────────────────────────────────
   const filtered = (() => {
+    // Pot filter takes precedence
+    if (activePot) return reef.filter((n) => n.pot_id === activePot);
     switch (activeFilter) {
       case 'starred': return reef.filter((n) => n.starred);
       case 'pinned':  return reef.filter((n) => n.pinned);
@@ -55,20 +65,30 @@ export function Notes() {
   };
 
   const handleToggleStar = async (pearl: Note) => {
+    const original = { ...pearl };
+    // Optimistic UI flash
+    updatePearlInReef({ ...pearl, starred: !pearl.starred });
+    
     try {
       const updated = await noteService.toggleStarred(pearl.id, !pearl.starred);
       updatePearlInReef(updated);
     } catch (err) {
       console.error('[Notes] Toggle star failed:', err);
+      updatePearlInReef(original); // Rollback on crack
     }
   };
 
   const handleTogglePin = async (pearl: Note) => {
+    const original = { ...pearl };
+    // Optimistic UI flash
+    updatePearlInReef({ ...pearl, pinned: !pearl.pinned });
+
     try {
       const updated = await noteService.togglePinned(pearl.id, !pearl.pinned);
       updatePearlInReef(updated);
     } catch (err) {
       console.error('[Notes] Toggle pin failed:', err);
+      updatePearlInReef(original); // Rollback on crack
     }
   };
 
@@ -97,7 +117,7 @@ export function Notes() {
       {/* Page title + filter badge */}
       <div className="flex items-center gap-3">
         <h1 className="text-2xl font-bold text-slate-900 dark:text-slate-50">
-          {FILTER_LABELS[activeFilter] ?? 'Pearls'}
+          {activePotName ? `🪸 ${activePotName}` : (FILTER_LABELS[activeFilter] ?? 'Pearls')}
         </h1>
         <span className="text-xs px-2 py-1 rounded-full bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300 font-medium">
           {sorted.length} pearl{sorted.length !== 1 ? 's' : ''}

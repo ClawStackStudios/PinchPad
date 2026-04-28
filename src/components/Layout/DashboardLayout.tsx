@@ -15,6 +15,7 @@ import { AddPearlModal } from '../Modals/AddPearlModal';
 import { DashboardProvider, useDashboard } from '../../context/DashboardContext';
 import { ReefProvider, useReef } from '../../context/ReefContext';
 import { SettingsProvider, useSettings } from '../../context/SettingsContext';
+import { PotProvider } from '../../context/PotContext';
 import { Menu } from 'lucide-react';
 import { Note } from '../../services/noteService';
 import { useLocation } from 'react-router-dom';
@@ -88,13 +89,15 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
 export function DashboardLayout({ children }: DashboardLayoutProps) {
   return (
     <ReefProvider>
-      <DashboardProvider>
-        <SettingsProvider>
-          <DashboardLayoutContent>
-            {children}
-          </DashboardLayoutContent>
-        </SettingsProvider>
-      </DashboardProvider>
+      <PotProvider>
+        <DashboardProvider>
+          <SettingsProvider>
+            <DashboardLayoutContent>
+              {children}
+            </DashboardLayoutContent>
+          </SettingsProvider>
+        </DashboardProvider>
+      </PotProvider>
     </ReefProvider>
   );
 }

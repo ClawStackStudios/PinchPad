@@ -23,12 +23,25 @@ export const NoteSchemas = {
     content: z.string().min(1),
     starred: z.union([z.boolean(), z.number()]).optional(),
     pinned: z.union([z.boolean(), z.number()]).optional(),
+    pot_id: z.string().optional().nullable(),
   }),
   update: z.object({
     title: z.string().optional(),
     content: z.string().optional(),
     starred: z.union([z.boolean(), z.number()]).optional(),
     pinned: z.union([z.boolean(), z.number()]).optional(),
+    pot_id: z.string().optional().nullable(),
+  }),
+};
+
+export const PotSchemas = {
+  create: z.object({
+    name: z.string().min(1).max(100),
+    color: z.string().default('#f59e0b'),
+  }),
+  update: z.object({
+    name: z.string().min(1).max(100).optional(),
+    color: z.string().optional(),
   }),
 };
 

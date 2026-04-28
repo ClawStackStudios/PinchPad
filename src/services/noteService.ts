@@ -27,6 +27,7 @@ export interface Note {
   content: string;
   starred: boolean;
   pinned: boolean;
+  pot_id?: string | null;
   created_at: string;
   updated_at: string;
   photos?: PearlPhoto[];

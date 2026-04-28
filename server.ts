@@ -18,6 +18,7 @@ import notesRoutes from './src/server/routes/notes';
 import agentsRoutes from './src/server/routes/agents';
 import lobsterSessionRoutes from './src/server/routes/lobsterSession';
 import photosRoutes from './src/server/routes/photos';
+import potsRoutes from './src/server/routes/pots';
 import { apiLimiter } from './src/server/middleware/rateLimiter';
 
 async function startServer() {
@@ -69,6 +70,7 @@ async function startServer() {
   // ─── API Routes ───────────────────────────────────────────────────────────────
   app.use('/api/auth', authRoutes);
   app.use('/api/notes', notesRoutes);
+  app.use('/api/pots', potsRoutes);
   app.use('/api/agents', agentsRoutes);
   app.use('/api/lobster-session', lobsterSessionRoutes);
   app.use('/api/photos', photosRoutes);
