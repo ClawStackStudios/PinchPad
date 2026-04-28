@@ -1,130 +1,77 @@
+import rateLimit from 'express-rate-limit';
 import { Request, Response, NextFunction } from 'express';
+import db from '../database/index';
 import { AuthRequest } from './auth';
 
-/**
- * Lobster Key Rate Limiting
- *
- * Per-key rate limiting for agent (lobster) keys with in-memory counter store.
- * - rate_limit = requests per minute (NULL = unlimited)
- * - Counter store limited to MAX_CACHE_SIZE (100) with LRU eviction
- * - Human keys bypass this limiter
- *
- * Why in-memory counters instead of express-rate-limit library:
- * The express-rate-limit library enforces that all limiters are created at app init,
- * not per-request. This doesn't work for dynamic per-key limits where we discover the
- * limit from the database. Instead, we manage request counters ourselves.
- *
- * Window-based approach:
- * - Tracks request count per key per 60-second window
- * - Resets counter when window expires
- * - Resets are lazy (checked on next request)
- */
-
-const MAX_CACHE_SIZE = 100;
-
-interface RateLimitEntry {
-  count: number;
-  windowStart: number; // timestamp when window opened
-  limit: number; // requests per minute for this key
+function parseWindow(windowStr: string | undefined): number | null {
+  if (!windowStr) return null;
+  if (windowStr.endsWith('m')) return parseInt(windowStr) * 60 * 1000;
+  if (windowStr.endsWith('s')) return parseInt(windowStr) * 1000;
+  return parseInt(windowStr);
 }
 
-const counterStore = new Map<string, RateLimitEntry>();
+export const authLimiter = rateLimit({
+  windowMs: parseWindow(process.env.AUTH_RATE_WINDOW) || 15 * 60 * 1000,
+  max: parseInt(process.env.AUTH_RATE_LIMIT || '10', 10),
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: {
+    success: false,
+    error: 'The Reef is crowded! Too many login attempts. Please rest your claws and try again later.',
+  },
+  skipSuccessfulRequests: true,
+});
 
-/**
- * Evict the oldest entry from the counter store (FIFO — Map preserves insertion order)
- */
-function evictOldest() {
-  const oldestKey = counterStore.keys().next().value;
-  if (oldestKey) {
-    counterStore.delete(oldestKey);
-  }
-}
+export const apiLimiter = rateLimit({
+  windowMs: parseWindow(process.env.API_RATE_WINDOW) || 1 * 60 * 1000,
+  max: parseInt(process.env.API_RATE_LIMIT || '100', 10),
+  standardHeaders: true,
+  legacyHeaders: false,
+  skip: (req) => req.method === 'POST' && req.path === '/notes/bulk',
+  message: {
+    success: false,
+    error: "The Reef is crowded! You've exceeded your rate limit. Please slow down your requests.",
+  },
+});
 
-/**
- * Check and increment rate limit for a key
- * Returns: { allowed: boolean; remaining: number; resetTime: number }
- */
-function checkRateLimit(keyId: string, limit: number): {
-  allowed: boolean;
-  remaining: number;
-  resetTime: number;
-} {
-  const now = Date.now();
-  const WINDOW_MS = 60 * 1000; // 1 minute
+export const createAgentKeyRateLimiter = () => {
+  const limiterCache = new Map<string, ReturnType<typeof rateLimit>>();
+  const MAX_CACHE_SIZE = 100;
 
-  let entry = counterStore.get(keyId);
+  return async (req: Request, res: Response, next: NextFunction) => {
+    const authReq = req as AuthRequest;
+    if (
+      authReq.keyType === 'human' ||
+      !authReq.apiKey ||
+      (req.method === 'POST' && req.path === '/notes/bulk')
+    ) return next();
 
-  // Window expired or entry doesn't exist — create new window
-  if (!entry || now - entry.windowStart >= WINDOW_MS) {
-    entry = {
-      count: 0,
-      windowStart: now,
-      limit,
-    };
+    let limit: number | null = null;
+    let agentApiKey: string | null = null;
 
-    // Manage cache size
-    if (counterStore.size >= MAX_CACHE_SIZE) {
-      evictOldest();
+    if (authReq.keyType === 'agent' && authReq.agentApiKey && authReq.agentRateLimit) {
+      limit = authReq.agentRateLimit;
+      agentApiKey = authReq.agentApiKey;
     }
 
-    counterStore.set(keyId, entry);
-  }
+    if (!limit || !agentApiKey) return next();
 
-  // Increment counter
-  entry.count++;
+    if (!limiterCache.has(agentApiKey)) {
+      if (limiterCache.size >= MAX_CACHE_SIZE) {
+        const firstKey = limiterCache.keys().next().value as string;
+        limiterCache.delete(firstKey);
+      }
 
-  // Check if limit exceeded
-  const allowed = entry.count <= limit;
-  const remaining = Math.max(0, limit - entry.count);
-  const resetTime = entry.windowStart + WINDOW_MS;
+      limiterCache.set(agentApiKey, rateLimit({
+        windowMs: 60 * 1000,
+        max: limit,
+        standardHeaders: true,
+        legacyHeaders: false,
+        keyGenerator: () => agentApiKey as string,
+        message: { success: false, error: 'Your carapace lacks the capacity! Agent rate limit exceeded.' },
+      }));
+    }
 
-  return { allowed, remaining, resetTime };
-}
-
-/**
- * Express middleware: Apply per-key rate limiting for lobster keys
- *
- * Flow:
- * 1. Skip if not authenticated or not a lobster key
- * 2. Skip if rate_limit is NULL or 0 (unlimited)
- * 3. Check counter; if over limit, respond with 429
- * 4. Otherwise, attach rate limit headers and continue
- */
-export const lobsterRateLimiter = (req: Request, res: Response, next: NextFunction) => {
-  const authReq = req as AuthRequest;
-
-  // Only apply to lobster keys
-  if (!authReq.user || authReq.user.keyType !== 'lobster') {
-    return next();
-  }
-
-  // Skip if no rate limit configured (unlimited)
-  if (!authReq.user.rateLimit || authReq.user.rateLimit <= 0) {
-    return next();
-  }
-
-  // Skip if no key ID (shouldn't happen, but defensive)
-  if (!authReq.user.lobsterKeyId) {
-    return next();
-  }
-
-  // Check rate limit
-  const { allowed, remaining, resetTime } = checkRateLimit(
-    authReq.user.lobsterKeyId,
-    authReq.user.rateLimit
-  );
-
-  // Set rate limit headers
-  res.setHeader('RateLimit-Limit', authReq.user.rateLimit.toString());
-  res.setHeader('RateLimit-Remaining', remaining.toString());
-  res.setHeader('RateLimit-Reset', Math.ceil(resetTime / 1000).toString());
-
-  if (!allowed) {
-    return res.status(429).json({
-      success: false,
-      error: 'Your carapace lacks the capacity! Agent rate limit exceeded.',
-    });
-  }
-
-  return next();
+    limiterCache.get(agentApiKey)!(req, res, next);
+  };
 };

@@ -1,65 +1,66 @@
 import { Router, Response } from 'express';
-import singletonDb from '../database/index';
+import db from '../database/index';
 import { createAuditLogger } from '../utils/auditLogger';
 import { requireAuth, requireHuman } from '../middleware/auth';
 import { validateBody } from '../middleware/validate';
-import { LobsterKeySchemas } from '../validation/schemas';
+import { AgentKeySchemas } from '../validation/schemas';
 
 const router = Router();
+const audit = createAuditLogger(db);
 
-router.get('/', requireAuth(), requireHuman(), (req: any, res: Response) => {
-  const db = req.db || singletonDb;
+router.get('/', requireAuth, requireHuman, (req: any, res: Response) => {
+  const userUuid = req.userUuid;
   try {
     const keys = db.prepare(`
-      SELECT id, name, api_key, permissions, expiration_type, expiration_date, rate_limit, is_active, created_at, last_used 
-      FROM lobster_keys 
-      WHERE user_uuid = ? 
+      SELECT id, name, description, permissions, expiration_type, expiration_date, rate_limit, is_active, created_at, last_used
+      FROM agent_keys
+      WHERE user_uuid = ?
       ORDER BY created_at DESC
-    `).all(req.user!.uuid);
+    `).all(userUuid);
     res.json({ data: keys });
   } catch (error) {
-    res.status(500).json({ error: 'Failed to fetch lobster keys' });
+    res.status(500).json({ error: 'Failed to fetch agent keys' });
   }
 });
 
-router.post('/', requireAuth(), requireHuman(), validateBody(LobsterKeySchemas.create), (req: any, res: Response) => {
-  const db = req.db || singletonDb;
-  const audit = createAuditLogger(db);
-  const { id, name, permissions, expiration_type, expiration_date, rate_limit, api_key_hash, api_key } = req.body;
+router.post('/', requireAuth, requireHuman, validateBody(AgentKeySchemas.create), (req: any, res: Response) => {
+  const { id, name, description, permissions, expiration_type, expiration_date, rate_limit, api_key } = req.body;
+  const userUuid = req.userUuid;
   const now = new Date().toISOString();
 
   try {
     db.prepare(`
-      INSERT INTO lobster_keys (id, user_uuid, name, api_key, api_key_hash, permissions, expiration_type, expiration_date, rate_limit, is_active, created_at)
+      INSERT INTO agent_keys (id, user_uuid, name, description, api_key, permissions, expiration_type, expiration_date, rate_limit, is_active, created_at)
       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 1, ?)
     `).run(
       id,
-      req.user!.uuid,
+      userUuid,
       name,
+      description || null,
       api_key,
-      api_key_hash,
       JSON.stringify(permissions),
-      expiration_type,
+      expiration_type || 'never',
       expiration_date || null,
       rate_limit || null,
       now
     );
 
-    audit.log('LOBSTER_KEY_CREATE', {
-      actor: req.user!.uuid,
+    audit.log('AGENT_KEY_CREATE', {
+      actor: userUuid,
       actor_type: 'human',
       action: 'create',
       outcome: 'success',
-      resource: 'lobster_key',
+      resource: 'agent_key',
       details: { key_id: id, name },
       ip_address: req.ip,
-      user_agent: req.headers['user-agent'] as string
+      user_agent: (req.headers?.['user-agent'] as string) || 'unknown'
     });
 
     res.status(201).json({
       data: {
         id,
         name,
+        description,
         api_key,
         permissions,
         expiration_type,
@@ -70,37 +71,36 @@ router.post('/', requireAuth(), requireHuman(), validateBody(LobsterKeySchemas.c
       }
     });
   } catch (error) {
-    console.error('[Agents] Failed to create lobster key:', error);
-    res.status(500).json({ error: 'Failed to create lobster key' });
+    console.error('[Agents] Failed to create agent key:', error);
+    res.status(500).json({ error: 'Failed to create agent key' });
   }
 });
 
-router.put('/:id/revoke', requireAuth(), requireHuman(), (req: any, res: Response) => {
-  const db = req.db || singletonDb;
-  const audit = createAuditLogger(db);
+router.put('/:id/revoke', requireAuth, requireHuman, (req: any, res: Response) => {
   const { id } = req.params;
+  const userUuid = req.userUuid;
 
   try {
-    const result = db.prepare('UPDATE lobster_keys SET is_active = 0 WHERE id = ? AND user_uuid = ?').run(id, req.user!.uuid);
-    
+    const result = db.prepare('UPDATE agent_keys SET is_active = 0 WHERE id = ? AND user_uuid = ?').run(id, userUuid);
+
     if (result.changes === 0) {
-      return res.status(404).json({ error: 'Lobster key not found' });
+      return res.status(404).json({ error: 'Agent key not found' });
     }
 
-    audit.log('LOBSTER_KEY_REVOKE', {
-      actor: req.user!.uuid,
+    audit.log('AGENT_KEY_REVOKE', {
+      actor: userUuid,
       actor_type: 'human',
       action: 'revoke',
       outcome: 'success',
-      resource: 'lobster_key',
+      resource: 'agent_key',
       details: { key_id: id },
       ip_address: req.ip,
-      user_agent: req.headers['user-agent'] as string
+      user_agent: (req.headers?.['user-agent'] as string) || 'unknown'
     });
 
     res.json({ data: { success: true } });
   } catch (error) {
-    res.status(500).json({ error: 'Failed to revoke lobster key' });
+    res.status(500).json({ error: 'Failed to revoke agent key' });
   }
 });
 

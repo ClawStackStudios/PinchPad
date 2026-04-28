@@ -1,23 +1,20 @@
 import { Router, Response } from 'express';
 import multer from 'multer';
 import crypto from 'crypto';
-import singletonDb from '../database/index';
-import { requireAuth } from '../middleware/auth';
+import db from '../database/index';
+import { requireAuth, type AuthRequest } from '../middleware/auth';
 import { createAuditLogger } from '../utils/auditLogger';
 
 const router = Router();
-const audit = createAuditLogger(singletonDb);
+const audit = createAuditLogger(db);
 
-// Configure multer for memory storage
 const storage = multer.memoryStorage();
-const upload = multer({ 
+const upload = multer({
   storage,
-  limits: { fileSize: 10 * 1024 * 1024 } // 10MB limit
+  limits: { fileSize: 10 * 1024 * 1024 }
 });
 
-/** POST /api/photos/upload — Upload a photo for a pearl */
-router.post('/upload', requireAuth(), upload.single('photo'), (req: any, res: Response) => {
-  const db = req.db || singletonDb;
+router.post('/upload', requireAuth, upload.single('photo'), (req: AuthRequest, res: Response) => {
   const { pearlId } = req.body;
   const file = req.file;
 
@@ -33,8 +30,7 @@ router.post('/upload', requireAuth(), upload.single('photo'), (req: any, res: Re
   const now = new Date().toISOString();
 
   try {
-    // Verify pearl existence and ownership
-    const pearl = db.prepare('SELECT id FROM notes WHERE id = ? AND user_uuid = ?').get(pearlId, req.user!.uuid);
+    const pearl = db.prepare('SELECT id FROM notes WHERE id = ? AND user_uuid = ?').get(pearlId, req.userUuid);
     if (!pearl) {
       return res.status(404).json({ error: 'Pearl not found or access denied' });
     }
@@ -45,7 +41,7 @@ router.post('/upload', requireAuth(), upload.single('photo'), (req: any, res: Re
     `).run(
       id,
       pearlId,
-      req.user!.uuid,
+      req.userUuid,
       file.originalname,
       file.mimetype,
       file.buffer,
@@ -53,24 +49,24 @@ router.post('/upload', requireAuth(), upload.single('photo'), (req: any, res: Re
     );
 
     audit.log('PHOTO_UPLOAD', {
-      actor: req.user!.uuid,
-      actor_type: 'human',
+      actor: req.userUuid,
+      actor_type: req.keyType,
       action: 'upload',
       outcome: 'success',
       resource: 'photo',
       details: { photo_id: id, pearl_id: pearlId },
       ip_address: req.ip,
-      user_agent: req.headers['user-agent'] as string
+      user_agent: (req.headers?.['user-agent'] as string) || 'unknown'
     });
 
-    res.status(201).json({ 
-      success: true, 
-      data: { 
-        id, 
+    res.status(201).json({
+      success: true,
+      data: {
+        id,
         filename: file.originalname,
         mimeType: file.mimetype,
-        url: `/api/photos/${id}` 
-      } 
+        url: `/api/photos/${id}`
+      }
     });
   } catch (error) {
     console.error('[Photos] Upload error:', error);
@@ -78,14 +74,12 @@ router.post('/upload', requireAuth(), upload.single('photo'), (req: any, res: Re
   }
 });
 
-/** GET /api/photos/:id — Serve photo binary */
 router.get('/:id', (req: any, res: Response) => {
-  const db = req.db || singletonDb;
   const { id } = req.params;
 
   try {
     const photo = db.prepare('SELECT data, mime_type FROM pearl_photos WHERE id = ?').get(id) as any;
-    
+
     if (!photo) {
       return res.status(404).json({ error: 'Photo not found' });
     }
@@ -99,27 +93,25 @@ router.get('/:id', (req: any, res: Response) => {
   }
 });
 
-/** DELETE /api/photos/:id — Delete a photo */
-router.delete('/:id', requireAuth(), (req: any, res: Response) => {
-  const db = req.db || singletonDb;
+router.delete('/:id', requireAuth, (req: AuthRequest, res: Response) => {
   const { id } = req.params;
 
   try {
-    const result = db.prepare('DELETE FROM pearl_photos WHERE id = ? AND user_uuid = ?').run(id, req.user!.uuid);
-    
+    const result = db.prepare('DELETE FROM pearl_photos WHERE id = ? AND user_uuid = ?').run(id, req.userUuid);
+
     if (result.changes === 0) {
       return res.status(404).json({ error: 'Photo not found or access denied' });
     }
 
     audit.log('PHOTO_DELETE', {
-      actor: req.user!.uuid,
-      actor_type: 'human',
+      actor: req.userUuid,
+      actor_type: req.keyType,
       action: 'delete',
       outcome: 'success',
       resource: 'photo',
       details: { photo_id: id },
       ip_address: req.ip,
-      user_agent: req.headers['user-agent'] as string
+      user_agent: (req.headers?.['user-agent'] as string) || 'unknown'
     });
 
     res.json({ success: true });

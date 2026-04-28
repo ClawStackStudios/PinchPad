@@ -1,10 +1,12 @@
 import { describe, it, expect, beforeAll, afterAll } from 'vitest';
 import Database from 'better-sqlite3-multiple-ciphers';
+import crypto from 'crypto';
 import express from 'express';
 import request from 'supertest';
 import authRouter from '../../src/server/routes/auth';
 import notesRouter from '../../src/server/routes/notes';
 import agentsRouter from '../../src/server/routes/agents';
+import { createTestApp } from '../shared/app';
 
 describe('Cross-User Data Isolation', () => {
   let db: Database.Database;
@@ -12,93 +14,31 @@ describe('Cross-User Data Isolation', () => {
 
   // User A credentials and token
   const userA = {
-    uuid: 'user-a-isolation',
+    uuid: crypto.randomUUID(),
     username: 'useraisolation',
-    keyHash: 'user-a-hash',
+    keyHash: crypto.createHash('sha256').update('user-a-secret').digest('hex'),
     displayName: 'User A'
   };
   let tokenA: string;
 
   // User B credentials and token
   const userB = {
-    uuid: 'user-b-isolation',
+    uuid: crypto.randomUUID(),
     username: 'userbisolation',
-    keyHash: 'user-b-hash',
+    keyHash: crypto.createHash('sha256').update('user-b-secret').digest('hex'),
     displayName: 'User B'
   };
   let tokenB: string;
 
   // Shared resource IDs
-  let noteAId: string = 'note-a-isolation-1';
-  let agentKeyAId: string = 'agent-a-isolation-1';
+  let noteAId: string = crypto.randomUUID();
+  let noteBId: string = crypto.randomUUID();
+  let agentKeyAId: string = crypto.randomUUID();
 
   beforeAll(() => {
-    // Create in-memory database
-    db = new Database(':memory:');
-    db.pragma('foreign_keys = ON');
-
-    // Initialize schema
-    db.exec(`
-      CREATE TABLE users (
-        uuid TEXT PRIMARY KEY,
-        username TEXT UNIQUE NOT NULL,
-        display_name TEXT,
-        key_hash TEXT NOT NULL UNIQUE,
-        created_at TEXT NOT NULL
-      );
-
-      CREATE TABLE api_tokens (
-        key TEXT PRIMARY KEY,
-        owner_uuid TEXT NOT NULL,
-        owner_type TEXT NOT NULL,
-        lobster_key_id TEXT,
-        expires_at TEXT,
-        created_at TEXT NOT NULL,
-        FOREIGN KEY(owner_uuid) REFERENCES users(uuid) ON DELETE CASCADE
-      );
-
-      CREATE TABLE lobster_keys (
-        id TEXT PRIMARY KEY,
-        user_uuid TEXT NOT NULL,
-        name TEXT NOT NULL,
-        api_key TEXT,
-        api_key_hash TEXT UNIQUE,
-        permissions TEXT NOT NULL,
-        expiration_type TEXT NOT NULL,
-        expiration_date TEXT,
-        rate_limit INTEGER,
-        is_active INTEGER DEFAULT 1,
-        created_at TEXT NOT NULL,
-        last_used TEXT,
-        FOREIGN KEY(user_uuid) REFERENCES users(uuid) ON DELETE CASCADE
-      );
-
-      CREATE TABLE notes (
-        id TEXT PRIMARY KEY,
-        user_uuid TEXT NOT NULL,
-        title TEXT NOT NULL,
-        content TEXT NOT NULL,
-        starred INTEGER DEFAULT 0,
-        pinned INTEGER DEFAULT 0,
-        created_at TEXT NOT NULL,
-        updated_at TEXT NOT NULL,
-        FOREIGN KEY(user_uuid) REFERENCES users(uuid) ON DELETE CASCADE
-      );
-    `);
-
-    // Create Express app
-    app = express();
-    app.use(express.json());
-
-    // Provide db to routes via middleware
-    app.use((req: any, res, next) => {
-      req.db = db;
-      next();
-    });
-
-    app.use('/api/auth', authRouter);
-    app.use('/api/notes', notesRouter);
-    app.use('/api/agents', agentsRouter);
+    const testSetup = createTestApp();
+    app = testSetup.app;
+    db = testSetup.db;
   });
 
   afterAll(() => {
@@ -131,9 +71,9 @@ describe('Cross-User Data Isolation', () => {
           type: 'human'
         });
 
-      expect(response.status).toBe(200);
-      expect(response.body.token).toBeDefined();
-      tokenA = response.body.token;
+      expect(response.status).toBe(201);
+      expect(response.body.data.token).toBeDefined();
+      tokenA = response.body.data.token;
     });
 
     it('4. Get token for user B', async () => {
@@ -145,9 +85,9 @@ describe('Cross-User Data Isolation', () => {
           type: 'human'
         });
 
-      expect(response.status).toBe(200);
-      expect(response.body.token).toBeDefined();
-      tokenB = response.body.token;
+      expect(response.status).toBe(201);
+      expect(response.body.data.token).toBeDefined();
+      tokenB = response.body.data.token;
     });
   });
 
@@ -220,7 +160,7 @@ describe('Cross-User Data Isolation', () => {
         .post('/api/notes')
         .set('Authorization', `Bearer ${tokenB}`)
         .send({
-          id: 'note-b-isolation-1',
+          id: noteBId,
           title: 'User B Note',
           content: 'Only for user B'
         });
@@ -308,7 +248,7 @@ describe('Cross-User Data Isolation', () => {
       expect(response.status).toBe(404);
 
       // Verify key is still active
-      const key = db.prepare('SELECT is_active FROM lobster_keys WHERE id = ?').get(agentKeyAId) as any;
+      const key = db.prepare('SELECT is_active FROM agent_keys WHERE id = ?').get(agentKeyAId) as any;
       expect(key.is_active).toBe(1);
     });
 
@@ -320,7 +260,7 @@ describe('Cross-User Data Isolation', () => {
       expect(response.status).toBe(200);
 
       // Verify key is revoked
-      const key = db.prepare('SELECT is_active FROM lobster_keys WHERE id = ?').get(agentKeyAId) as any;
+      const key = db.prepare('SELECT is_active FROM agent_keys WHERE id = ?').get(agentKeyAId) as any;
       expect(key.is_active).toBe(0);
     });
   });
@@ -344,7 +284,7 @@ describe('Cross-User Data Isolation', () => {
 
       expect(response.status).toBe(200);
       expect(response.body.data).toHaveLength(1);
-      expect(response.body.data[0].id).toBe('note-b-isolation-1');
+      expect(response.body.data[0].id).toBe(noteBId);
       // Verify user A's attack note is NOT in the results
       expect(response.body.data.some((note: any) => note.id === 'note-attack-test')).toBe(false);
     });
@@ -370,14 +310,14 @@ describe('Cross-User Data Isolation', () => {
     let deleteUserToken: string;
 
     it('22. Create user for deletion test', async () => {
-      deleteUserUuid = 'user-delete-test';
+      deleteUserUuid = crypto.randomUUID();
       const response = await request(app)
         .post('/api/auth/register')
         .send({
           uuid: deleteUserUuid,
           username: 'deleteuser',
           displayName: 'Delete User',
-          keyHash: 'delete-hash'
+          keyHash: crypto.createHash('sha256').update('delete-hash').digest('hex')
         });
 
       expect(response.status).toBe(201);
@@ -386,11 +326,11 @@ describe('Cross-User Data Isolation', () => {
         .post('/api/auth/token')
         .send({
           uuid: deleteUserUuid,
-          keyHash: 'delete-hash',
+          keyHash: crypto.createHash('sha256').update('delete-hash').digest('hex'),
           type: 'human'
         });
 
-      deleteUserToken = tokenResponse.body.token;
+      deleteUserToken = tokenResponse.body.data.token;
     });
 
     it('23. User can create resources before deletion', async () => {
@@ -398,9 +338,9 @@ describe('Cross-User Data Isolation', () => {
         .post('/api/notes')
         .set('Authorization', `Bearer ${deleteUserToken}`)
         .send({
-          id: 'note-delete-1',
+          id: crypto.randomUUID(),
           title: 'To be deleted',
-          content: 'With user'
+          content: 'This note should disappear'
         });
 
       const note = db.prepare('SELECT * FROM notes WHERE user_uuid = ?').get(deleteUserUuid);

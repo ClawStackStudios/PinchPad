@@ -102,13 +102,20 @@ export const authService = {
     }
 
     const pearl = await response.json();
-    localStorage.setItem(SESSION_KEYS.token, pearl.token);
-    localStorage.setItem(SESSION_KEYS.username, pearl.username);
-    if (pearl.displayName) localStorage.setItem(SESSION_KEYS.displayName, pearl.displayName);
-    localStorage.setItem(SESSION_KEYS.uuid, pearl.uuid);
-    localStorage.setItem(EXPIRY_KEY, String(Date.now() + 86400000)); // 24 hours
+    const data = pearl.data;
+    localStorage.setItem(SESSION_KEYS.token, data.token);
+    localStorage.setItem(SESSION_KEYS.username, data.user.username);
+    if (data.user.displayName) localStorage.setItem(SESSION_KEYS.displayName, data.user.displayName);
+    localStorage.setItem(SESSION_KEYS.uuid, data.user.uuid);
+    
+    // Store exact expiry if provided, otherwise default to 24h fallback
+    if (data.expiresAt) {
+      localStorage.setItem(EXPIRY_KEY, String(new Date(data.expiresAt).getTime()));
+    } else {
+      localStorage.setItem(EXPIRY_KEY, String(Date.now() + 86400000));
+    }
 
-    return { token: pearl.token, username: pearl.username, displayName: pearl.displayName, uuid: pearl.uuid };
+    return { token: data.token, username: data.user.username, displayName: data.user.displayName || null, uuid: data.user.uuid };
   },
 
   async login(identityFileContent: string): Promise<{ token: string, username: string, displayName: string | null, uuid: string }> {
@@ -134,17 +141,23 @@ export const authService = {
     }
 
     const pearl = await response.json();
-    localStorage.setItem(SESSION_KEYS.token, pearl.token);
-    localStorage.setItem(SESSION_KEYS.username, pearl.username);
-    if (pearl.displayName) localStorage.setItem(SESSION_KEYS.displayName, pearl.displayName);
-    localStorage.setItem(SESSION_KEYS.uuid, pearl.uuid);
-    localStorage.setItem(EXPIRY_KEY, String(Date.now() + 86400000)); // 24 hours
+    const data = pearl.data;
+    localStorage.setItem(SESSION_KEYS.token, data.token);
+    localStorage.setItem(SESSION_KEYS.username, data.user.username);
+    if (data.user.displayName) localStorage.setItem(SESSION_KEYS.displayName, data.user.displayName);
+    localStorage.setItem(SESSION_KEYS.uuid, data.user.uuid);
+    
+    if (data.expiresAt) {
+      localStorage.setItem(EXPIRY_KEY, String(new Date(data.expiresAt).getTime()));
+    } else {
+      localStorage.setItem(EXPIRY_KEY, String(Date.now() + 86400000));
+    }
 
-    return { token: pearl.token, username: pearl.username, displayName: pearl.displayName, uuid: pearl.uuid };
+    return { token: data.token, username: data.user.username, displayName: data.user.displayName || null, uuid: data.user.uuid };
   },
 
   async verifyToken(token: string): Promise<{ uuid: string, username: string, displayName: string | null }> {
-    const response = await apiFetch(`${getApiBaseUrl()}/api/auth/verify`, {
+    const response = await apiFetch(`${getApiBaseUrl()}/api/auth/validate`, {
       method: 'GET',
       headers: {
         'Authorization': `Bearer ${token}`
@@ -155,7 +168,13 @@ export const authService = {
       throw new Error('Token expired or invalid');
     }
 
-    return await response.json();
+    const result = await response.json();
+    return {
+      uuid: result.data.userUuid,
+      // fallback to local storage since validate only returns uuid and keyType
+      username: localStorage.getItem(SESSION_KEYS.username) || 'User',
+      displayName: localStorage.getItem(SESSION_KEYS.displayName)
+    };
   },
 
   async logout() {

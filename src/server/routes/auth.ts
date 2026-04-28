@@ -1,38 +1,41 @@
 import { Router, Response } from 'express';
 import crypto from 'crypto';
-import singletonDb from '../database/index';
+import db from '../database/index';
 import { createAuditLogger } from '../utils/auditLogger';
-import { calculateExpiry } from '../utils/tokenExpiry';
 import { generateString, timingSafeEqualWithHashing } from '../utils/crypto';
 import { validateBody } from '../middleware/validate';
 import { AuthSchemas } from '../validation/schemas';
+import { calculateExpiry } from '../utils/tokenExpiry';
+import { authLimiter } from '../middleware/rateLimiter';
+import { requireAuth, AuthRequest } from '../middleware/auth';
 
 const router = Router();
+const audit = createAuditLogger(db);
 
-/** POST /api/auth/register */
-router.post('/register', validateBody(AuthSchemas.register), (req: any, res: Response) => {
-  const db = req.db || singletonDb;
-  const audit = createAuditLogger(db);
-  const { uuid, username, keyHash, displayName } = req.body;
-  
+function detectKeyType(key: string) {
+  if (key?.startsWith('hu-'))  return 'human';
+  if (key?.startsWith('lb-'))  return 'agent';
+  if (key?.startsWith('api-')) return 'api';
+  return null;
+}
+
+router.post('/register', authLimiter, validateBody(AuthSchemas.register), (req: any, res: Response) => {
+  const { uuid, username, keyHash } = req.body;
+
   try {
-    db.prepare('INSERT INTO users (uuid, username, display_name, key_hash, created_at) VALUES (?, ?, ?, ?, ?)').run(
-      uuid, 
-      username, 
-      displayName || null,
-      keyHash, 
-      new Date().toISOString()
+    db.prepare('INSERT INTO users (uuid, username, key_hash, created_at) VALUES (?, ?, ?, ?)').run(
+      uuid, username, keyHash, new Date().toISOString()
     );
 
-    audit.log('AUTH_REGISTER', { 
-      actor: uuid, 
-      actor_type: 'human', 
-      action: 'register', 
-      outcome: 'success', 
-      resource: 'user', 
-      details: { username, user_uuid: uuid }, 
-      ip_address: req.ip, 
-      user_agent: req.headers['user-agent'] as string 
+    audit.log('AUTH_REGISTER', {
+      actor: uuid,
+      actor_type: 'human',
+      action: 'register',
+      outcome: 'success',
+      resource: 'user',
+      details: { username, user_uuid: uuid },
+      ip_address: req.ip,
+      user_agent: (req.headers?.['user-agent'] as string) || 'unknown'
     });
 
     res.status(201).json({ success: true });
@@ -47,141 +50,146 @@ router.post('/register', validateBody(AuthSchemas.register), (req: any, res: Res
     if (err.message?.includes('UNIQUE constraint failed: users.uuid')) {
       return res.status(409).json({ success: false, error: 'Identity already registered (UUID conflict).' });
     }
-    return res.status(500).json({ 
-      success: false, 
-      error: 'Failed to register user.',
-      message: err.message // Providing message for collaborative debugging
+    return res.status(500).json({
+      success: false,
+      error: 'Failed to register user.'
     });
   }
 });
 
-/** POST /api/auth/token */
-router.post('/token', validateBody(AuthSchemas.token), (req: any, res: Response) => {
-  const db = req.db || singletonDb;
-  const audit = createAuditLogger(db);
+router.post('/token', authLimiter, validateBody(AuthSchemas.token), (req: any, res: Response) => {
   const { type, uuid, username, keyHash, ownerKey } = req.body;
   const ttl = process.env.TOKEN_TTL_DEFAULT || '1d';
   const expiresAt = calculateExpiry(ttl);
 
   if (type === 'human') {
     let user: any;
+    const searchKey = uuid || username || keyHash;
+    if (!searchKey) {
+      return res.status(400).json({ success: false, error: 'Invalid authentication request' });
+    }
+
+    const keyHashToUse = keyHash || (uuid ? null : crypto.createHash('sha256').update(searchKey).digest('hex'));
+
     if (uuid) {
       user = db.prepare('SELECT * FROM users WHERE uuid = ?').get(uuid);
     } else if (username) {
       user = db.prepare('SELECT * FROM users WHERE username = ?').get(username);
-    } else if (keyHash) {
-      user = db.prepare('SELECT * FROM users WHERE key_hash = ?').get(keyHash);
+    } else if (keyHashToUse) {
+      user = db.prepare('SELECT * FROM users WHERE key_hash = ?').get(keyHashToUse);
     }
 
     if (!user) {
-      audit.log('AUTH_FAILURE', { 
-        action: 'login', 
-        outcome: 'failure', 
-        actor_type: 'human', 
-        ip_address: req.ip, 
-        user_agent: req.headers['user-agent'] as string 
+      audit.log('AUTH_FAILURE', {
+        action: 'login',
+        outcome: 'failure',
+        actor_type: 'human',
+        ip_address: req.ip,
+        user_agent: req.headers['user-agent'] as string
       });
-      return res.status(404).json({ 
-        success: false, 
-        error: 'Identity not registered on this node' 
-      });
+      return res.status(404).json({ success: false, error: 'Identity not registered on this node' });
     }
 
-    // 🛡️ Sentinel Security Patch: Timing-safe comparison
-    const keyMatch = timingSafeEqualWithHashing(user.key_hash, keyHash || '');
+    const keyMatch = timingSafeEqualWithHashing(user.key_hash, keyHashToUse || '');
 
     if (!keyMatch) {
-      audit.log('AUTH_FAILURE', { 
-        action: 'login', 
-        outcome: 'failure', 
-        actor_type: 'human', 
-        ip_address: req.ip, 
-        user_agent: req.headers['user-agent'] as string, 
-        details: { user_uuid: user.uuid } 
+      audit.log('AUTH_FAILURE', {
+        action: 'login',
+        outcome: 'failure',
+        actor_type: 'human',
+        ip_address: req.ip,
+        user_agent: req.headers['user-agent'] as string,
+        details: { user_uuid: user.uuid }
       });
-      return res.status(401).json({ 
-        success: false, 
-        error: 'Invalid identity key' 
-      });
+      return res.status(401).json({ success: false, error: 'Invalid identity key' });
     }
 
-    const token = `api-${generateString(32)}`;
-    const tokenHash = crypto.createHash('sha256').update(token).digest('hex');
+    // Invalidate previous tokens for this human user
+    db.prepare('DELETE FROM api_tokens WHERE owner_key = ? AND owner_type = ?').run(user.uuid, 'human');
 
+    const token = `api-${generateString(32)}`;
     db.prepare('INSERT INTO api_tokens (key, owner_key, owner_type, created_at, expires_at) VALUES (?, ?, ?, ?, ?)').run(
-      tokenHash, 
-      user.uuid, 
-      'human', 
-      new Date().toISOString(), 
-      expiresAt
+      token, user.uuid, 'human', new Date().toISOString(), expiresAt
     );
 
-    audit.log('AUTH_SUCCESS', { 
-      actor: user.uuid, 
-      actor_type: 'human', 
-      action: 'login', 
-      outcome: 'success', 
-      ip_address: req.ip, 
-      user_agent: req.headers['user-agent'] as string 
+    audit.log('AUTH_SUCCESS', {
+      actor: user.uuid,
+      actor_type: 'human',
+      action: 'login',
+      outcome: 'success',
+      ip_address: req.ip,
+      user_agent: req.headers['user-agent'] as string
     });
 
-    return res.status(201).json({ 
-      success: true, 
-      token, 
-      type: 'human', 
-      uuid: user.uuid, 
-      username: user.username, 
-      displayName: user.display_name 
+    return res.status(201).json({
+      success: true,
+      data: {
+        token,
+        type: 'human',
+        createdAt: new Date().toISOString(),
+        expiresAt,
+        user: { uuid: user.uuid, username: user.username }
+      }
     });
 
-  } else if (type === 'lobster') {
-    const lobsterKey = ownerKey;
-    if (!lobsterKey?.startsWith('lb-')) {
-      return res.status(400).json({ success: false, error: 'Invalid lobster key' });
+  } else if (type === 'agent' || (ownerKey && detectKeyType(ownerKey) === 'agent')) {
+    const agentKey = ownerKey;
+    if (!agentKey?.startsWith('lb-')) return res.status(400).json({ success: false, error: 'Invalid agent key' });
+
+    // Sentinel: Fetch by key, then verify with timingSafeEqual to ensure constant-time response profiles
+    const agent = db.prepare('SELECT * FROM agent_keys WHERE api_key = ? AND is_active = 1').get(agentKey) as any;
+    
+    // Sentinel Security Patch: Timing-safe comparison with pre-hashing
+    let keyMatch = false;
+    if (agent) {
+      try {
+        const storedKeyHash = crypto.createHash('sha256').update(agent.api_key).digest();
+        const providedKeyHash = crypto.createHash('sha256').update(agentKey).digest();
+        keyMatch = crypto.timingSafeEqual(storedKeyHash, providedKeyHash);
+      } catch {
+        keyMatch = false;
+      }
     }
 
-    // 🛡️ Sentinel: Fetch by key hash to avoid timing leaks during lookup
-    const lobsterKeyHash = crypto.createHash('sha256').update(lobsterKey).digest('hex');
-    const lobster = db.prepare('SELECT * FROM lobster_keys WHERE api_key_hash = ? AND is_active = 1').get(lobsterKeyHash) as any;
-    
-    if (!lobster) {
-      audit.log('AUTH_FAILURE', { 
-        action: 'login', 
-        outcome: 'failure', 
-        actor_type: 'lobster', 
-        ip_address: req.ip, 
-        user_agent: req.headers['user-agent'] as string 
+    if (!agent || !keyMatch) {
+      audit.log('AUTH_FAILURE', {
+        action: 'login',
+        outcome: 'failure',
+        actor_type: 'agent',
+        ip_address: req.ip,
+        user_agent: req.headers['user-agent'] as string
       });
-      return res.status(401).json({ success: false, error: 'Invalid or revoked lobster key' });
+      return res.status(401).json({ success: false, error: 'Invalid or revoked agent key' });
+    }
+
+    if (agent.expiration_date && new Date(agent.expiration_date) < new Date()) {
+      return res.status(401).json({ success: false, error: 'Lobster key expired' });
     }
 
     const token = `api-${generateString(32)}`;
-    const tokenHash = crypto.createHash('sha256').update(token).digest('hex');
-
-    db.prepare('INSERT INTO api_tokens (key, owner_key, owner_type, lobster_key_id, created_at, expires_at) VALUES (?, ?, ?, ?, ?, ?)').run(
-      tokenHash, 
-      lobster.user_uuid, 
-      'lobster', 
-      lobster.id, 
-      new Date().toISOString(), 
-      expiresAt
+    db.prepare('INSERT INTO api_tokens (key, owner_key, owner_type, created_at, expires_at) VALUES (?, ?, ?, ?, ?)').run(
+      token, agentKey, 'agent', new Date().toISOString(), expiresAt
     );
 
-    db.prepare('UPDATE lobster_keys SET last_used = ? WHERE id = ?').run(new Date().toISOString(), lobster.id);
+    db.prepare('UPDATE agent_keys SET last_used = ? WHERE api_key = ?').run(new Date().toISOString(), agentKey);
 
-    audit.log('AUTH_SUCCESS', { 
-      actor: lobster.id, 
-      actor_type: 'lobster', 
-      action: 'login', 
-      outcome: 'success', 
-      ip_address: req.ip, 
-      user_agent: req.headers['user-agent'] as string 
+    audit.log('AUTH_SUCCESS', {
+      actor: agent.id,
+      actor_type: 'agent',
+      action: 'login',
+      outcome: 'success',
+      ip_address: req.ip,
+      user_agent: req.headers['user-agent'] as string
     });
 
-    return res.status(201).json({ 
-      success: true, 
-      token, 
-      type: 'lobster' 
+    return res.status(201).json({
+      success: true,
+      data: {
+        token,
+        type: 'agent',
+        createdAt: new Date().toISOString(),
+        expiresAt
+      }
     });
 
   } else {
@@ -189,50 +197,28 @@ router.post('/token', validateBody(AuthSchemas.token), (req: any, res: Response)
   }
 });
 
-/** GET /api/auth/verify */
-router.get('/verify', (req: any, res: Response) => {
-  const db = req.db || singletonDb;
-  const authHeader = req.headers.authorization;
-  if (!authHeader || !authHeader.startsWith('Bearer ')) {
-    return res.status(401).json({ success: false, error: 'Missing token' });
-  }
-
-  const token = authHeader.slice(7);
-  const tokenHash = crypto.createHash('sha256').update(token).digest('hex');
-
-  try {
-    const row = db.prepare(`
-      SELECT owner_key as uuid, username, display_name, owner_type as type
-      FROM api_tokens t
-      JOIN users u ON t.owner_key = u.uuid
-      WHERE t.key = ? AND datetime(t.expires_at) > datetime('now')
-    `).get(tokenHash) as any;
-
-    if (!row) {
-      return res.status(401).json({ success: false, error: 'Token expired or invalid' });
-    }
-
-    res.json(row);
-  } catch (error) {
-    res.status(500).json({ success: false, error: 'Verification failed' });
-  }
+router.get('/validate', requireAuth, (req, res) => {
+  const authReq = req as AuthRequest;
+  res.json({ success: true, data: { valid: true, keyType: authReq.keyType, userUuid: authReq.userUuid } });
 });
 
-/** POST /api/auth/logout */
+router.get('/verify', requireAuth, (req, res) => {
+  // Legacy alias for validate to not instantly break older clients that relied on /verify
+  const authReq = req as AuthRequest;
+  res.json({ success: true, valid: true, type: authReq.keyType, uuid: authReq.userUuid });
+});
+
 router.post('/logout', (req: any, res: Response) => {
-  const db = req.db || singletonDb;
-  const audit = createAuditLogger(db);
   const authHeader = req.headers.authorization;
   if (!authHeader || !authHeader.startsWith('Bearer ')) {
     return res.status(401).json({ error: 'Missing token' });
   }
 
   const token = authHeader.slice(7);
-  const tokenHash = crypto.createHash('sha256').update(token).digest('hex');
 
   try {
-    const tokenRecord = db.prepare('SELECT owner_key, owner_type FROM api_tokens WHERE key = ?').get(tokenHash) as any;
-    const result = db.prepare('DELETE FROM api_tokens WHERE key = ?').run(tokenHash);
+    const tokenRecord = db.prepare('SELECT owner_key, owner_type FROM api_tokens WHERE key = ?').get(token) as any;
+    const result = db.prepare('DELETE FROM api_tokens WHERE key = ?').run(token);
 
     if (result.changes > 0 && tokenRecord) {
       audit.log('AUTH_LOGOUT', {
@@ -241,7 +227,7 @@ router.post('/logout', (req: any, res: Response) => {
         action: 'logout',
         outcome: 'success',
         ip_address: req.ip,
-        user_agent: req.headers['user-agent'] as string
+        user_agent: (req.headers?.['user-agent'] as string) || 'unknown'
       });
     }
 

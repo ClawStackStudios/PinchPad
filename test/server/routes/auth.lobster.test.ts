@@ -89,10 +89,10 @@ describe('Auth Routes', () => {
         });
 
       expect(response.status).toBe(201);
-      expect(response.body.token).toBeDefined();
-      expect(response.body.token).toMatch(/^api-/);
-      expect(response.body.uuid).toBe(testUuid);
-      expect(response.body.username).toBe('authuser');
+      expect(response.body.data.token).toBeDefined();
+      expect(response.body.data.token).toMatch(/^api-/);
+      expect(response.body.data.user.uuid).toBe(testUuid);
+      expect(response.body.data.user.username).toBe('authuser');
     });
 
     it('rejects invalid keyHash', async () => {
@@ -132,7 +132,7 @@ describe('Auth Routes', () => {
           type: 'human'
         });
 
-      const token = tokenResponse.body.token;
+      const token = tokenResponse.body.data.token;
 
       // Then verify it
       const response = await request(app)
@@ -141,7 +141,7 @@ describe('Auth Routes', () => {
 
       expect(response.status).toBe(200);
       expect(response.body.uuid).toBe(testUuid);
-      expect(response.body.username).toBe('authuser');
+      expect(response.body.type).toBe('human');
     });
 
     it('rejects request without token', async () => {
@@ -170,7 +170,7 @@ describe('Auth Routes', () => {
           type: 'human'
         });
 
-      const token = tokenResponse.body.token;
+      const token = tokenResponse.body.data.token;
 
       // Logout
       const response = await request(app)
@@ -180,9 +180,8 @@ describe('Auth Routes', () => {
       expect(response.status).toBe(200);
       expect(response.body.success).toBe(true);
 
-      // Verify token was deleted from DB (hash it first)
-      const tokenHash = crypto.createHash('sha256').update(token).digest('hex');
-      const tokenRecord = db.prepare('SELECT * FROM api_tokens WHERE key = ?').get(tokenHash);
+      // Verify token was deleted from DB
+      const tokenRecord = db.prepare('SELECT * FROM api_tokens WHERE key = ?').get(token);
       expect(tokenRecord).toBeUndefined();
     });
 

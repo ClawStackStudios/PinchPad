@@ -8,6 +8,7 @@ import authRouter from '../../src/server/routes/auth';
 const TOKEN_TTL_DEFAULT = 24 * 60 * 60 * 1000; // 24 hours in ms
 import notesRouter from '../../src/server/routes/notes';
 import { requireAuth } from '../../src/server/middleware/auth';
+import { createTestApp } from '../shared/app';
 
 describe('Token Lifecycle Integration', () => {
   let db: Database.Database;
@@ -17,81 +18,14 @@ describe('Token Lifecycle Integration', () => {
   let testKeyHash: string;
 
   beforeAll(() => {
-    // Create in-memory database
-    db = new Database(':memory:');
-    db.pragma('foreign_keys = ON');
-
-    // Initialize schema
-    db.exec(`
-      CREATE TABLE users (
-        uuid TEXT PRIMARY KEY,
-        username TEXT UNIQUE NOT NULL,
-        display_name TEXT,
-        key_hash TEXT NOT NULL UNIQUE,
-        created_at TEXT NOT NULL
-      );
-
-      CREATE TABLE api_tokens (
-        key TEXT PRIMARY KEY,
-        owner_uuid TEXT NOT NULL,
-        owner_type TEXT NOT NULL,
-        lobster_key_id TEXT,
-        expires_at TEXT,
-        created_at TEXT NOT NULL,
-        FOREIGN KEY(owner_uuid) REFERENCES users(uuid) ON DELETE CASCADE
-      );
-
-      CREATE TABLE lobster_keys (
-        id TEXT PRIMARY KEY,
-        user_uuid TEXT NOT NULL,
-        name TEXT NOT NULL,
-        api_key TEXT,
-        api_key_hash TEXT UNIQUE,
-        permissions TEXT NOT NULL,
-        expiration_type TEXT NOT NULL,
-        expiration_date TEXT,
-        rate_limit INTEGER,
-        is_active INTEGER DEFAULT 1,
-        created_at TEXT NOT NULL,
-        last_used TEXT,
-        FOREIGN KEY(user_uuid) REFERENCES users(uuid) ON DELETE CASCADE
-      );
-
-      CREATE TABLE notes (
-        id TEXT PRIMARY KEY,
-        user_uuid TEXT NOT NULL,
-        title TEXT NOT NULL,
-        content TEXT NOT NULL,
-        starred INTEGER DEFAULT 0,
-        pinned INTEGER DEFAULT 0,
-        created_at TEXT NOT NULL,
-        updated_at TEXT NOT NULL,
-        FOREIGN KEY(user_uuid) REFERENCES users(uuid) ON DELETE CASCADE
-      );
-    `);
+    const testSetup = createTestApp();
+    app = testSetup.app;
+    db = testSetup.db;
 
     // Setup test data
-    testUuid = 'user-lifecycle-test';
+    testUuid = crypto.randomUUID();
     testUsername = 'lifecycleuser';
-    testKeyHash = 'test-key-hash-12345';
-
-    // Create Express app
-    app = express();
-    app.use(express.json());
-
-    // Provide db to routes via middleware
-    app.use((req: any, res, next) => {
-      req.db = db;
-      next();
-    });
-
-    app.use('/api/auth', authRouter);
-    app.use('/api/notes', notesRouter);
-
-    // Health check endpoint
-    app.get('/health', (req, res) => {
-      res.json({ status: 'ok' });
-    });
+    testKeyHash = crypto.createHash('sha256').update('test-secret').digest('hex');
   });
 
   afterAll(() => {
@@ -108,14 +42,16 @@ describe('Token Lifecycle Integration', () => {
         .send({
           uuid: testUuid,
           username: testUsername,
-          displayName: 'Lifecycle User',
-          keyHash: testKeyHash
+          keyHash: testKeyHash,
+          displayName: 'Test User',
         });
 
       expect(response.status).toBe(201);
       expect(response.body.success).toBe(true);
 
       // Verify user exists
+      const allUsers = db.prepare('SELECT * FROM users').all();
+      console.log('ALL USERS:', allUsers);
       const user = db.prepare('SELECT * FROM users WHERE uuid = ?').get(testUuid) as any;
       expect(user).toBeDefined();
       expect(user.username).toBe(testUsername);
@@ -130,21 +66,19 @@ describe('Token Lifecycle Integration', () => {
           type: 'human'
         });
 
-      expect(response.status).toBe(200);
-      expect(response.body.token).toBeDefined();
-      expect(response.body.token).toMatch(/^api-/);
-      expect(response.body.uuid).toBe(testUuid);
-      expect(response.body.username).toBe(testUsername);
+      expect(response.status).toBe(201);
+      expect(response.body.data.token).toBeDefined();
+      expect(response.body.data.token).toMatch(/^api-/);
+      expect(response.body.data.user.uuid).toBe(testUuid);
+      expect(response.body.data.user.username).toBe(testUsername);
 
-      sessionToken = response.body.token;
+      sessionToken = response.body.data.token;
 
       // Verify token exists in DB
-      const sessionTokenHash = crypto.createHash('sha256').update(sessionToken).digest('hex');
-      const token = db.prepare('SELECT * FROM api_tokens WHERE key = ?').get(sessionTokenHash) as any;
+      const token = db.prepare('SELECT * FROM api_tokens WHERE key = ?').get(sessionToken) as any;
       expect(token).toBeDefined();
-      expect(token.owner_key || token.owner_uuid).toBe(testUuid);
-      expect(token.owner_type).toBe('human');
-    });
+      expect(token.owner_key).toBe(testUuid);
+      expect(token.owner_type).toBe('human');    });
 
     it('3. Use token for API call (GET /api/notes)', async () => {
       const response = await request(app)
@@ -156,7 +90,7 @@ describe('Token Lifecycle Integration', () => {
     });
 
     it('4. Create a note with valid token', async () => {
-      noteId = 'note-lifecycle-1';
+      noteId = crypto.randomUUID();
       const response = await request(app)
         .post('/api/notes')
         .set('Authorization', `Bearer ${sessionToken}`)
@@ -178,11 +112,10 @@ describe('Token Lifecycle Integration', () => {
 
     it('5. Simulate token expiry by manually expiring it', () => {
       const expiredTime = new Date(Date.now() - 1000).toISOString();
-      const sessionTokenHash = crypto.createHash('sha256').update(sessionToken).digest('hex');
-      db.prepare('UPDATE api_tokens SET expires_at = ? WHERE key = ?').run(expiredTime, sessionTokenHash);
+      db.prepare('UPDATE api_tokens SET expires_at = ? WHERE key = ?').run(expiredTime, sessionToken);
 
       // Verify token is marked expired
-      const token = db.prepare('SELECT expires_at FROM api_tokens WHERE key = ?').get(sessionTokenHash) as any;
+      const token = db.prepare('SELECT expires_at FROM api_tokens WHERE key = ?').get(sessionToken) as any;
       expect(new Date(token.expires_at).getTime()).toBeLessThan(Date.now());
     });
 
@@ -196,8 +129,7 @@ describe('Token Lifecycle Integration', () => {
     });
 
     it('7. Verify token was deleted after expiry check', () => {
-      const sessionTokenHash = crypto.createHash('sha256').update(sessionToken).digest('hex');
-      const token = db.prepare('SELECT * FROM api_tokens WHERE key = ?').get(sessionTokenHash);
+      const token = db.prepare('SELECT * FROM api_tokens WHERE key = ?').get(sessionToken);
       expect(token).toBeUndefined();
     });
 
@@ -210,11 +142,11 @@ describe('Token Lifecycle Integration', () => {
           type: 'human'
         });
 
-      expect(response.status).toBe(200);
-      expect(response.body.token).toBeDefined();
-      expect(response.body.token).not.toBe(sessionToken);
+      expect(response.status).toBe(201);
+      expect(response.body.data.token).toBeDefined();
+      expect(response.body.data.token).not.toBe(sessionToken);
 
-      sessionToken = response.body.token;
+      sessionToken = response.body.data.token;
     });
 
     it('9. Verify new token works for API calls', async () => {
@@ -236,8 +168,7 @@ describe('Token Lifecycle Integration', () => {
       expect(response.body.success).toBe(true);
 
       // Verify token was deleted
-      const sessionTokenHash = crypto.createHash('sha256').update(sessionToken).digest('hex');
-      const token = db.prepare('SELECT * FROM api_tokens WHERE key = ?').get(sessionTokenHash);
+      const token = db.prepare('SELECT * FROM api_tokens WHERE key = ?').get(sessionToken);
       expect(token).toBeUndefined();
     });
 
@@ -253,14 +184,16 @@ describe('Token Lifecycle Integration', () => {
   describe('Token Invalidation on New Login', () => {
     let token1: string;
     let token2: string;
+    const invUserUuid = crypto.randomUUID();
+    const invKeyHash = crypto.createHash('sha256').update('inv-secret').digest('hex');
 
     beforeAll(() => {
       // Create fresh user for this test
       db.prepare('INSERT INTO users (uuid, username, display_name, key_hash, created_at) VALUES (?, ?, ?, ?, ?)').run(
-        'user-token-inv',
+        invUserUuid,
         'tokeninvuser',
         'Token Inv User',
-        'inv-key-hash',
+        invKeyHash,
         new Date().toISOString()
       );
     });
@@ -269,17 +202,16 @@ describe('Token Lifecycle Integration', () => {
       const response = await request(app)
         .post('/api/auth/token')
         .send({
-          uuid: 'user-token-inv',
-          keyHash: 'inv-key-hash',
+          uuid: invUserUuid,
+          keyHash: invKeyHash,
           type: 'human'
         });
 
-      expect(response.status).toBe(200);
-      token1 = response.body.token;
+      expect(response.status).toBe(201);
+      token1 = response.body.data.token;
 
       // Verify token exists
-      const token1Hash = crypto.createHash('sha256').update(token1).digest('hex');
-      const token = db.prepare('SELECT * FROM api_tokens WHERE key = ?').get(token1Hash);
+      const token = db.prepare('SELECT * FROM api_tokens WHERE key = ?').get(token1);
       expect(token).toBeDefined();
     });
 
@@ -287,23 +219,21 @@ describe('Token Lifecycle Integration', () => {
       const response = await request(app)
         .post('/api/auth/token')
         .send({
-          uuid: 'user-token-inv',
-          keyHash: 'inv-key-hash',
+          uuid: invUserUuid,
+          keyHash: invKeyHash,
           type: 'human'
         });
 
-      expect(response.status).toBe(200);
-      token2 = response.body.token;
+      expect(response.status).toBe(201);
+      token2 = response.body.data.token;
       expect(token2).not.toBe(token1);
 
       // Verify old token is deleted
-      const token1Hash = crypto.createHash('sha256').update(token1).digest('hex');
-      const oldToken = db.prepare('SELECT * FROM api_tokens WHERE key = ?').get(token1Hash);
+      const oldToken = db.prepare('SELECT * FROM api_tokens WHERE key = ?').get(token1);
       expect(oldToken).toBeUndefined();
 
       // Verify new token exists
-      const token2Hash = crypto.createHash('sha256').update(token2).digest('hex');
-      const newToken = db.prepare('SELECT * FROM api_tokens WHERE key = ?').get(token2Hash);
+      const newToken = db.prepare('SELECT * FROM api_tokens WHERE key = ?').get(token2);
       expect(newToken).toBeDefined();
     });
 
@@ -327,23 +257,25 @@ describe('Token Lifecycle Integration', () => {
   describe('Token TTL Enforcement', () => {
     it('token expires after TTL duration', () => {
       const now = new Date();
+      const ttlUserUuid = crypto.randomUUID();
+      const ttlKeyHash = crypto.createHash('sha256').update('ttl-secret').digest('hex');
       db.prepare('INSERT INTO users (uuid, username, display_name, key_hash, created_at) VALUES (?, ?, ?, ?, ?)').run(
-        'user-ttl-test',
+        ttlUserUuid,
         'ttluser',
         'TTL User',
-        'ttl-hash',
+        ttlKeyHash,
         now.toISOString()
       );
 
-      const token = 'api-ttltoken123456789012345678901';
+      const token = `api-${crypto.randomBytes(16).toString('hex')}`;
       const expiresAt = new Date(now.getTime() + TOKEN_TTL_DEFAULT).toISOString();
 
       db.prepare(`
-        INSERT INTO api_tokens (key, owner_uuid, owner_type, expires_at, created_at)
+        INSERT INTO api_tokens (key, owner_key, owner_type, expires_at, created_at)
         VALUES (?, ?, ?, ?, ?)
       `).run(
         token,
-        'user-ttl-test',
+        ttlUserUuid,
         'human',
         expiresAt,
         now.toISOString()

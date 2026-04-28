@@ -3,85 +3,49 @@ import crypto from 'node:crypto';
 
 export function runMigrations(db: Database) {
   console.log('[Database] Checking migrations...');
-  // 1. users table: display_name
-  const userColumns = db.prepare("PRAGMA table_info('users')").all() as any[];
-  if (!userColumns.some(col => col.name === 'display_name')) {
-    try {
-      db.exec('ALTER TABLE users ADD COLUMN display_name TEXT');
-      console.log('[Database] Added display_name column to users');
-    } catch (e) {
-      console.warn('[Database] Migration failed (display_name):', e);
-    }
-  }
+  
+  const runColumnMigration = (sql: string, desc: string) => {
+    try { db.exec(sql); console.log(`[DB Migration] ✅  ${desc}`); }
+    catch (e: any) { if (!e.message.includes('duplicate column')) throw e; }
+  };
 
-  // 2. lobster_keys table: api_key_hash
-  const lobsterColumns = db.prepare("PRAGMA table_info('lobster_keys')").all() as any[];
-  if (!lobsterColumns.some(col => col.name === 'api_key_hash')) {
-    try {
-      db.exec('ALTER TABLE lobster_keys ADD COLUMN api_key_hash TEXT UNIQUE');
-      console.log('[Database] Added api_key_hash column to lobster_keys');
-      
-      // Hash existing plaintext keys
-      const keys = db.prepare('SELECT id, api_key FROM lobster_keys WHERE api_key_hash IS NULL').all() as any[];
-      for (const key of keys) {
-        if (key.api_key && key.api_key.startsWith('lb-')) {
-          const hash = crypto.createHash('sha256').update(key.api_key).digest('hex');
-          db.prepare('UPDATE lobster_keys SET api_key_hash = ? WHERE id = ?').run(hash, key.id);
-        }
-      }
-    } catch (e) {
-      console.warn('[Database] Migration failed (api_key_hash):', e);
-    }
-  }
+  runColumnMigration("ALTER TABLE users ADD COLUMN display_name TEXT", 'users.display_name');
+  runColumnMigration("ALTER TABLE settings ADD COLUMN user_uuid TEXT NOT NULL DEFAULT ''", 'settings.user_uuid');
+  runColumnMigration('ALTER TABLE api_tokens ADD COLUMN expires_at TEXT', 'api_tokens.expires_at');
+  
+  // Backfill expiry for existing tokens (90 days)
+  db.prepare("UPDATE api_tokens SET expires_at = datetime('now', '+90 days') WHERE expires_at IS NULL").run();
 
-  // 3. users table: unique index on key_hash
-  const userIndexes = db.prepare("PRAGMA index_list('users')").all() as any[];
-  const hasUniqueKeyHash = userIndexes.some(idx =>
-    idx.unique === 1 &&
-    (db.prepare(`PRAGMA index_info('${idx.name}')`).all() as any[]).some(col => col.name === 'key_hash')
-  );
-  if (!hasUniqueKeyHash) {
-    try {
-      db.exec('CREATE UNIQUE INDEX idx_users_key_hash ON users(key_hash)');
-      console.log('[Database] Created unique index on key_hash');
-    } catch (e) {
-      console.warn('[Database] Could not create unique index on key_hash');
-    }
-  }
+  // Audit logs standard columns
+  runColumnMigration('ALTER TABLE audit_logs ADD COLUMN resource TEXT', 'audit_logs.resource');
+  runColumnMigration('ALTER TABLE audit_logs ADD COLUMN action TEXT NOT NULL DEFAULT "unknown"', 'audit_logs.action');
+  runColumnMigration('ALTER TABLE audit_logs ADD COLUMN outcome TEXT NOT NULL DEFAULT "unknown"', 'audit_logs.outcome');
 
-  // 4. notes table: starred, pinned
-  const noteColumns = db.prepare("PRAGMA table_info('notes')").all() as any[];
-  if (!noteColumns.some(col => col.name === 'starred')) {
-    db.exec('ALTER TABLE notes ADD COLUMN starred INTEGER DEFAULT 0');
-  }
-  if (!noteColumns.some(col => col.name === 'pinned')) {
-    db.exec('ALTER TABLE notes ADD COLUMN pinned INTEGER DEFAULT 0');
-  }
-
-  // 5. audit_logs table: resource, action, outcome (ClawStack Standard)
-  const auditColumns = db.prepare("PRAGMA table_info('audit_logs')").all() as any[];
-  if (!auditColumns.some(col => col.name === 'resource')) {
-    db.exec('ALTER TABLE audit_logs ADD COLUMN resource TEXT');
-    console.log('[Database] Added resource column to audit_logs');
-  }
-  if (!auditColumns.some(col => col.name === 'action')) {
-    db.exec('ALTER TABLE audit_logs ADD COLUMN action TEXT NOT NULL DEFAULT "unknown"');
-    console.log('[Database] Added action column to audit_logs');
-  }
-  if (!auditColumns.some(col => col.name === 'outcome')) {
-    db.exec('ALTER TABLE audit_logs ADD COLUMN outcome TEXT NOT NULL DEFAULT "unknown"');
-    console.log('[Database] Added outcome column to audit_logs');
-  }
-
-  // 6. api_tokens table: rename owner_uuid to owner_key
+  // api_tokens owner_uuid -> owner_key
   const tokenColumns = db.prepare("PRAGMA table_info('api_tokens')").all() as any[];
   if (tokenColumns.some(col => col.name === 'owner_uuid') && !tokenColumns.some(col => col.name === 'owner_key')) {
     try {
       db.exec('ALTER TABLE api_tokens RENAME COLUMN owner_uuid TO owner_key');
-      console.log('[Database] Renamed owner_uuid to owner_key in api_tokens');
+      console.log('[DB Migration] ✅ Renamed owner_uuid to owner_key in api_tokens');
     } catch (e) {
-      console.warn('[Database] Migration failed (rename owner_uuid):', e);
+      console.warn('[DB Migration] ❌ Migration failed (rename owner_uuid):', e);
     }
   }
+
+  // Indexes
+  db.exec(`
+    CREATE UNIQUE INDEX IF NOT EXISTS idx_users_key_hash ON users(key_hash);
+    CREATE UNIQUE INDEX IF NOT EXISTS idx_settings_user_key ON settings(user_uuid, key);
+    CREATE INDEX IF NOT EXISTS idx_audit_timestamp ON audit_logs(timestamp);
+    CREATE INDEX IF NOT EXISTS idx_audit_event_type ON audit_logs(event_type);
+    CREATE INDEX IF NOT EXISTS idx_audit_actor ON audit_logs(actor);
+    CREATE INDEX IF NOT EXISTS idx_audit_outcome ON audit_logs(outcome);
+    CREATE INDEX IF NOT EXISTS idx_api_tokens_key ON api_tokens(key);
+    CREATE INDEX IF NOT EXISTS idx_api_tokens_expires_at ON api_tokens(expires_at);
+    CREATE INDEX IF NOT EXISTS idx_agent_keys_api_key ON agent_keys(api_key);
+    CREATE INDEX IF NOT EXISTS idx_agent_keys_active ON agent_keys(is_active);
+    CREATE INDEX IF NOT EXISTS idx_notes_user_created ON notes(user_uuid, created_at DESC);
+  `);
+  
   console.log('[Database] Migrations complete.');
 }

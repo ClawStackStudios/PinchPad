@@ -1,9 +1,10 @@
 /// <reference types="vitest" />
 import { describe, it, expect, beforeEach } from 'vitest';
 import request from 'supertest';
-import { createTestApp, createTestUser, createTestToken, createTestLobsterKey } from '../../shared/app';
+import { createTestApp, createTestUser, createTestToken, createTestAgentKey } from '../../shared/app';
 import { Express } from 'express';
 import Database from 'better-sqlite3-multiple-ciphers';
+import crypto from 'crypto';
 
 describe('Agents Routes (Lobster Keys)', () => {
   let app: Express;
@@ -34,7 +35,7 @@ describe('Agents Routes (Lobster Keys)', () => {
 
     it('returns lobster keys created by user', async () => {
       // Create a key
-      const keyData = createTestLobsterKey(db, userUuid, { canRead: true, canWrite: true });
+      const keyData = createTestAgentKey(db, userUuid, { canRead: true, canWrite: true });
 
       // Get keys
       const res = await request(app)
@@ -49,13 +50,13 @@ describe('Agents Routes (Lobster Keys)', () => {
 
     it('returns keys ordered by created_at descending', async () => {
       // Create first key
-      const key1 = createTestLobsterKey(db, userUuid);
+      const key1 = createTestAgentKey(db, userUuid);
 
       // Wait a tiny bit
       await new Promise(resolve => setTimeout(resolve, 10));
 
       // Create second key
-      const key2 = createTestLobsterKey(db, userUuid);
+      const key2 = createTestAgentKey(db, userUuid);
 
       const res = await request(app)
         .get('/api/agents')
@@ -74,29 +75,32 @@ describe('Agents Routes (Lobster Keys)', () => {
       // Create a lobster key
       const lobsterKeyId = crypto.randomUUID();
       db.prepare(`
-        INSERT INTO lobster_keys (id, user_uuid, name, api_key, api_key_hash, permissions, expiration_type, is_active, created_at)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+        INSERT INTO agent_keys (id, user_uuid, name, description, api_key, permissions, expiration_type, expiration_date, rate_limit, is_active, created_at, last_used)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
       `).run(
         lobsterKeyId,
         userUuid,
         'Agent Key',
-        'encrypted',
-        'hash-agent',
+        null,
+        crypto.createHash('sha256').update(`lb-${crypto.randomBytes(24).toString('hex')}`).digest('hex'), // Store hash
         JSON.stringify({ canRead: true }),
         'never',
+        null,
+        null,
         1,
-        new Date().toISOString()
+        new Date().toISOString(),
+        null
       );
 
       // Create token for agent key
-      const agentToken = createTestToken(db, userUuid, 'lobster', lobsterKeyId);
+      const agentToken = createTestToken(db, userUuid, 'agent', lobsterKeyId);
 
       const res = await request(app)
         .get('/api/agents')
         .set('Authorization', `Bearer ${agentToken}`);
 
       expect(res.status).toBe(403);
-      expect(res.body.error).toBe('This operation is for humans only');
+      expect(res.body.error).toBe('Forbidden: This area of the Reef requires Human identity');
     });
   });
 
@@ -110,7 +114,6 @@ describe('Agents Routes (Lobster Keys)', () => {
           name: 'My Agent Key',
           permissions: { canRead: true, canWrite: true, canDelete: false },
           expiration_type: 'never',
-          api_key_hash: 'hash-abc123',
           api_key: 'encrypted-key-xyz'
         });
 
@@ -138,14 +141,13 @@ describe('Agents Routes (Lobster Keys)', () => {
           name: 'Test Key',
           permissions,
           expiration_type: 'never',
-          api_key_hash: 'hash-test',
           api_key: 'encrypted'
         });
 
       expect(res.body.data.permissions).toEqual(permissions);
 
       // Verify in database as well
-      const dbKey = db.prepare('SELECT permissions FROM lobster_keys WHERE id = ?').get(keyId) as any;
+      const dbKey = db.prepare('SELECT permissions FROM agent_keys WHERE id = ?').get(keyId) as any;
       expect(JSON.parse(dbKey.permissions)).toEqual(permissions);
     });
 
@@ -159,7 +161,6 @@ describe('Agents Routes (Lobster Keys)', () => {
           permissions: { canRead: true },
           expiration_type: 'never',
           rate_limit: 100,
-          api_key_hash: 'hash-rl',
           api_key: 'encrypted'
         });
 
@@ -177,9 +178,8 @@ describe('Agents Routes (Lobster Keys)', () => {
           id: keyId,
           name: 'Expiring Key',
           permissions: { canRead: true },
-          expiration_type: 'date',
+          expiration_type: 'custom',
           expiration_date: expirationDate,
-          api_key_hash: 'hash-exp',
           api_key: 'encrypted'
         });
 
@@ -197,27 +197,30 @@ describe('Agents Routes (Lobster Keys)', () => {
         });
 
       expect(res.status).toBe(400);
-      expect(res.body.error).toMatch(/Missing required fields/i);
+      expect(res.body.error).toContain('Validation Error');
     });
 
     it('requires human key type (human-only endpoint)', async () => {
       const lobsterKeyId = crypto.randomUUID();
       db.prepare(`
-        INSERT INTO lobster_keys (id, user_uuid, name, api_key, api_key_hash, permissions, expiration_type, is_active, created_at)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+        INSERT INTO agent_keys (id, user_uuid, name, description, api_key, permissions, expiration_type, expiration_date, rate_limit, is_active, created_at, last_used)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
       `).run(
         lobsterKeyId,
         userUuid,
         'Agent Key',
-        'encrypted',
-        'hash-agent',
+        null,
+        crypto.createHash('sha256').update(`lb-${crypto.randomBytes(24).toString('hex')}`).digest('hex'), // Store hash
         JSON.stringify({ canRead: true }),
         'never',
+        null,
+        null,
         1,
-        new Date().toISOString()
+        new Date().toISOString(),
+        null
       );
 
-      const agentToken = createTestToken(db, userUuid, 'lobster', lobsterKeyId);
+      const agentToken = createTestToken(db, userUuid, 'agent', lobsterKeyId);
 
       const res = await request(app)
         .post('/api/agents')
@@ -227,7 +230,6 @@ describe('Agents Routes (Lobster Keys)', () => {
           name: 'Should Fail',
           permissions: { canRead: true },
           expiration_type: 'never',
-          api_key_hash: 'hash-fail',
           api_key: 'encrypted'
         });
 
@@ -245,7 +247,6 @@ describe('Agents Routes (Lobster Keys)', () => {
           name: 'Test Key',
           permissions: { canRead: true },
           expiration_type: 'never',
-          api_key_hash: 'hash-test',
           api_key: encryptedKey
         });
 
@@ -256,10 +257,10 @@ describe('Agents Routes (Lobster Keys)', () => {
   describe('PUT /api/agents/:id/revoke', () => {
     it('revokes an active lobster key', async () => {
       // Create a key
-      const keyData = createTestLobsterKey(db, userUuid);
+      const keyData = createTestAgentKey(db, userUuid);
 
       // Verify it's active
-      let dbKey = db.prepare('SELECT is_active FROM lobster_keys WHERE id = ?').get(keyData.id) as any;
+      let dbKey = db.prepare('SELECT is_active FROM agent_keys WHERE id = ?').get(keyData.id) as any;
       expect(dbKey.is_active).toBe(1);
 
       // Revoke it
@@ -271,7 +272,7 @@ describe('Agents Routes (Lobster Keys)', () => {
       expect(res.body.data.success).toBe(true);
 
       // Verify it's inactive
-      dbKey = db.prepare('SELECT is_active FROM lobster_keys WHERE id = ?').get(keyData.id) as any;
+      dbKey = db.prepare('SELECT is_active FROM agent_keys WHERE id = ?').get(keyData.id) as any;
       expect(dbKey.is_active).toBe(0);
     });
 
@@ -295,21 +296,24 @@ describe('Agents Routes (Lobster Keys)', () => {
       // Create a lobster key
       const lobsterKeyId = crypto.randomUUID();
       db.prepare(`
-        INSERT INTO lobster_keys (id, user_uuid, name, api_key, api_key_hash, permissions, expiration_type, is_active, created_at)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+        INSERT INTO agent_keys (id, user_uuid, name, description, api_key, permissions, expiration_type, expiration_date, rate_limit, is_active, created_at, last_used)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
       `).run(
         lobsterKeyId,
         userUuid,
         'Agent Key',
-        'encrypted',
-        'hash-agent',
+        null,
+        crypto.createHash('sha256').update(`lb-${crypto.randomBytes(24).toString('hex')}`).digest('hex'), // Store hash
         JSON.stringify({ canRead: true }),
         'never',
+        null,
+        null,
         1,
-        new Date().toISOString()
+        new Date().toISOString(),
+        null
       );
 
-      const agentToken = createTestToken(db, userUuid, 'lobster', lobsterKeyId);
+      const agentToken = createTestToken(db, userUuid, 'agent', lobsterKeyId);
 
       // Try to revoke with agent token
       const res = await request(app)
@@ -326,7 +330,7 @@ describe('Agents Routes (Lobster Keys)', () => {
       const tokenB = createTestToken(db, userB);
 
       // User A creates a key
-      createTestLobsterKey(db, userUuid);
+      createTestAgentKey(db, userUuid);
 
       // User B lists keys
       const res = await request(app)
@@ -341,7 +345,7 @@ describe('Agents Routes (Lobster Keys)', () => {
       const tokenB = createTestToken(db, userB);
 
       // User A creates a key
-      const keyData = createTestLobsterKey(db, userUuid);
+      const keyData = createTestAgentKey(db, userUuid);
 
       // User B tries to revoke it
       const res = await request(app)
@@ -351,7 +355,7 @@ describe('Agents Routes (Lobster Keys)', () => {
       expect(res.status).toBe(404);
 
       // Verify it's still active for user A
-      const dbKey = db.prepare('SELECT is_active FROM lobster_keys WHERE id = ?').get(keyData.id) as any;
+      const dbKey = db.prepare('SELECT is_active FROM agent_keys WHERE id = ?').get(keyData.id) as any;
       expect(dbKey.is_active).toBe(1);
     });
   });
@@ -367,7 +371,6 @@ describe('Agents Routes (Lobster Keys)', () => {
           permissions: { canRead: true },
           expiration_type: 'never',
           rate_limit: null,
-          api_key_hash: 'hash-unlimited',
           api_key: 'encrypted'
         });
 
@@ -386,14 +389,13 @@ describe('Agents Routes (Lobster Keys)', () => {
           permissions: { canRead: true },
           expiration_type: 'never',
           rate_limit: rateLimit,
-          api_key_hash: 'hash-limited',
           api_key: 'encrypted'
         });
 
       expect(res.body.data.rate_limit).toBe(rateLimit);
 
       // Verify in database
-      const dbKey = db.prepare('SELECT rate_limit FROM lobster_keys WHERE id = ?').get(keyId) as any;
+      const dbKey = db.prepare('SELECT rate_limit FROM agent_keys WHERE id = ?').get(keyId) as any;
       expect(dbKey.rate_limit).toBe(rateLimit);
     });
   });
@@ -408,7 +410,6 @@ describe('Agents Routes (Lobster Keys)', () => {
           name: 'Never Expire',
           permissions: { canRead: true },
           expiration_type: 'never',
-          api_key_hash: 'hash-never',
           api_key: 'encrypted'
         });
 
@@ -427,14 +428,13 @@ describe('Agents Routes (Lobster Keys)', () => {
           id: keyId,
           name: 'Expiring Soon',
           permissions: { canRead: true },
-          expiration_type: 'date',
+          expiration_type: 'custom',
           expiration_date: expirationDate,
-          api_key_hash: 'hash-date',
           api_key: 'encrypted'
         });
 
       expect(res.status).toBe(201);
-      expect(res.body.data.expiration_type).toBe('date');
+      expect(res.body.data.expiration_type).toBe('custom');
       expect(res.body.data.expiration_date).toBe(expirationDate);
     });
 
@@ -448,7 +448,6 @@ describe('Agents Routes (Lobster Keys)', () => {
           permissions: { canRead: true },
           expiration_type: 'never',
           expiration_date: null,
-          api_key_hash: 'hash-noexp',
           api_key: 'encrypted'
         });
 
@@ -468,7 +467,6 @@ describe('Agents Routes (Lobster Keys)', () => {
           name: 'Timestamped Key',
           permissions: { canRead: true },
           expiration_type: 'never',
-          api_key_hash: 'hash-time',
           api_key: 'encrypted'
         });
       const afterTime = new Date();
@@ -481,7 +479,7 @@ describe('Agents Routes (Lobster Keys)', () => {
     });
 
     it('returns key metadata in GET response', async () => {
-      const keyData = createTestLobsterKey(db, userUuid, { canRead: true, canWrite: true });
+      const keyData = createTestAgentKey(db, userUuid, { canRead: true, canWrite: true });
 
       const res = await request(app)
         .get('/api/agents')
@@ -497,15 +495,15 @@ describe('Agents Routes (Lobster Keys)', () => {
       expect(key.created_at).toBeDefined();
       expect(key.last_used).toBeDefined();
 
-      // Verify api_key_hash is NOT returned (security)
-      expect(key.api_key_hash).toBeUndefined();
+      // Verify api_key is NOT returned in GET response (security)
       expect(key.api_key).toBeUndefined();
     });
   });
 
   describe('Security - Sensitive data exclusion', () => {
-    it('excludes api_key_hash from GET response', async () => {
-      createTestLobsterKey(db, userUuid);
+    it.skip('excludes api_key_hash from GET response', async () => {
+      // SKIPPED: api_key_hash column removed from schema
+      createTestAgentKey(db, userUuid);
 
       const res = await request(app)
         .get('/api/agents')
@@ -514,7 +512,8 @@ describe('Agents Routes (Lobster Keys)', () => {
       expect(res.body.data[0].api_key_hash).toBeUndefined();
     });
 
-    it('excludes api_key_hash from POST response', async () => {
+    it.skip('excludes api_key_hash from POST response', async () => {
+      // SKIPPED: api_key_hash column removed from schema
       const res = await request(app)
         .post('/api/agents')
         .set('Authorization', `Bearer ${token}`)
@@ -523,7 +522,6 @@ describe('Agents Routes (Lobster Keys)', () => {
           name: 'Secure Key',
           permissions: { canRead: true },
           expiration_type: 'never',
-          api_key_hash: 'hash-secret',
           api_key: 'encrypted-value'
         });
 
@@ -541,7 +539,6 @@ describe('Agents Routes (Lobster Keys)', () => {
           name: 'Backup Key',
           permissions: { canRead: true },
           expiration_type: 'never',
-          api_key_hash: 'hash-backup',
           api_key: encryptedKey
         });
 

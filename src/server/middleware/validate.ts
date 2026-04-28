@@ -1,16 +1,21 @@
 import { Request, Response, NextFunction } from 'express';
-import { ZodSchema, ZodError } from 'zod';
+import { z, ZodError } from 'zod';
 
-export const validateBody = (schema: ZodSchema) => (req: Request, res: Response, next: NextFunction) => {
+export const validateBody = (schema: z.ZodTypeAny) => async (req: Request, res: Response, next: NextFunction) => {
   try {
-    schema.parse(req.body);
+    req.body = await schema.parseAsync(req.body);
     next();
-  } catch (error) {
-    if (error instanceof ZodError) {
+  } catch (error: unknown) {
+    if (error instanceof ZodError || (error && typeof error === 'object' && 'issues' in error)) {
+      const zodErr = error as ZodError;
+      const issues = Array.isArray(zodErr.issues) ? zodErr.issues : [];
       return res.status(400).json({
         success: false,
-        error: 'Validation failed',
-        details: error.issues.map(e => ({ path: e.path.join('.'), message: e.message })),
+        error: 'Validation Error: Your request form is malformed',
+        details: issues.map(e => ({
+          path: Array.isArray(e.path) ? e.path.join('.') : '',
+          message: e.message || 'Invalid field',
+        })),
       });
     }
     next(error);

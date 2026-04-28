@@ -1,20 +1,19 @@
 import { Router, Response } from 'express';
 import crypto from 'crypto';
-import singletonDb from '../database/index';
+import db from '../database/index';
 import JSZip from 'jszip';
-import { requireAuth, requirePermission } from '../middleware/auth';
+import { requireAuth, requirePermission, type AuthRequest } from '../middleware/auth';
 import { validateBody } from '../middleware/validate';
 import { NoteSchemas } from '../validation/schemas';
 import { createAuditLogger } from '../utils/auditLogger';
 
 const router = Router();
+const audit = createAuditLogger(db);
 
-router.get('/', requireAuth(), requirePermission('canRead'), (req: any, res: Response) => {
-  const db = req.db || singletonDb;
+router.get('/', requireAuth, requirePermission('canRead'), (req: AuthRequest, res: Response) => {
   try {
-    const notes = db.prepare('SELECT * FROM notes WHERE user_uuid = ? ORDER BY updated_at DESC').all(req.user!.uuid) as any[];
-    
-    // Fetch photos for each note
+    const notes = db.prepare('SELECT * FROM notes WHERE user_uuid = ? ORDER BY updated_at DESC').all(req.userUuid) as any[];
+
     const notesWithPhotos = notes.map(note => {
       const photos = db.prepare('SELECT id, filename, mime_type FROM pearl_photos WHERE pearl_id = ?').all(note.id) as any[];
       return {
@@ -33,16 +32,14 @@ router.get('/', requireAuth(), requirePermission('canRead'), (req: any, res: Res
   }
 });
 
-router.post('/', requireAuth(), requirePermission('canWrite'), validateBody(NoteSchemas.create), (req: any, res: Response) => {
-  const db = req.db || singletonDb;
-  const audit = createAuditLogger(db);
+router.post('/', requireAuth, requirePermission('canWrite'), validateBody(NoteSchemas.create), (req: AuthRequest, res: Response) => {
   const { id, title, content, starred = 0, pinned = 0 } = req.body;
   const now = new Date().toISOString();
 
   try {
     db.prepare('INSERT INTO notes (id, user_uuid, title, content, starred, pinned, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)').run(
       id,
-      req.user!.uuid,
+      req.userUuid,
       title,
       content,
       starred ? 1 : 0,
@@ -52,17 +49,17 @@ router.post('/', requireAuth(), requirePermission('canWrite'), validateBody(Note
     );
 
     audit.log('NOTE_CREATE', {
-      actor: req.user!.uuid,
-      actor_type: req.authContext?.type || 'human',
+      actor: req.userUuid,
+      actor_type: req.keyType,
       action: 'create',
       outcome: 'success',
       resource: 'note',
       details: { note_id: id },
       ip_address: req.ip,
-      user_agent: req.headers['user-agent'] as string
+      user_agent: (req.headers?.['user-agent'] as string) || 'unknown'
     });
 
-    const newNote = db.prepare('SELECT * FROM notes WHERE id = ? AND user_uuid = ?').get(id, req.user!.uuid);
+    const newNote = db.prepare('SELECT * FROM notes WHERE id = ? AND user_uuid = ?').get(id, req.userUuid);
     res.status(201).json({ data: newNote });
   } catch (error) {
     console.error('[Notes POST] Error:', error);
@@ -70,9 +67,7 @@ router.post('/', requireAuth(), requirePermission('canWrite'), validateBody(Note
   }
 });
 
-router.put('/:id', requireAuth(), requirePermission('canEdit'), validateBody(NoteSchemas.update), (req: any, res: Response) => {
-  const db = req.db || singletonDb;
-  const audit = createAuditLogger(db);
+router.put('/:id', requireAuth, requirePermission('canEdit'), validateBody(NoteSchemas.update), (req: AuthRequest, res: Response) => {
   const { title, content, starred, pinned } = req.body;
   const { id } = req.params;
 
@@ -84,7 +79,7 @@ router.put('/:id', requireAuth(), requirePermission('canEdit'), validateBody(Not
       pinned !== undefined ? (pinned ? 1 : 0) : null,
       new Date().toISOString(),
       id,
-      req.user!.uuid
+      req.userUuid
     );
 
     if (result.changes === 0) {
@@ -92,17 +87,17 @@ router.put('/:id', requireAuth(), requirePermission('canEdit'), validateBody(Not
     }
 
     audit.log('NOTE_UPDATE', {
-      actor: req.user!.uuid,
-      actor_type: req.authContext?.type || 'human',
+      actor: req.userUuid,
+      actor_type: req.keyType,
       action: 'update',
       outcome: 'success',
       resource: 'note',
       details: { note_id: id },
       ip_address: req.ip,
-      user_agent: req.headers['user-agent'] as string
+      user_agent: (req.headers?.['user-agent'] as string) || 'unknown'
     });
 
-    const updatedNote = db.prepare('SELECT * FROM notes WHERE id = ? AND user_uuid = ?').get(id, req.user!.uuid);
+    const updatedNote = db.prepare('SELECT * FROM notes WHERE id = ? AND user_uuid = ?').get(id, req.userUuid);
     res.json({ data: updatedNote });
   } catch (error) {
     console.error('[Notes PUT] Error:', error);
@@ -110,8 +105,7 @@ router.put('/:id', requireAuth(), requirePermission('canEdit'), validateBody(Not
   }
 });
 
-router.patch('/:id/starred', requireAuth(), requirePermission('canEdit'), (req: any, res: Response) => {
-  const db = req.db || singletonDb;
+router.patch('/:id/starred', requireAuth, requirePermission('canEdit'), (req: AuthRequest, res: Response) => {
   const { starred } = req.body;
   const { id } = req.params;
 
@@ -120,7 +114,7 @@ router.patch('/:id/starred', requireAuth(), requirePermission('canEdit'), (req: 
       starred ? 1 : 0,
       new Date().toISOString(),
       id,
-      req.user!.uuid
+      req.userUuid
     );
 
     if (result.changes === 0) {
@@ -133,8 +127,7 @@ router.patch('/:id/starred', requireAuth(), requirePermission('canEdit'), (req: 
   }
 });
 
-router.patch('/:id/pinned', requireAuth(), requirePermission('canEdit'), (req: any, res: Response) => {
-  const db = req.db || singletonDb;
+router.patch('/:id/pinned', requireAuth, requirePermission('canEdit'), (req: AuthRequest, res: Response) => {
   const { pinned } = req.body;
   const { id } = req.params;
 
@@ -143,7 +136,7 @@ router.patch('/:id/pinned', requireAuth(), requirePermission('canEdit'), (req: a
       pinned ? 1 : 0,
       new Date().toISOString(),
       id,
-      req.user!.uuid
+      req.userUuid
     );
 
     if (result.changes === 0) {
@@ -156,27 +149,25 @@ router.patch('/:id/pinned', requireAuth(), requirePermission('canEdit'), (req: a
   }
 });
 
-router.delete('/:id', requireAuth(), requirePermission('canDelete'), (req: any, res: Response) => {
-  const db = req.db || singletonDb;
-  const audit = createAuditLogger(db);
+router.delete('/:id', requireAuth, requirePermission('canDelete'), (req: AuthRequest, res: Response) => {
   const { id } = req.params;
 
   try {
-    const result = db.prepare('DELETE FROM notes WHERE id = ? AND user_uuid = ?').run(id, req.user!.uuid);
-    
+    const result = db.prepare('DELETE FROM notes WHERE id = ? AND user_uuid = ?').run(id, req.userUuid);
+
     if (result.changes === 0) {
       return res.status(404).json({ error: 'Note not found' });
     }
 
     audit.log('NOTE_DELETE', {
-      actor: req.user!.uuid,
-      actor_type: req.authContext?.type || 'human',
+      actor: req.userUuid,
+      actor_type: req.keyType,
       action: 'delete',
       outcome: 'success',
       resource: 'note',
       details: { note_id: id },
       ip_address: req.ip,
-      user_agent: req.headers['user-agent'] as string
+      user_agent: (req.headers?.['user-agent'] as string) || 'unknown'
     });
 
     res.json({ data: { success: true } });
@@ -185,10 +176,7 @@ router.delete('/:id', requireAuth(), requirePermission('canDelete'), (req: any, 
   }
 });
 
-/** POST /api/notes/bulk — Bulk import pearls/notes */
-router.post('/bulk', requireAuth(), requirePermission('canWrite'), (req: any, res: Response) => {
-  const db = req.db || singletonDb;
-  const audit = createAuditLogger(db);
+router.post('/bulk', requireAuth, requirePermission('canWrite'), (req: AuthRequest, res: Response) => {
   const { notes } = req.body;
   const sessionId = req.headers['x-session-id'];
 
@@ -223,7 +211,7 @@ router.post('/bulk', requireAuth(), requirePermission('canWrite'), (req: any, re
         VALUES (?, ?, ?, ?, ?, ?, ?, ?)
       `).run(
         id,
-        req.user!.uuid,
+        req.userUuid,
         title,
         content,
         starred ? 1 : 0,
@@ -241,12 +229,11 @@ router.post('/bulk', requireAuth(), requirePermission('canWrite'), (req: any, re
     }
   }
 
-  // If session ID provided, update the session record
   if (sessionId && typeof sessionId === 'string') {
     try {
       const session = db.prepare(
         'SELECT id, errors_json, error_count FROM import_sessions WHERE id = ? AND user_uuid = ? AND closed_at IS NULL'
-      ).get(sessionId, req.user!.uuid) as any;
+      ).get(sessionId, req.userUuid) as any;
 
       if (session) {
         const existingErrors = JSON.parse(session.errors_json || '[]');
@@ -260,18 +247,18 @@ router.post('/bulk', requireAuth(), requirePermission('canWrite'), (req: any, re
   }
 
   audit.log('NOTES_BULK_IMPORT', {
-    actor: req.user!.uuid,
-    actor_type: req.user!.keyType,
+    actor: req.userUuid,
+    actor_type: req.keyType,
     action: 'bulk_create',
     outcome: 'success',
     resource: 'notes',
-    details: { 
-      imported: results.imported, 
-      failed: results.failed, 
-      sessionId: sessionId || null 
+    details: {
+      imported: results.imported,
+      failed: results.failed,
+      sessionId: sessionId || null
     },
     ip_address: req.ip,
-    user_agent: req.headers['user-agent'] as string
+    user_agent: (req.headers?.['user-agent'] as string) || 'unknown'
   });
 
   res.status(results.failed > 0 ? 207 : 201).json({
@@ -280,11 +267,9 @@ router.post('/bulk', requireAuth(), requirePermission('canWrite'), (req: any, re
   });
 });
 
-/** GET /api/notes/export — Export all pearls as a ZIP or MD */
-router.get('/export', requireAuth(), async (req: any, res: Response) => {
-  const db = req.db || singletonDb;
+router.get('/export', requireAuth, async (req: AuthRequest, res: Response) => {
   const format = req.query.format || 'json';
-  const notes = db.prepare('SELECT * FROM notes WHERE user_uuid = ?').all(req.user!.uuid) as any[];
+  const notes = db.prepare('SELECT * FROM notes WHERE user_uuid = ?').all(req.userUuid) as any[];
 
   if (notes.length === 0) {
     return res.status(404).json({ error: 'No pearls found to export' });
@@ -297,13 +282,12 @@ router.get('/export', requireAuth(), async (req: any, res: Response) => {
 
     for (const note of notes) {
       const photos = db.prepare('SELECT id, filename, data, mime_type FROM pearl_photos WHERE pearl_id = ?').all(note.id) as any[];
-      
+
       let noteContent = note.content;
       if (photos.length > 0) {
         hasPhotos = true;
         for (const photo of photos) {
           photosFolder?.file(`${photo.id}-${photo.filename}`, photo.data);
-          // Optionally update links in content to point to local relative path
           const remoteUrl = `/api/photos/${photo.id}`;
           const localPath = `photos/${photo.id}-${photo.filename}`;
           noteContent = noteContent.split(remoteUrl).join(localPath);

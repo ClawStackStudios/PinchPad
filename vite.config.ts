@@ -36,5 +36,16 @@ export default defineConfig(({mode}) => {
       host: true,
       strictPort: true,
     },
+    build: {
+      chunkSizeWarningLimit: 1000,
+      rollupOptions: {
+        output: {
+          manualChunks: {
+            'vendor-react': ['react', 'react-dom', 'react-router-dom'],
+            'vendor-ui': ['lucide-react', 'framer-motion', 'clsx', 'tailwind-merge'],
+          },
+        },
+      },
+    },
   };
 });

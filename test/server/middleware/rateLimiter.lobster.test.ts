@@ -2,7 +2,7 @@ import { describe, it, expect, beforeEach } from 'vitest';
 import request from 'supertest';
 import { Express } from 'express';
 import Database from 'better-sqlite3-multiple-ciphers';
-import { createTestApp, createTestUser, createTestToken, createTestLobsterKey } from '../../shared/app';
+import { createTestApp, createTestUser, createTestToken, createTestAgentKey } from '../../shared/app';
 
 describe('Lobster Key Rate Limiting', () => {
   let app: Express;
@@ -18,8 +18,8 @@ describe('Lobster Key Rate Limiting', () => {
 
   describe('Unlimited lobster keys (rate_limit = NULL)', () => {
     it('allows unlimited requests', async () => {
-      const { id: lobsterKeyId } = createTestLobsterKey(db, userUuid, { canRead: true }, null);
-      const token = createTestToken(db, userUuid, 'lobster', lobsterKeyId);
+      const { id: lobsterKeyId } = createTestAgentKey(db, userUuid, { canRead: true }, null);
+      const token = createTestToken(db, userUuid, 'agent', lobsterKeyId);
 
       // Make 20 rapid requests — should all succeed
       for (let i = 0; i < 20; i++) {
@@ -33,8 +33,8 @@ describe('Lobster Key Rate Limiting', () => {
 
   describe('rate_limit = 0', () => {
     it('treats 0 as unlimited (no limiter applied)', async () => {
-      const { id: lobsterKeyId } = createTestLobsterKey(db, userUuid, { canRead: true }, 0);
-      const token = createTestToken(db, userUuid, 'lobster', lobsterKeyId);
+      const { id: lobsterKeyId } = createTestAgentKey(db, userUuid, { canRead: true }, 0);
+      const token = createTestToken(db, userUuid, 'agent', lobsterKeyId);
 
       // Should allow many requests
       for (let i = 0; i < 20; i++) {
@@ -62,8 +62,8 @@ describe('Lobster Key Rate Limiting', () => {
 
   describe('Rate limit enforcement', () => {
     it('allows requests up to the limit, then 429s', async () => {
-      const { id: lobsterKeyId } = createTestLobsterKey(db, userUuid, { canRead: true }, 3);
-      const token = createTestToken(db, userUuid, 'lobster', lobsterKeyId);
+      const { id: lobsterKeyId } = createTestAgentKey(db, userUuid, { canRead: true }, 3);
+      const token = createTestToken(db, userUuid, 'agent', lobsterKeyId);
 
       // First 3 requests should succeed
       for (let i = 0; i < 3; i++) {
@@ -82,10 +82,10 @@ describe('Lobster Key Rate Limiting', () => {
     });
 
     it('enforces per-key rate limits independently', async () => {
-      const { id: keyId1 } = createTestLobsterKey(db, userUuid, { canRead: true }, 2);
-      const { id: keyId2 } = createTestLobsterKey(db, userUuid, { canRead: true }, 2);
-      const token1 = createTestToken(db, userUuid, 'lobster', keyId1);
-      const token2 = createTestToken(db, userUuid, 'lobster', keyId2);
+      const { id: keyId1 } = createTestAgentKey(db, userUuid, { canRead: true }, 2);
+      const { id: keyId2 } = createTestAgentKey(db, userUuid, { canRead: true }, 2);
+      const token1 = createTestToken(db, userUuid, 'agent', keyId1);
+      const token2 = createTestToken(db, userUuid, 'agent', keyId2);
 
       // Key 1: use 2 requests
       for (let i = 0; i < 2; i++) {
@@ -117,8 +117,8 @@ describe('Lobster Key Rate Limiting', () => {
     });
 
     it('includes rate limit headers in response', async () => {
-      const { id: lobsterKeyId } = createTestLobsterKey(db, userUuid, { canRead: true }, 5);
-      const token = createTestToken(db, userUuid, 'lobster', lobsterKeyId);
+      const { id: lobsterKeyId } = createTestAgentKey(db, userUuid, { canRead: true }, 5);
+      const token = createTestToken(db, userUuid, 'agent', lobsterKeyId);
 
       const response = await request(app)
         .get('/api/notes')
@@ -135,8 +135,8 @@ describe('Lobster Key Rate Limiting', () => {
 
   describe('Rate limiting applied when rate_limit is set', () => {
     it('attaches rate_limit and lobsterKeyId to req.user from DB', async () => {
-      const { id: lobsterKeyId } = createTestLobsterKey(db, userUuid, { canRead: true }, 100);
-      const token = createTestToken(db, userUuid, 'lobster', lobsterKeyId);
+      const { id: lobsterKeyId } = createTestAgentKey(db, userUuid, { canRead: true }, 100);
+      const token = createTestToken(db, userUuid, 'agent', lobsterKeyId);
 
       // Make a request and verify auth middleware populated the fields
       const response = await request(app)

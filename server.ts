@@ -18,7 +18,7 @@ import notesRoutes from './src/server/routes/notes';
 import agentsRoutes from './src/server/routes/agents';
 import lobsterSessionRoutes from './src/server/routes/lobsterSession';
 import photosRoutes from './src/server/routes/photos';
-import { lobsterRateLimiter } from './src/server/middleware/rateLimiter';
+import { apiLimiter } from './src/server/middleware/rateLimiter';
 
 async function startServer() {
   const app = express();
@@ -27,10 +27,16 @@ async function startServer() {
   // ─── Startup tasks ───────────────────────────────────────────────────────────
   scheduleTokenCleanup(db);
 
+  // ─── Trust proxy ─────────────────────────────────────────────────────────────
+  if (process.env.TRUST_PROXY === 'true') app.set('trust proxy', 1);
+
   // ─── Security Middleware ──────────────────────────────────────────────────────
   app.use(httpsRedirect);
 
+  const isProduction = process.env.NODE_ENV === 'production';
+
   app.use(helmet({
+    strictTransportSecurity: process.env.ENFORCE_HTTPS === 'true' ? undefined : false,
     contentSecurityPolicy: {
       directives: {
         defaultSrc: ["'self'"],
@@ -38,17 +44,21 @@ async function startServer() {
         styleSrc: ["'self'", "'unsafe-inline'", 'https://fonts.googleapis.com'],
         fontSrc: ["'self'", 'https://fonts.gstatic.com'],
         imgSrc: ["'self'", 'data:', 'https:'],
-        connectSrc: ["'self'", 'wss:', 'ws:'],
+        connectSrc: ["'self'", 'wss:', 'ws:', 'http://localhost:8383', 'http://localhost:8282'],
+        frameAncestors: isProduction ? ["'self'"] : ["'self'", "*"],
+        upgradeInsecureRequests: process.env.ENFORCE_HTTPS === 'true' ? [] : null,
       },
     },
     crossOriginEmbedderPolicy: false,
     crossOriginResourcePolicy: false,
     crossOriginOpenerPolicy: false,
     originAgentCluster: false,
+    frameguard: isProduction ? { action: 'sameorigin' } : false,
   }));
 
   app.use(cors(getCorsConfig()));
   app.use(express.json());
+  app.use('/api', apiLimiter);
 
   // Request logger
   app.use((req, _res, next) => {
@@ -58,7 +68,7 @@ async function startServer() {
 
   // ─── API Routes ───────────────────────────────────────────────────────────────
   app.use('/api/auth', authRoutes);
-  app.use('/api/notes', lobsterRateLimiter, notesRoutes);
+  app.use('/api/notes', notesRoutes);
   app.use('/api/agents', agentsRoutes);
   app.use('/api/lobster-session', lobsterSessionRoutes);
   app.use('/api/photos', photosRoutes);

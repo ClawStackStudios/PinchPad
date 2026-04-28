@@ -9,14 +9,12 @@ import crypto from 'crypto';
 export interface TestUser {
   uuid: string;
   username: string;
-  displayName?: string;
   keyHash: string;
   createdAt: string;
 }
 
 export interface TestLobsterKey {
   id: string;
-  userId: string;
   name: string;
   apiKey: string;
   apiKeyHash: string;
@@ -42,8 +40,7 @@ export interface TestToken {
   key: string;
   keyHash: string;
   ownerUuid: string;
-  ownerType: 'human' | 'lobster';
-  expiresAt: string;
+  ownerType: 'human' | 'agent';
   createdAt: string;
 }
 
@@ -56,24 +53,25 @@ export function createTestUser(
 ): TestUser {
   const uuid = overrides?.uuid ?? crypto.randomUUID();
   const username = overrides?.username ?? `user-${uuid.slice(0, 8)}`;
-  const displayName = overrides?.displayName ?? `Test User ${uuid.slice(0, 8)}`;
   const keyHash = overrides?.keyHash ?? crypto.createHash('sha256').update(`secret-${uuid}`).digest('hex');
   const createdAt = overrides?.createdAt ?? new Date().toISOString();
 
   db.prepare(
-    'INSERT INTO users (uuid, username, display_name, key_hash, created_at) VALUES (?, ?, ?, ?, ?)'
-  ).run(uuid, username, displayName, keyHash, createdAt);
+    'INSERT INTO users (uuid, username, key_hash, created_at) VALUES (?, ?, ?, ?)'
+  ).run(uuid, username, keyHash, createdAt);
 
-  return { uuid, username, displayName, keyHash, createdAt };
+  return { uuid, username, keyHash, createdAt };
 }
 
 /**
- * Creates a test lobster key owned by a user.
- * Requires the user to already exist.
+ * Creates a test lobster (agent) key.
+ * Note: agent_keys is tied to users via user_uuid.
+ * SECURITY NOTE: The current implementation stores plain API keys in the database.
+ * This is a security vulnerability that should be addressed in production.
  */
 export function createTestLobsterKey(
   db: Database.Database,
-  userId: string,
+  userId: string, // Required - agent_keys is tied to users
   overrides?: Partial<TestLobsterKey>
 ): TestLobsterKey {
   const id = overrides?.id ?? crypto.randomUUID();
@@ -86,15 +84,17 @@ export function createTestLobsterKey(
   const isActive = overrides?.isActive ?? true;
   const createdAt = overrides?.createdAt ?? new Date().toISOString();
 
+  // SECURITY WARNING: Storing plain API key - this matches current implementation
+  // TODO: Implement hashing for API keys in production
   db.prepare(`
-    INSERT INTO lobster_keys (id, user_uuid, name, api_key, api_key_hash, permissions, expiration_type, expiration_date, rate_limit, is_active, created_at)
+    INSERT INTO agent_keys (id, user_uuid, name, description, api_key, permissions, expiration_type, expiration_date, rate_limit, is_active, created_at)
     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
   `).run(
     id,
-    userId,
+    userId, // Required user_uuid
     name,
-    apiKey,
-    apiKeyHash,
+    null, // description
+    apiKey, // Store plain key (matches current auth implementation)
     JSON.stringify(permissions),
     'never',
     expirationDate,
@@ -105,7 +105,6 @@ export function createTestLobsterKey(
 
   return {
     id,
-    userId,
     name,
     apiKey,
     apiKeyHash,
@@ -124,20 +123,18 @@ export function createTestLobsterKey(
 export function createTestToken(
   db: Database.Database,
   ownerUuid: string,
-  ownerType: 'human' | 'lobster' = 'human',
+  ownerType: 'human' | 'agent' = 'human',
   overrides?: Partial<TestToken>
 ): TestToken {
   const key = overrides?.key ?? `api-${crypto.randomBytes(16).toString('hex')}`;
   const keyHash = overrides?.keyHash ?? crypto.createHash('sha256').update(key).digest('hex');
-  const expiresAt =
-    overrides?.expiresAt ?? new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString();
   const createdAt = overrides?.createdAt ?? new Date().toISOString();
 
   db.prepare(
-    'INSERT INTO api_tokens (key, owner_uuid, owner_type, expires_at, created_at) VALUES (?, ?, ?, ?, ?)'
-  ).run(keyHash, ownerUuid, ownerType, expiresAt, createdAt);
+    'INSERT INTO api_tokens (key, owner_key, owner_type, created_at) VALUES (?, ?, ?, ?)'
+  ).run(key, ownerUuid, ownerType, createdAt);
 
-  return { key, keyHash, ownerUuid, ownerType, expiresAt, createdAt };
+  return { key, keyHash, ownerUuid, ownerType, createdAt };
 }
 
 /**

@@ -4,7 +4,7 @@ import fs from 'fs';
 
 // Validate DB_ENCRYPTION_KEY format at module load time
 const encryptionKey = process.env.DB_ENCRYPTION_KEY;
-if (encryptionKey) {
+if (encryptionKey && process.env.NODE_ENV !== 'test') {
   // Require at least 32 bytes in base64 format (43+ chars including padding)
   if (!/^[A-Za-z0-9+/=]{43,}$/.test(encryptionKey)) {
     throw new Error(
@@ -15,37 +15,27 @@ if (encryptionKey) {
 }
 
 const dataDir = path.join(process.cwd(), 'data');
-if (!fs.existsSync(dataDir)) {
+if (!fs.existsSync(dataDir) && process.env.NODE_ENV !== 'test') {
   fs.mkdirSync(dataDir, { recursive: true, mode: 0o700 });
 }
 
-const dbPath = path.join(dataDir, 'clawstack.db');
+const dbPath = process.env.NODE_ENV === 'test' ? ':memory:' : path.join(dataDir, 'clawstack.db');
 
 // Set restrictive umask for DB file creation (0o077 = owner only)
 const originalUmask = process.umask(0o077);
 
 function encryptExistingDatabase(targetPath: string, key: string) {
-  // Open plaintext DB, attach encrypted copy, export, replace
-  const tempPath = targetPath + '.tmp';
+  // Open plaintext DB, apply rekey to encrypt it in place.
+  // better-sqlite3-multiple-ciphers uses PRAGMA rekey — NOT the ATTACH DATABASE approach.
+  console.log('[DB] Migrating plaintext database to encrypted...');
   const plain = new Database(targetPath);
-  plain.exec(`
-    ATTACH DATABASE '${tempPath}' AS encrypted KEY '${key}';
-    SELECT sqlcipher_export('encrypted');
-    DETACH DATABASE encrypted;
-  `);
+  plain.pragma(`rekey = '${key}'`);
   plain.close();
-
-  // Verify temp file is a regular file (not symlink — TOCTOU check)
-  const stats = fs.lstatSync(tempPath);
-  if (stats.isSymbolicLink()) {
-    throw new Error('[DB] Migration temp file is a symlink — possible attack detected. Aborting.');
-  }
-
-  fs.renameSync(tempPath, targetPath);
-  console.log('[DB] Database encrypted successfully.');
+  console.log('[DB] Database encrypted successfully via rekey.');
 }
 
 function ensureDbPermissions(targetPath: string) {
+  if (targetPath === ':memory:') return;
   // Set restrictive permissions on database and WAL files (owner only: 0o600)
   try {
     if (fs.existsSync(targetPath)) {
@@ -69,7 +59,7 @@ function openDatabase(): Database.Database {
   try {
     const db = new Database(dbPath);
 
-    if (encryptionKey) {
+    if (encryptionKey && process.env.NODE_ENV !== 'test') {
       // Apply SQLCipher key — must be first pragma after open
       db.pragma(`key = '${encryptionKey}'`);
 
@@ -87,7 +77,7 @@ function openDatabase(): Database.Database {
         ensureDbPermissions(dbPath);
         return encrypted;
       }
-    } else {
+    } else if (process.env.NODE_ENV !== 'test') {
       console.warn('[DB] WARNING: DB_ENCRYPTION_KEY is not set — database is unencrypted at rest.');
     }
 
@@ -102,7 +92,7 @@ function openDatabase(): Database.Database {
 
 // Clean up any stale migration temp file from a previous crash
 const staleTempPath = dbPath + '.tmp';
-if (fs.existsSync(staleTempPath)) {
+if (dbPath !== ':memory:' && fs.existsSync(staleTempPath)) {
   try {
     fs.unlinkSync(staleTempPath);
     console.log('[DB] Removed stale migration temp file from previous crash.');

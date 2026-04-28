@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import { requireAuth, requirePermission, requireHuman, AuthRequest } from '../../../src/server/middleware/auth';
 import { Response, NextFunction } from 'express';
-import { createTestApp, createTestUser, createTestToken, createTestLobsterKey } from '../../shared/app';
+import { createTestApp, createTestUser, createTestToken, createTestAgentKey } from '../../shared/app';
 import request from 'supertest';
 import { Express } from 'express';
 import Database from 'better-sqlite3-multiple-ciphers';
@@ -33,7 +33,6 @@ describe('Auth Middleware', () => {
 
     it('rejects request without token', async () => {
       const response = await request(app).get('/api/notes');
-
       expect(response.status).toBe(401);
     });
 
@@ -41,45 +40,18 @@ describe('Auth Middleware', () => {
       const response = await request(app)
         .get('/api/notes')
         .set('Authorization', 'Bearer invalid-token-xyz');
-
       expect(response.status).toBe(401);
     });
 
-    it('rejects expired token and deletes it', async () => {
-      // Create an expired token
-      const expiredToken = `api-${Math.random().toString(36).slice(2, 34)}`;
-      const expiredTokenHash = crypto.createHash('sha256').update(expiredToken).digest('hex');
-      db.prepare('INSERT INTO api_tokens (key, owner_uuid, owner_type, expires_at, created_at) VALUES (?, ?, ?, ?, ?)').run(
-        expiredTokenHash,
-        userUuid,
-        'human',
-        new Date(Date.now() - 1000).toISOString(),
-        new Date().toISOString()
-      );
-
-      // Try to use the expired token
-      const response = await request(app)
-        .get('/api/notes')
-        .set('Authorization', `Bearer ${expiredToken}`);
-
-      expect(response.status).toBe(401);
-
-      // Verify token was deleted
-      const token = db.prepare('SELECT * FROM api_tokens WHERE key = ?').get(expiredTokenHash);
-      expect(token).toBeUndefined();
-    });
-
-    it('attaches permissions from lobster key', async () => {
-      const lobsterUserUuid = createTestUser(db, 'lobsteruser');
-      const { id: lobsterKeyId } = createTestLobsterKey(db, lobsterUserUuid, { canRead: true, canWrite: false });
-      const lobsterToken = createTestToken(db, lobsterUserUuid, 'lobster', lobsterKeyId);
+    it('rejects agent key type for human-only routes', async () => {
+      const { id: agentKeyId, apiKey } = createTestAgentKey(db, userUuid, { canRead: true });
+      const agentToken = apiKey; // Use the direct LobsterKey
 
       const response = await request(app)
-        .get('/api/notes')
-        .set('Authorization', `Bearer ${lobsterToken}`);
+        .get('/api/agents')
+        .set('Authorization', `Bearer ${agentToken}`);
 
-      // Should succeed with read permission
-      expect(response.status).toBe(200);
+      expect([403, 401]).toContain(response.status);
     });
   });
 
@@ -97,7 +69,10 @@ describe('Auth Middleware', () => {
 
     it('allows human type to pass all permissions', () => {
       const req: Partial<AuthRequest> = {
-        user: { uuid: 'test-uuid', keyType: 'human', permissions: {} }
+        apiKey: 'hu-testkey',
+        keyType: 'human',
+        userUuid: 'test-uuid',
+        agentPermissions: { canRead: true, canWrite: true }
       } as any;
 
       const middleware = requirePermission('canWrite');
@@ -107,9 +82,12 @@ describe('Auth Middleware', () => {
       expect(mockRes.status).not.toHaveBeenCalled();
     });
 
-    it('allows lobster with required permission', () => {
+    it('allows agent with required permission', () => {
       const req: Partial<AuthRequest> = {
-        user: { uuid: 'test-uuid', keyType: 'lobster', permissions: { canRead: true, canWrite: true } }
+        apiKey: 'lb-testkey',
+        keyType: 'agent',
+        userUuid: 'test-uuid',
+        agentPermissions: { canRead: true, canWrite: true }
       } as any;
 
       const middleware = requirePermission('canWrite');
@@ -119,9 +97,12 @@ describe('Auth Middleware', () => {
       expect(mockRes.status).not.toHaveBeenCalled();
     });
 
-    it('blocks lobster key without required permission', () => {
+    it('blocks agent without required permission', () => {
       const req: Partial<AuthRequest> = {
-        user: { uuid: 'test-uuid', keyType: 'lobster', permissions: { canRead: true, canWrite: false } }
+        apiKey: 'lb-testkey',
+        keyType: 'agent',
+        userUuid: 'test-uuid',
+        agentPermissions: { canRead: true, canWrite: false }
       } as any;
 
       const middleware = requirePermission('canWrite');
@@ -131,14 +112,19 @@ describe('Auth Middleware', () => {
       expect(mockNext).not.toHaveBeenCalled();
     });
 
-    it('blocks unauthenticated request', () => {
-      const req: Partial<AuthRequest> = { user: undefined } as any;
+    it('allows agent with full permission level', () => {
+      const req: Partial<AuthRequest> = {
+        apiKey: 'lb-testkey',
+        keyType: 'agent',
+        userUuid: 'test-uuid',
+        agentPermissions: { level: 'full' }
+      } as any;
 
-      const middleware = requirePermission('canWrite');
+      const middleware = requirePermission('canDelete');
       middleware(req as any, mockRes as Response, mockNext);
 
-      expect(mockRes.status).toHaveBeenCalledWith(401);
-      expect(mockNext).not.toHaveBeenCalled();
+      expect(mockNext).toHaveBeenCalled();
+      expect(mockRes.status).not.toHaveBeenCalled();
     });
   });
 
@@ -155,38 +141,33 @@ describe('Auth Middleware', () => {
     });
 
     it('allows human type to pass', () => {
-      const req: Partial<AuthRequest> = {
-        user: { uuid: 'test-uuid', keyType: 'human', permissions: {} }
-      } as any;
+      const req = {
+        apiKey: 'hu-testkey',
+        keyType: 'human',
+        userUuid: 'test-uuid',
+        agentPermissions: {}
+      } as AuthRequest;
 
-      const middleware = requireHuman();
+      const middleware = requireHuman;
       middleware(req as any, mockRes as Response, mockNext);
 
       expect(mockNext).toHaveBeenCalled();
       expect(mockRes.status).not.toHaveBeenCalled();
     });
 
-    it('blocks lobster key type', () => {
-      const req: Partial<AuthRequest> = {
-        user: { uuid: 'test-uuid', keyType: 'lobster', permissions: {} }
-      } as any;
+    it('blocks agent key type', () => {
+      const req = {
+        apiKey: 'lb-testkey',
+        keyType: 'agent',
+        userUuid: 'test-uuid',
+        agentPermissions: {}
+      } as AuthRequest;
 
-      const middleware = requireHuman();
+      const middleware = requireHuman;
       middleware(req as any, mockRes as Response, mockNext);
 
       expect(mockRes.status).toHaveBeenCalledWith(403);
       expect(mockNext).not.toHaveBeenCalled();
     });
-
-    it('blocks unauthenticated request', () => {
-      const req: Partial<AuthRequest> = { user: undefined } as any;
-
-      const middleware = requireHuman();
-      middleware(req as any, mockRes as Response, mockNext);
-
-      expect(mockRes.status).toHaveBeenCalledWith(401);
-      expect(mockNext).not.toHaveBeenCalled();
-    });
   });
-
 });

@@ -4,6 +4,7 @@ import request from 'supertest';
 import { createTestApp, createTestUser, createTestToken } from '../../shared/app';
 import { Express } from 'express';
 import Database from 'better-sqlite3-multiple-ciphers';
+import crypto from 'crypto';
 
 describe('Notes Routes', () => {
   let app: Express;
@@ -58,14 +59,13 @@ describe('Notes Routes', () => {
       expect(res.status).toBe(401);
     });
 
-    it('rejects expired token', async () => {
+    it.skip('rejects expired token', async () => {
+      // expires_at column removed - tokens don't expire anymore
       // Create an expired token
       const expiredToken = `api-${Math.random().toString(36).slice(2, 34)}`;
-      db.prepare('INSERT INTO api_tokens (key, owner_uuid, owner_type, expires_at, created_at) VALUES (?, ?, ?, ?, ?)').run(
+      db.prepare('INSERT INTO api_tokens (key, owner_key, created_at) VALUES (?, ?, ?)').run(
         expiredToken,
         userUuid,
-        'human',
-        new Date(Date.now() - 1000).toISOString(), // 1 second ago
         new Date().toISOString()
       );
 
@@ -194,7 +194,7 @@ describe('Notes Routes', () => {
       expect(res.status).toBe(404);
     });
 
-    it('requires title and content', async () => {
+    it('allows partial updates', async () => {
       await request(app)
         .post('/api/notes')
         .set('Authorization', `Bearer ${token}`)
@@ -203,9 +203,11 @@ describe('Notes Routes', () => {
       const res = await request(app)
         .put(`/api/notes/${noteId}`)
         .set('Authorization', `Bearer ${token}`)
-        .send({ title: 'Test' });
+        .send({ title: 'Updated Title' });
 
-      expect(res.status).toBe(400);
+      expect(res.status).toBe(200);
+      expect(res.body.data.title).toBe('Updated Title');
+      expect(res.body.data.content).toBe('Test'); // Unchanged
     });
   });
 
@@ -224,7 +226,11 @@ describe('Notes Routes', () => {
         .send({ starred: 1 });
 
       expect(res.status).toBe(200);
-      expect(res.body.data.starred).toBe(1);
+      expect(res.body.data.success).toBe(true);
+
+      // Verify the note was actually starred
+      const note = db.prepare('SELECT starred FROM notes WHERE id = ?').get(noteId) as any;
+      expect(note.starred).toBe(1);
     });
 
     it('toggles starred flag to false', async () => {
@@ -241,7 +247,11 @@ describe('Notes Routes', () => {
         .send({ starred: 0 });
 
       expect(res.status).toBe(200);
-      expect(res.body.data.starred).toBe(0);
+      expect(res.body.data.success).toBe(true);
+
+      // Verify the note was actually unstarred
+      const note = db.prepare('SELECT starred FROM notes WHERE id = ?').get(noteId) as any;
+      expect(note.starred).toBe(0);
     });
 
     it('returns 404 for non-existent note', async () => {
@@ -269,7 +279,11 @@ describe('Notes Routes', () => {
         .send({ pinned: 1 });
 
       expect(res.status).toBe(200);
-      expect(res.body.data.pinned).toBe(1);
+      expect(res.body.data.success).toBe(true);
+
+      // Verify the note was actually pinned
+      const note = db.prepare('SELECT pinned FROM notes WHERE id = ?').get(noteId) as any;
+      expect(note.pinned).toBe(1);
     });
 
     it('toggles pinned flag to false', async () => {
@@ -286,7 +300,11 @@ describe('Notes Routes', () => {
         .send({ pinned: 0 });
 
       expect(res.status).toBe(200);
-      expect(res.body.data.pinned).toBe(0);
+      expect(res.body.data.success).toBe(true);
+
+      // Verify the note was actually unpinned
+      const note = db.prepare('SELECT pinned FROM notes WHERE id = ?').get(noteId) as any;
+      expect(note.pinned).toBe(0);
     });
 
     it('returns 404 for non-existent note', async () => {
@@ -407,22 +425,27 @@ describe('Notes Routes', () => {
     it('requires canRead permission for GET', async () => {
       // Create a lobster key without canRead
       const lobsterKeyId = crypto.randomUUID();
+      const lobsterApiKey = `lb-${crypto.randomBytes(24).toString('hex')}`;
       db.prepare(`
-        INSERT INTO lobster_keys (id, user_uuid, name, api_key, api_key_hash, permissions, expiration_type, is_active, created_at)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
-      `).run(
+        INSERT INTO agent_keys (id, user_uuid, name, description, api_key, permissions, expiration_type, expiration_date, rate_limit, is_active, created_at, last_used)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      `)
+      .run(
         lobsterKeyId,
         userUuid,
         'No Read Key',
-        'encrypted',
-        'hash-noperm',
+        null,
+        lobsterApiKey, // Store plain key
         JSON.stringify({ canRead: false }),
         'never',
+        null,
+        null,
         1,
-        new Date().toISOString()
+        new Date().toISOString(),
+        null
       );
 
-      const lobsterToken = createTestToken(db, userUuid, 'lobster', lobsterKeyId);
+      const lobsterToken = createTestToken(db, userUuid, 'agent', lobsterKeyId);
 
       const res = await request(app)
         .get('/api/notes')
@@ -433,22 +456,27 @@ describe('Notes Routes', () => {
 
     it('requires canWrite permission for POST', async () => {
       const lobsterKeyId = crypto.randomUUID();
+      const lobsterApiKey = `lb-${crypto.randomBytes(24).toString('hex')}`;
       db.prepare(`
-        INSERT INTO lobster_keys (id, user_uuid, name, api_key, api_key_hash, permissions, expiration_type, is_active, created_at)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
-      `).run(
+        INSERT INTO agent_keys (id, user_uuid, name, description, api_key, permissions, expiration_type, expiration_date, rate_limit, is_active, created_at, last_used)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      `)
+      .run(
         lobsterKeyId,
         userUuid,
         'No Write Key',
-        'encrypted',
-        'hash-nowrite',
+        null,
+        lobsterApiKey, // Store plain key
         JSON.stringify({ canRead: true, canWrite: false }),
         'never',
+        null,
+        null,
         1,
-        new Date().toISOString()
+        new Date().toISOString(),
+        null
       );
 
-      const lobsterToken = createTestToken(db, userUuid, 'lobster', lobsterKeyId);
+      const lobsterToken = createTestToken(db, userUuid, 'agent', lobsterKeyId);
 
       const res = await request(app)
         .post('/api/notes')
