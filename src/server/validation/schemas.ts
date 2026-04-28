@@ -1,32 +1,5 @@
 import { z } from 'zod';
 
-// SSRF-protected jinaUrl validator
-const jinaUrlSchema = z.string()
-  .regex(/^https:\/\/r\.jina\.ai\//, 'jinaUrl must start with https://r.jina.ai/')
-  .refine((val) => {
-    if (!val) return true;
-    try {
-      let wrappedUrl = val.replace(/^https:\/\/r\.jina\.ai\//, '');
-      if (!wrappedUrl.match(/^https?:\/\//)) {
-        wrappedUrl = 'https://' + wrappedUrl;
-      }
-      const parsed = new URL(wrappedUrl);
-      if (!['http:', 'https:'].includes(parsed.protocol)) return false;
-      const hostname = parsed.hostname.toLowerCase();
-      if (['localhost', '127.0.0.1', '::1', '0.0.0.0'].includes(hostname)) return false;
-      if (hostname.match(/^10\./)) return false;
-      if (hostname.match(/^172\.(1[6-9]|2[0-9]|3[01])\./)) return false;
-      if (hostname.match(/^192\.168\./)) return false;
-      if (hostname.match(/^169\.254\./)) return false;
-      if (hostname.startsWith('fc') || hostname.startsWith('fd')) return false;
-      if (hostname.startsWith('fe80:')) return false;
-      return true;
-    } catch {
-      return false;
-    }
-  }, { message: 'jinaUrl wraps an invalid, private, or blocked URL (localhost/internal IPs not allowed)' })
-  .optional()
-  .nullable();
 
 export const AuthSchemas = {
   register: z.object({
@@ -45,25 +18,23 @@ export const AuthSchemas = {
 
 export const NoteSchemas = {
   create: z.object({
-    id: z.string().uuid().optional(),
+    id: z.string().optional(),
     title: z.string().min(1),
     content: z.string().min(1),
     starred: z.union([z.boolean(), z.number()]).optional(),
     pinned: z.union([z.boolean(), z.number()]).optional(),
-    jinaUrl: jinaUrlSchema,
   }),
   update: z.object({
     title: z.string().optional(),
     content: z.string().optional(),
     starred: z.union([z.boolean(), z.number()]).optional(),
     pinned: z.union([z.boolean(), z.number()]).optional(),
-    jinaUrl: jinaUrlSchema,
   }),
 };
 
 export const AgentKeySchemas = {
   create: z.object({
-    id: z.string().uuid().optional(),
+    id: z.string().optional(),
     name: z.string().min(1).max(100),
     description: z.string().max(500).optional().nullable(),
     permissions: z.record(z.string(), z.any()).optional(),

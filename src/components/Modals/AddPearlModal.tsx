@@ -24,6 +24,7 @@ export function AddPearlModal({ isOpen, onClose, onSuccess, onAutosave, editNote
   const [isUploading, setIsUploading] = useState(false);
   const [isPreviewOpen, setIsPreviewOpen] = useState(false);
   const [lastSaved, setLastSaved] = useState<Date | null>(null);
+  const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'saved' | 'incomplete' | 'error'>('idle');
 
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const isEdit = !!editNote;
@@ -47,9 +48,12 @@ export function AddPearlModal({ isOpen, onClose, onSuccess, onAutosave, editNote
 
   const doSave = async () => {
     if (currentNoteId.current) {
+      console.log('[AddPearlModal] 🔄 Updating existing pearl:', currentNoteId.current);
       return noteService.update(currentNoteId.current, title.trim(), content.trim(), starred, pinned);
     }
+    console.log('[AddPearlModal] ✨ Creating new pearl...');
     const note = await noteService.create(title.trim(), content.trim(), starred, pinned);
+    console.log('[AddPearlModal] 🏷️ New pearl created with ID:', note.id);
     currentNoteId.current = note.id;
     return note;
   };
@@ -57,38 +61,55 @@ export function AddPearlModal({ isOpen, onClose, onSuccess, onAutosave, editNote
   // ── Manual save (Shell It! button) ────────────────────────────────────────
 
   const handleShellIt = async () => {
+    console.log('[AddPearlModal] 🐚 Shell It! triggered');
     if (!title.trim() || !content.trim()) {
       setError('Title and content are required');
+      console.warn('[AddPearlModal] ⚠️ Validation failed: empty fields');
       return;
     }
 
     setError('');
     setIsSubmitting(true);
     try {
+      console.log('[AddPearlModal] 🚀 Calling doSave()...');
       const note = await doSave();
+      console.log('[AddPearlModal] ✅ doSave() successful:', note.id);
       setLastSaved(new Date());
+      
+      console.log('[AddPearlModal] 📢 Calling onSuccess()...');
       onSuccess(note);
+      console.log('[AddPearlModal] 🔒 Closing modal...');
       onClose();
     } catch (err: any) {
-      console.error('[AddPearlModal] Shell It failed:', err);
+      console.error('[AddPearlModal] ❌ Shell It failed:', err);
       setError(err?.message || 'Failed to save pearl');
     } finally {
       setIsSubmitting(false);
+      console.log('[AddPearlModal] 🏁 handleShellIt finished');
     }
   };
 
   // ── Autosave (3s debounce) ────────────────────────────────────────────────
 
   useEffect(() => {
-    if (!isOpen || !title.trim() || !content.trim()) return;
+    if (!isOpen) return;
 
+    if (!title.trim() || !content.trim()) {
+      setSaveStatus('incomplete');
+      return;
+    }
+
+    setSaveStatus('idle');
     const timer = setTimeout(async () => {
+      setSaveStatus('saving');
       try {
         const note = await doSave();
         setLastSaved(new Date());
+        setSaveStatus('saved');
         onAutosave?.(note);
       } catch (err) {
         console.error('[AddPearlModal] Autosave failed:', err);
+        setSaveStatus('error');
       }
     }, 3000);
 
@@ -154,10 +175,24 @@ export function AddPearlModal({ isOpen, onClose, onSuccess, onAutosave, editNote
             <h2 className="text-xl font-bold dark:text-white">
               {isEdit ? 'Polish Pearl' : 'Shell New Pearl'}
             </h2>
-            {lastSaved && (
-              <span className="text-[10px] bg-green-500/10 text-green-600 px-2 py-0.5 rounded-full font-bold uppercase tracking-wider animate-pulse">
-                Autosaved{' '}
-                {lastSaved.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
+            {saveStatus === 'saved' && lastSaved && (
+              <span className="text-[10px] bg-green-500/10 text-green-600 px-2 py-0.5 rounded-full font-bold uppercase tracking-wider">
+                Saved {lastSaved.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+              </span>
+            )}
+            {saveStatus === 'saving' && (
+              <span className="text-[10px] bg-amber-500/10 text-amber-600 px-2 py-0.5 rounded-full font-bold uppercase tracking-wider animate-pulse">
+                Saving...
+              </span>
+            )}
+            {saveStatus === 'incomplete' && (
+              <span className="text-[10px] bg-slate-500/10 text-slate-500 px-2 py-0.5 rounded-full font-bold uppercase tracking-wider">
+                Incomplete Pearl
+              </span>
+            )}
+            {saveStatus === 'error' && (
+              <span className="text-[10px] bg-red-500/10 text-red-500 px-2 py-0.5 rounded-full font-bold uppercase tracking-wider">
+                Save Failed
               </span>
             )}
           </div>

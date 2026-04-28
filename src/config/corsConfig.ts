@@ -26,19 +26,18 @@ export function getCorsConfig(): CorsOptions {
         // 1. Always allow localhost
         if (isLocalhost(hostname)) return callback(null, true);
 
-        if (isProduction) {
-          // 2. In Prod: Allow LAN access
-          if (isPrivateIP(hostname)) return callback(null, true);
+        // 2. Allow LAN access (Private IPs)
+        if (isPrivateIP(hostname)) return callback(null, true);
 
+        if (isProduction) {
           // 3. In Prod: Allow explicit CORS origins (CF tunnels, etc.)
           if (allowedOrigins.includes(origin)) return callback(null, true);
 
           console.warn(`⚠️ CORS: Rejected origin in production: ${origin}`);
           return callback(new Error("CORS: Origin not allowed in production"));
         } else {
-          // In Dev: Strict localhost only
-          console.warn(`⚠️ CORS: Rejected non-localhost origin in dev mode: ${origin}`);
-          return callback(new Error("CORS: Only localhost allowed in dev mode"));
+          // In Dev: Allow all origins to prevent friction during LAN testing
+          return callback(null, true);
         }
       } catch (err) {
         callback(new Error(`CORS: Invalid origin format: ${origin}`));

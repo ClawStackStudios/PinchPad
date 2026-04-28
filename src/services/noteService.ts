@@ -2,6 +2,9 @@ import { restAdapter } from '../lib/api';
 
 // Browser-compatible UUID v4 generator
 function generateUUID(): string {
+  if (typeof crypto.randomUUID === 'function') {
+    return crypto.randomUUID();
+  }
   const bytes = new Uint8Array(16);
   crypto.getRandomValues(bytes);
   bytes[6] = (bytes[6] & 0x0f) | 0x40;
@@ -41,20 +44,27 @@ export const noteService = {
 
   async create(title: string, content: string, starred = false, pinned = false): Promise<Note> {
     const tempId = generateUUID();
+    console.log('[NoteService] 🧪 Creating pearl with tempId:', tempId);
 
-    const response = await restAdapter.POST('/api/notes', {
-      id: tempId,
-      title,
-      content,
-      starred: starred ? 1 : 0,
-      pinned: pinned ? 1 : 0
-    });
+    try {
+      const response = await restAdapter.POST('/api/notes', {
+        id: tempId,
+        title,
+        content,
+        starred: starred ? 1 : 0,
+        pinned: pinned ? 1 : 0
+      });
+      console.log('[NoteService] 📥 POST /api/notes response received:', response);
 
-    return {
-      ...response.data,
-      starred: !!response.data.starred,
-      pinned: !!response.data.pinned
-    };
+      return {
+        ...response.data,
+        starred: !!response.data.starred,
+        pinned: !!response.data.pinned
+      };
+    } catch (err) {
+      console.error('[NoteService] ❌ POST /api/notes failed:', err);
+      throw err;
+    }
   },
 
   async update(id: string, title: string, content: string, starred = false, pinned = false): Promise<Note> {

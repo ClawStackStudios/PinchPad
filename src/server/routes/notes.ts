@@ -36,17 +36,16 @@ router.get('/', requireAuth, requirePermission('canRead'), (req: AuthRequest, re
   }
 });
 
-/**
- * POST /
- * Locks a new pearl into the claw.
- */
 router.post('/', requireAuth, requirePermission('canWrite'), validateBody(NoteSchemas.create), (req: AuthRequest, res: Response) => {
   const { id, title, content, starred = 0, pinned = 0 } = req.body;
   const now = new Date().toISOString();
+  
+  // HardShell Defense: Server-side ID generation fallback
+  const pearlId = id || crypto.randomUUID();
 
   try {
     db.prepare('INSERT INTO notes (id, user_uuid, title, content, starred, pinned, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)').run(
-      id,
+      pearlId,
       req.userUuid,
       title,
       content,
@@ -62,12 +61,12 @@ router.post('/', requireAuth, requirePermission('canWrite'), validateBody(NoteSc
       action: 'create',
       outcome: 'success',
       resource: 'note',
-      details: { note_id: id },
+      details: { note_id: pearlId },
       ip_address: req.ip,
       user_agent: (req.headers?.['user-agent'] as string) || 'unknown'
     });
 
-    const newPolyP = db.prepare('SELECT * FROM notes WHERE id = ? AND user_uuid = ?').get(id, req.userUuid);
+    const newPolyP = db.prepare('SELECT * FROM notes WHERE id = ? AND user_uuid = ?').get(pearlId, req.userUuid);
     res.status(201).json({ data: newPolyP });
   } catch (isCracked: any) {
     console.error('[Notes POST] ❌ Molt failed:', isCracked.message);

@@ -14,7 +14,7 @@
     "scuttle:reset": "npm run scuttle:stop && rm -rf dist",
     "scuttle:stop": "npm run scuttle:dev-stop",
     "clean": "rm -rf dist",
-    "dev": "vite --port 8282 --strictPort",
+    "dev": "vite --port 8282 --host --strictPort",
     "dev:server": "PORT=8383 tsx --watch server.ts",
     "build": "vite build",
     "preview": "vite preview",

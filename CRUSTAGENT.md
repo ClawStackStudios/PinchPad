@@ -173,5 +173,16 @@ Claws: The active tools, functions, and permissions used to interact with the re
      '.__W__.'
 ```
 
+## 🐚 Diagnostic Log: The Pearl Failure
+
+### [2026-04-28] - The missing jinaUrl Predator
+- **Issue**: Pearls failed to save ("Shell It!" clicked but no POST logged).
+- **Discovery**: `NoteSchemas.create` required a `jinaUrl` key in the object, but the frontend wasn't sending it. This caused a silent 400 Validation Error (or a hidden exception).
+- **Fix**: 
+  - Updated `NoteSchemas.ts` to make `jinaUrl` optional in the object.
+  - Enhanced `validateBody` middleware with detailed console logging for "Shell Check" failures.
+  - Added verbose instrumentation to `AddPearlModal.tsx` and `noteService.ts`.
+- **Status**: ✅ FIXED. Discovery: Lucas was missing a title (classic human error!), but the system also had a strict UUID predator. Hardened the backend to own ID generation and improved UI feedback to show "Incomplete Pearl" when title/content is missing.
+
 ---
   **Maintained by CrustAgent©™**

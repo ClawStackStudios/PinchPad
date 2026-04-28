@@ -5,19 +5,20 @@ export const validateBody = (schema: z.ZodTypeAny) => async (req: Request, res: 
   try {
     req.body = await schema.parseAsync(req.body);
     next();
-  } catch (error: unknown) {
-    if (error instanceof ZodError || (error && typeof error === 'object' && 'issues' in error)) {
-      const zodErr = error as ZodError;
+  } catch (isCracked: unknown) {
+    if (isCracked instanceof ZodError || (isCracked && typeof isCracked === 'object' && 'issues' in isCracked)) {
+      const zodErr = isCracked as ZodError;
       const issues = Array.isArray(zodErr.issues) ? zodErr.issues : [];
+      const errorMsg = issues.map(i => `${i.path.join('.')}: ${i.message}`).join(', ');
+      
+      console.warn(`[Validation] ❌ Payload failed shell check for ${req.path}:`, errorMsg);
+
       return res.status(400).json({
         success: false,
-        error: 'Validation Error: Your request form is malformed',
-        details: issues.map(e => ({
-          path: Array.isArray(e.path) ? e.path.join('.') : '',
-          message: e.message || 'Invalid field',
-        })),
+        error: 'Shell Check Failed: Your request carapace is malformed',
+        details: errorMsg,
       });
     }
-    next(error);
+    next(isCracked);
   }
 };
