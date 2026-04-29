@@ -4,20 +4,20 @@ services:
     image: ghcr.io/clawstackstudios/pinchpad:latest
     container_name: pinchpad
     ports:
-      - "8383:8383"
+      - "8282:8282"
     # ─── Docker Bind Mount for SQLite Database ───────
     volumes:
       - ./data:/app/data
     environment:
       - NODE_ENV=production
-      - PORT=8383
+      - PORT=8282
       - DATA_DIR=/app/data
       - DB_ENCRYPTION_KEY=${DB_ENCRYPTION_KEY:-}
       - PUID=1000
       - PGID=1000
       # For detailed configuration, see README.md → Running with Docker section
     healthcheck:
-      test: ["CMD", "wget", "-qO-", "http://localhost:8383/api/health"]
+      test: ["CMD", "wget", "-qO-", "http://localhost:8282/api/health"]
       interval: 15s
       timeout: 10s
       retries: 5

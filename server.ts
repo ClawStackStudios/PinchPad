@@ -23,7 +23,7 @@ import { apiLimiter } from './src/server/middleware/rateLimiter';
 
 async function startServer() {
   const app = express();
-  const PORT = process.env.PORT ? parseInt(process.env.PORT, 10) : 8383;
+  const PORT = process.env.PORT ? parseInt(process.env.PORT, 10) : 8282;
 
   // ─── Startup tasks ───────────────────────────────────────────────────────────
   scheduleMoltCleanup(db);
@@ -45,7 +45,7 @@ async function startServer() {
         styleSrc: ["'self'", "'unsafe-inline'", 'https://fonts.googleapis.com'],
         fontSrc: ["'self'", 'https://fonts.gstatic.com'],
         imgSrc: ["'self'", 'data:', 'https:'],
-        connectSrc: ["'self'", 'wss:', 'ws:', 'http://localhost:8383', 'http://localhost:8282'],
+        connectSrc: ["'self'", 'wss:', 'ws:', 'http://localhost:8282'],
         frameAncestors: isProduction ? ["'self'"] : ["'self'", "*"],
         upgradeInsecureRequests: process.env.ENFORCE_HTTPS === 'true' ? [] : null,
       },

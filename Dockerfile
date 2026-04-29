@@ -42,7 +42,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends gosu && rm -rf 
 COPY docker-entrypoint.sh /usr/local/bin/entrypoint.sh
 RUN chmod +x /usr/local/bin/entrypoint.sh
 
-EXPOSE 8383
+EXPOSE 8282
 
 ENTRYPOINT ["entrypoint.sh"]
 CMD ["tsx", "server.ts"]
