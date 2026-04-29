@@ -11,6 +11,9 @@ import db from '../../src/server/database/index';
 import authRoutes from '../../src/server/routes/auth';
 import notesRoutes from '../../src/server/routes/notes';
 import agentsRoutes from '../../src/server/routes/agents';
+import potsRoutes from '../../src/server/routes/pots';
+import photosRoutes from '../../src/server/routes/photos';
+import lobsterSessionRoutes from '../../src/server/routes/lobsterSession';
 import { requireAuth } from '../../src/server/middleware/auth';
 import { createAgentKeyRateLimiter, apiLimiter } from '../../src/server/middleware/rateLimiter';
 
@@ -23,6 +26,7 @@ export function createTestApp(): { app: Express; db: Database.Database } {
   db.exec(`
     DELETE FROM import_sessions;
     DELETE FROM pearl_photos;
+    DELETE FROM pots;
     DELETE FROM notes;
     DELETE FROM agent_keys;
     DELETE FROM api_tokens;
@@ -37,6 +41,9 @@ export function createTestApp(): { app: Express; db: Database.Database } {
   app.use('/api/auth', authRoutes);
   app.use('/api/notes', notesRoutes);
   app.use('/api/agents', agentsRoutes);
+  app.use('/api/pots', potsRoutes);
+  app.use('/api/photos', photosRoutes);
+  app.use('/api/lobster-session', lobsterSessionRoutes);
 
   return { app, db };
 }

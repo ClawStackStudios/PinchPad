@@ -4,7 +4,7 @@ import db from '../database/index';
 import JSZip from 'jszip';
 import { requireAuth, requirePermission, type AuthRequest } from '../middleware/auth';
 import { validateBody } from '../middleware/validate';
-import { NoteSchemas } from '../validation/schemas';
+import { NoteSchemas, StatusSchemas } from '../validation/schemas';
 import { createAuditLogger } from '../utils/auditLogger';
 
 const router = Router();
@@ -120,13 +120,13 @@ router.put('/:id', requireAuth, requirePermission('canEdit'), validateBody(NoteS
  * PATCH /:id/starred
  * Pinches the starred state of a pearl.
  */
-router.patch('/:id/starred', requireAuth, requirePermission('canEdit'), (req: AuthRequest, res: Response) => {
-  const { starred } = req.body;
+router.patch('/:id/starred', requireAuth, requirePermission('canEdit'), validateBody(StatusSchemas.toggle), (req: AuthRequest, res: Response) => {
+  const { value } = req.body;
   const { id } = req.params;
 
   try {
     const lockResult = db.prepare('UPDATE notes SET starred = ?, updated_at = ? WHERE id = ? AND user_uuid = ?').run(
-      starred ? 1 : 0,
+      value ? 1 : 0,
       new Date().toISOString(),
       id,
       req.userUuid
@@ -147,13 +147,13 @@ router.patch('/:id/starred', requireAuth, requirePermission('canEdit'), (req: Au
  * PATCH /:id/pinned
  * Pinches the pinned state of a pearl.
  */
-router.patch('/:id/pinned', requireAuth, requirePermission('canEdit'), (req: AuthRequest, res: Response) => {
-  const { pinned } = req.body;
+router.patch('/:id/pinned', requireAuth, requirePermission('canEdit'), validateBody(StatusSchemas.toggle), (req: AuthRequest, res: Response) => {
+  const { value } = req.body;
   const { id } = req.params;
 
   try {
     const lockResult = db.prepare('UPDATE notes SET pinned = ?, updated_at = ? WHERE id = ? AND user_uuid = ?').run(
-      pinned ? 1 : 0,
+      value ? 1 : 0,
       new Date().toISOString(),
       id,
       req.userUuid
@@ -300,7 +300,7 @@ router.post('/bulk', requireAuth, requirePermission('canWrite'), (req: AuthReque
  * GET /export
  * Exports the entire habitat as a hardened zip file.
  */
-router.get('/export', requireAuth, async (req: AuthRequest, res: Response) => {
+router.get('/export', requireAuth, requirePermission('canRead'), async (req: AuthRequest, res: Response) => {
   const format = req.query.format || 'json';
   const reef = db.prepare('SELECT * FROM notes WHERE user_uuid = ?').all(req.userUuid) as any[];
 

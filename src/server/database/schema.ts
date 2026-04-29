@@ -83,7 +83,7 @@ export function initializeSchema(db: Database) {
     CREATE TRIGGER IF NOT EXISTS cascade_agent_api_tokens
     AFTER DELETE ON agent_keys
     BEGIN
-      DELETE FROM api_tokens WHERE owner_key = OLD.id AND owner_type = 'agent';
+      DELETE FROM api_tokens WHERE owner_key = OLD.api_key AND owner_type = 'agent';
     END;
 
     CREATE TABLE IF NOT EXISTS audit_logs (

@@ -14,12 +14,14 @@ import db from '../database/index';
 import { requireAuth, requirePermission, type AuthRequest } from '../middleware/auth';
 import { validateBody } from '../middleware/validate';
 import { PotSchemas } from '../validation/schemas';
+import { createAuditLogger } from '../utils/auditLogger';
 
 const router = Router();
+const audit = createAuditLogger(db);
 
 // ── GET / ─────────────────────────────────────────────────────────────────────
 // Returns all pots for the current user with live pearl counts.
-router.get('/', requireAuth, (req: AuthRequest, res: Response) => {
+router.get('/', requireAuth, requirePermission('canRead'), (req: AuthRequest, res: Response) => {
   try {
     const pots = db.prepare(`
       SELECT
@@ -59,7 +61,18 @@ router.post('/', requireAuth, requirePermission('canWrite'), validateBody(PotSch
     );
 
     const newPot = db.prepare('SELECT * FROM pots WHERE id = ?').get(id);
-    console.log(`[Pots POST] ✅ Created pot "${name}" (${id}) for user ${req.userUuid}`);
+
+    audit.log('POT_CREATE', {
+      actor: req.userUuid,
+      actor_type: req.keyType,
+      action: 'create',
+      outcome: 'success',
+      resource: 'pot',
+      details: { pot_id: id, name },
+      ip_address: req.ip,
+      user_agent: (req.headers?.['user-agent'] as string) || 'unknown'
+    });
+
     res.status(201).json({ data: newPot });
   } catch (err: any) {
     console.error('[Pots POST] ❌ Failed to create pot:', err.message);
@@ -90,7 +103,18 @@ router.patch('/:id', requireAuth, requirePermission('canEdit'), validateBody(Pot
     db.prepare(`UPDATE pots SET ${fields.join(', ')} WHERE id = ? AND user_uuid = ?`).run(...values);
 
     const updated = db.prepare('SELECT * FROM pots WHERE id = ?').get(id);
-    console.log(`[Pots PATCH] ✅ Updated pot ${id}`);
+
+    audit.log('POT_UPDATE', {
+      actor: req.userUuid,
+      actor_type: req.keyType,
+      action: 'update',
+      outcome: 'success',
+      resource: 'pot',
+      details: { pot_id: id, fields },
+      ip_address: req.ip,
+      user_agent: (req.headers?.['user-agent'] as string) || 'unknown'
+    });
+
     res.json({ data: updated });
   } catch (err: any) {
     console.error('[Pots PATCH] ❌ Failed to update pot:', err.message);
@@ -111,7 +135,17 @@ router.delete('/:id', requireAuth, requirePermission('canDelete'), (req: AuthReq
     const unpotted = db.prepare('UPDATE notes SET pot_id = NULL WHERE pot_id = ? AND user_uuid = ?').run(id, req.userUuid);
     db.prepare('DELETE FROM pots WHERE id = ? AND user_uuid = ?').run(id, req.userUuid);
 
-    console.log(`[Pots DELETE] ✅ Deleted pot ${id}, un-potted ${unpotted.changes} pearls`);
+    audit.log('POT_DELETE', {
+      actor: req.userUuid,
+      actor_type: req.keyType,
+      action: 'delete',
+      outcome: 'success',
+      resource: 'pot',
+      details: { pot_id: id, unpotted_count: unpotted.changes },
+      ip_address: req.ip,
+      user_agent: (req.headers?.['user-agent'] as string) || 'unknown'
+    });
+
     res.json({ data: { success: true, unpotted: unpotted.changes } });
   } catch (err: any) {
     console.error('[Pots DELETE] ❌ Failed to delete pot:', err.message);

@@ -2,7 +2,7 @@ import { Router, Response } from 'express';
 import multer from 'multer';
 import crypto from 'crypto';
 import db from '../database/index';
-import { requireAuth, type AuthRequest } from '../middleware/auth';
+import { requireAuth, requirePermission, type AuthRequest } from '../middleware/auth';
 import { createAuditLogger } from '../utils/auditLogger';
 
 const router = Router();
@@ -14,7 +14,7 @@ const upload = multer({
   limits: { fileSize: 10 * 1024 * 1024 }
 });
 
-router.post('/upload', requireAuth, upload.single('photo'), (req: AuthRequest, res: Response) => {
+router.post('/upload', requireAuth, requirePermission('canWrite'), upload.single('photo'), (req: AuthRequest, res: Response) => {
   const { pearlId } = req.body;
   const file = req.file;
 
@@ -74,14 +74,14 @@ router.post('/upload', requireAuth, upload.single('photo'), (req: AuthRequest, r
   }
 });
 
-router.get('/:id', (req: any, res: Response) => {
+router.get('/:id', requireAuth, requirePermission('canRead'), (req: AuthRequest, res: Response) => {
   const { id } = req.params;
 
   try {
-    const photo = db.prepare('SELECT data, mime_type FROM pearl_photos WHERE id = ?').get(id) as any;
+    const photo = db.prepare('SELECT data, mime_type FROM pearl_photos WHERE id = ? AND user_uuid = ?').get(id, req.userUuid) as any;
 
     if (!photo) {
-      return res.status(404).json({ error: 'Photo not found' });
+      return res.status(404).json({ error: 'Photo not found or access denied' });
     }
 
     res.setHeader('Content-Type', photo.mime_type);
@@ -93,7 +93,7 @@ router.get('/:id', (req: any, res: Response) => {
   }
 });
 
-router.delete('/:id', requireAuth, (req: AuthRequest, res: Response) => {
+router.delete('/:id', requireAuth, requirePermission('canDelete'), (req: AuthRequest, res: Response) => {
   const { id } = req.params;
 
   try {

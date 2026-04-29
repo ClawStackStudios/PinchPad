@@ -67,6 +67,21 @@ export function runMigrations(db: Database) {
     CREATE INDEX IF NOT EXISTS idx_pots_user ON pots(user_uuid);
     CREATE INDEX IF NOT EXISTS idx_notes_pot_id ON notes(pot_id);
   `);
+
+  // Fix cascade_agent_api_tokens trigger logic (OLD.id -> OLD.api_key)
+  try {
+    db.exec(`
+      DROP TRIGGER IF EXISTS cascade_agent_api_tokens;
+      CREATE TRIGGER cascade_agent_api_tokens
+      AFTER DELETE ON agent_keys
+      BEGIN
+        DELETE FROM api_tokens WHERE owner_key = OLD.api_key AND owner_type = 'agent';
+      END;
+    `);
+    console.log('[DB Migration] ✅ cascade_agent_api_tokens trigger updated');
+  } catch (e: any) {
+    console.warn('[DB Migration] ❌ Failed to update agent cascade trigger:', e.message);
+  }
   
   console.log('[Database] Migrations complete.');
 }

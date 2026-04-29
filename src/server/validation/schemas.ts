@@ -57,3 +57,15 @@ export const AgentKeySchemas = {
     api_key: z.string(),
   }),
 };
+
+export const PhotoSchemas = {
+  upload: z.object({
+    pearlId: z.string().min(1),
+  }),
+};
+
+export const StatusSchemas = {
+  toggle: z.object({
+    value: z.union([z.boolean(), z.number()]),
+  }),
+};

@@ -1,7 +1,7 @@
 services:
-# ─── PinchPad (API + UI Single Container) ─────────────────────────────────
+  # ─── PinchPad (API + UI Single Container) ─────────────────────────────────
   pinchpad:
-    image: ghcr.io/clawstackstudios/pinchpad:main
+    image: ghcr.io/clawstackstudios/pinchpad:latest
     container_name: pinchpad
     ports:
       - "8383:8383"
@@ -11,12 +11,11 @@ services:
     environment:
       - NODE_ENV=production
       - PORT=8383
-      # CORS_ORIGIN: leave unset to allow all origins, or set to restrict (e.g. http://yourdomain.com)
-      # DB_ENCRYPTION_KEY: Generate with: openssl rand -base64 32
+      - DATA_DIR=/app/data
       - DB_ENCRYPTION_KEY=${DB_ENCRYPTION_KEY:-}
-      # PUID/PGID: Set to your user:group ID for proper file ownership (default 1000:1000)
       - PUID=1000
       - PGID=1000
+      # For detailed configuration, see README.md → Running with Docker section
     healthcheck:
       test: ["CMD", "wget", "-qO-", "http://localhost:8383/api/health"]
       interval: 15s

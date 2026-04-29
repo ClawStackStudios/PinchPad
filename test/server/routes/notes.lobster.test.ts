@@ -223,7 +223,7 @@ describe('Notes Routes', () => {
       const res = await request(app)
         .patch(`/api/notes/${noteId}/starred`)
         .set('Authorization', `Bearer ${token}`)
-        .send({ starred: 1 });
+        .send({ value: 1 });
 
       expect(res.status).toBe(200);
       expect(res.body.data.starred).toBe(1);
@@ -244,7 +244,7 @@ describe('Notes Routes', () => {
       const res = await request(app)
         .patch(`/api/notes/${noteId}/starred`)
         .set('Authorization', `Bearer ${token}`)
-        .send({ starred: 0 });
+        .send({ value: 0 });
 
       expect(res.status).toBe(200);
       expect(res.body.data.starred).toBe(0);
@@ -258,7 +258,7 @@ describe('Notes Routes', () => {
       const res = await request(app)
         .patch(`/api/notes/nonexistent/starred`)
         .set('Authorization', `Bearer ${token}`)
-        .send({ starred: 1 });
+        .send({ value: 1 });
 
       expect(res.status).toBe(404);
     });
@@ -276,7 +276,7 @@ describe('Notes Routes', () => {
       const res = await request(app)
         .patch(`/api/notes/${noteId}/pinned`)
         .set('Authorization', `Bearer ${token}`)
-        .send({ pinned: 1 });
+        .send({ value: 1 });
 
       expect(res.status).toBe(200);
       expect(res.body.data.pinned).toBe(1);
@@ -297,7 +297,7 @@ describe('Notes Routes', () => {
       const res = await request(app)
         .patch(`/api/notes/${noteId}/pinned`)
         .set('Authorization', `Bearer ${token}`)
-        .send({ pinned: 0 });
+        .send({ value: 0 });
 
       expect(res.status).toBe(200);
       expect(res.body.data.pinned).toBe(0);
@@ -311,7 +311,7 @@ describe('Notes Routes', () => {
       const res = await request(app)
         .patch(`/api/notes/nonexistent/pinned`)
         .set('Authorization', `Bearer ${token}`)
-        .send({ pinned: 1 });
+        .send({ value: 1 });
 
       expect(res.status).toBe(404);
     });

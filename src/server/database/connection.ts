@@ -14,12 +14,12 @@ if (encryptionKey && process.env.NODE_ENV !== 'test') {
   }
 }
 
-const dataDir = path.join(process.cwd(), 'data');
-if (!fs.existsSync(dataDir) && process.env.NODE_ENV !== 'test') {
-  fs.mkdirSync(dataDir, { recursive: true, mode: 0o700 });
+const DATA_DIR = process.env.DATA_DIR ?? path.join(process.cwd(), 'data');
+if (!fs.existsSync(DATA_DIR) && process.env.NODE_ENV !== 'test') {
+  fs.mkdirSync(DATA_DIR, { recursive: true, mode: 0o700 });
 }
 
-const dbPath = process.env.NODE_ENV === 'test' ? ':memory:' : path.join(dataDir, 'clawstack.db');
+const dbPath = process.env.NODE_ENV === 'test' ? ':memory:' : path.join(DATA_DIR, 'clawstack.db');
 
 // Set restrictive umask for DB file creation (0o077 = owner only)
 const originalUmask = process.umask(0o077);
