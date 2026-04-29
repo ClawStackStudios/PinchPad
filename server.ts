@@ -11,7 +11,10 @@ import { generateSelfSignedCert, getCertPaths } from './src/server/ssl/generateC
 import { errorHandler } from './src/server/middleware/errorHandler';
 import { httpsRedirect } from './src/server/middleware/httpsRedirect';
 import { scheduleMoltCleanup } from './src/server/utils/tokenExpiry';
+import { createAuditLogger } from './src/server/utils/auditLogger';
 import db from './src/server/database/index';
+
+const audit = createAuditLogger(db);
 
 import authRoutes from './src/server/routes/auth';
 import notesRoutes from './src/server/routes/notes';
@@ -27,6 +30,7 @@ async function startServer() {
 
   // ─── Startup tasks ───────────────────────────────────────────────────────────
   scheduleMoltCleanup(db);
+  audit.cleanup(90); // Purge logs older than 90 days
 
   // ─── Trust proxy ─────────────────────────────────────────────────────────────
   if (process.env.TRUST_PROXY === 'true') app.set('trust proxy', 1);

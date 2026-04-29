@@ -24,14 +24,25 @@ const dbPath = process.env.NODE_ENV === 'test' ? ':memory:' : path.join(DATA_DIR
 // Set restrictive umask for DB file creation (0o077 = owner only)
 const originalUmask = process.umask(0o077);
 
-function encryptExistingDatabase(targetPath: string, key: string) {
-  // Open plaintext DB, apply rekey to encrypt it in place.
-  // better-sqlite3-multiple-ciphers uses PRAGMA rekey — NOT the ATTACH DATABASE approach.
-  console.log('[DB] Migrating plaintext database to encrypted...');
-  const plain = new Database(targetPath);
-  plain.pragma(`rekey = '${key}'`);
-  plain.close();
-  console.log('[DB] Database encrypted successfully via rekey.');
+function encryptExistingDatabase(dbPath: string, key: string) {
+  // Use ATTACH DATABASE + sqlcipher_export pattern (aligned with ClawChives)
+  const resolvedDbPath = path.resolve(dbPath);
+  const tempPath = resolvedDbPath + '.tmp';
+
+  try {
+    const plain = new Database(resolvedDbPath);
+    plain.exec(`
+      ATTACH DATABASE '${tempPath}' AS encrypted KEY '${key}';
+      SELECT sqlcipher_export('encrypted');
+      DETACH DATABASE encrypted;
+    `);
+    plain.close();
+    fs.renameSync(tempPath, resolvedDbPath);
+    console.log('[DB] ✅ Database encrypted successfully.');
+  } catch (e: any) {
+    try { fs.unlinkSync(tempPath); } catch {}
+    throw e;
+  }
 }
 
 function ensureDbPermissions(targetPath: string) {
@@ -63,10 +74,10 @@ function openDatabase(): Database.Database {
       // Apply SQLCipher key — must be first pragma after open
       db.pragma(`key = '${encryptionKey}'`);
 
-      // Verify the key works — if DB exists but was plaintext, this will fail
+      // Verify key works — if DB exists but was plaintext, this will fail
       try {
         db.pragma('user_version');
-      } catch (e) {
+      } catch (e: any) {
         // Key failed on existing DB → it's a plaintext DB, migrate it
         console.log('[DB] Detected unencrypted database — migrating to encrypted...');
         db.close();

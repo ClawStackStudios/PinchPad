@@ -65,6 +65,10 @@ export function initializeSchema(db: Database) {
       is_active       INTEGER DEFAULT 1,
       created_at      TEXT NOT NULL,
       last_used       TEXT,
+      -- Revocation tracking (aligned with ClawChives)
+      revoked_at      TEXT,
+      revoked_by      TEXT,
+      revoke_reason   TEXT,
       FOREIGN KEY(user_uuid) REFERENCES users(uuid) ON DELETE CASCADE
     );
 

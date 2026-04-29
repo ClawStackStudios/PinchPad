@@ -25,15 +25,12 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     && rm -rf /var/lib/apt/lists/*
 
 COPY package*.json ./
-RUN npm install --omit=dev
+RUN npm install
 
 COPY --from=builder /app/dist ./dist
 COPY --from=builder /app/server.ts ./
-COPY --from=builder /app/src/server ./src/server
+COPY --from=builder /app/src ./src
 COPY --from=builder /app/tsconfig.json ./
-
-# Install tsx to run server.ts
-RUN npm install -g tsx
 
 # Install gosu for privilege dropping (PUID/PGID support)
 RUN apt-get update && apt-get install -y --no-install-recommends gosu && rm -rf /var/lib/apt/lists/*
@@ -45,4 +42,4 @@ RUN chmod +x /usr/local/bin/entrypoint.sh
 EXPOSE 8282
 
 ENTRYPOINT ["entrypoint.sh"]
-CMD ["tsx", "server.ts"]
+CMD ["npx", "tsx", "server.ts"]

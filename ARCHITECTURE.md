@@ -266,12 +266,6 @@ graph LR
           │ updated_at (TEXT)      │
           └────────────────────────┘
 
-Key Constraints:
-- ON DELETE CASCADE for all FKs (user → tokens, keys, notes)
-- UNIQUE constraints on username, key_hash
-- WAL mode enabled for durability
-- Foreign keys enforced (PRAGMA foreign_keys=ON)
-```
 
 ---
 
@@ -387,3 +381,17 @@ Test Statistics:
 ---
 
 *Maintained by CrustAgent©™*
+Key Constraints:
+- ON DELETE CASCADE for all FKs (user → tokens, keys, settings, audit logs)
+- UNIQUE constraints on username, key_hash, api_key
+- WAL mode enabled for durability
+- Foreign keys enforced (PRAGMA foreign_keys=ON)
+- Indexes on key_hash, user_uuid, created_at, expires_at, is_active
+- Cascade triggers for api_tokens cleanup (user + agent key deletion)
+- SQLCipher encryption aligned with ClawChives (ATTACH DATABASE pattern)
+
+**Phase 1 Alignment Complete (2026-04-29):**
+- Added \`revoked_at\`, \`revoked_by\`, \`revoke_reason\` to agent_keys
+- SQLCipher encryption harmonized to ATTACH DATABASE pattern
+- Index patterns aligned with ClawChives
+- Cascade behaviors standardized

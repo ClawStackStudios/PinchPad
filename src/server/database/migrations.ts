@@ -32,6 +32,11 @@ export function runMigrations(db: Database) {
     }
   }
 
+  // ── Agent keys revocation columns (alignment with ClawChives) ───────────
+  runColumnMigration('ALTER TABLE agent_keys ADD COLUMN revoked_at TEXT', 'agent_keys.revoked_at');
+  runColumnMigration('ALTER TABLE agent_keys ADD COLUMN revoked_by TEXT', 'agent_keys.revoked_by');
+  runColumnMigration('ALTER TABLE agent_keys ADD COLUMN revoke_reason TEXT', 'agent_keys.revoke_reason');
+
   // ── Pots table (existing installs) ──────────────────────────────────────────
   try {
     db.exec(`

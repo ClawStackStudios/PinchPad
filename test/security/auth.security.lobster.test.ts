@@ -136,9 +136,7 @@ describe('Auth Security — Attack Vector Testing', () => {
       expect(errorResponse.text).not.toContain('invalid-token-here');
     });
 
-    it.skip('old tokens are invalidated on new login', async () => {
-      // Token invalidation on new login is not implemented
-      // Multiple tokens can be active simultaneously
+    it('old tokens are invalidated on new login', async () => {
       const user = createTestUser(db);
 
       // Get first token
@@ -147,7 +145,7 @@ describe('Auth Security — Attack Vector Testing', () => {
         keyHash: user.keyHash,
         type: 'human',
       });
-      const token1 = response1.body.token;
+      const token1 = response1.body.data.token;
 
       // Get second token
       const response2 = await request(app).post('/api/auth/token').send({
@@ -155,7 +153,7 @@ describe('Auth Security — Attack Vector Testing', () => {
         keyHash: user.keyHash,
         type: 'human',
       });
-      const token2 = response2.body.token;
+      const token2 = response2.body.data.token;
 
       // First token should be invalidated
       const verify1 = await request(app)
@@ -170,8 +168,7 @@ describe('Auth Security — Attack Vector Testing', () => {
       expect(verify2.status).toBe(200);
     });
 
-    it.skip('tokens expire after 24 hours', async () => {
-      // expires_at column removed - tokens don't expire anymore
+    it('tokens expire after 24 hours', async () => {
       const user = createTestUser(db);
       const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000 - 1000).toISOString();
       const token = createTestToken(db, user.uuid, 'human', { expiresAt });

@@ -42,6 +42,7 @@ export interface TestToken {
   ownerUuid: string;
   ownerType: 'human' | 'agent';
   createdAt: string;
+  expiresAt?: string | null;
 }
 
 /**
@@ -129,12 +130,13 @@ export function createTestToken(
   const key = overrides?.key ?? `api-${crypto.randomBytes(16).toString('hex')}`;
   const keyHash = overrides?.keyHash ?? crypto.createHash('sha256').update(key).digest('hex');
   const createdAt = overrides?.createdAt ?? new Date().toISOString();
+  const expiresAt = overrides?.expiresAt ?? null;
 
   db.prepare(
-    'INSERT INTO api_tokens (key, owner_key, owner_type, created_at) VALUES (?, ?, ?, ?)'
-  ).run(key, ownerUuid, ownerType, createdAt);
+    'INSERT INTO api_tokens (key, owner_key, owner_type, created_at, expires_at) VALUES (?, ?, ?, ?, ?)'
+  ).run(key, ownerUuid, ownerType, createdAt, expiresAt);
 
-  return { key, keyHash, ownerUuid, ownerType, createdAt };
+  return { key, keyHash, ownerUuid, ownerType, createdAt, expiresAt };
 }
 
 /**
