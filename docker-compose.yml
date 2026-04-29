@@ -1,7 +1,7 @@
 services:
   # ─── PinchPad (API + UI Single Container) ─────────────────────────────────
   pinchpad:
-    image: ghcr.io/clawstackstudios/pinchpad:latest
+    image: ghcr.io/clawstackstudios/pinchpad:main
     container_name: pinchpad
     ports:
       - "8282:8282"
@@ -12,7 +12,7 @@ services:
       - NODE_ENV=production
       - PORT=8282
       - DATA_DIR=/app/data
-      - DB_ENCRYPTION_KEY=${DB_ENCRYPTION_KEY:-}
+      - DB_ENCRYPTION_KEY=
       - PUID=1000
       - PGID=1000
       # For detailed configuration, see README.md → Running with Docker section
