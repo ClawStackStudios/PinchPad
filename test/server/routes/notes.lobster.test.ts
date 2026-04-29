@@ -226,7 +226,7 @@ describe('Notes Routes', () => {
         .send({ starred: 1 });
 
       expect(res.status).toBe(200);
-      expect(res.body.data.success).toBe(true);
+      expect(res.body.data.starred).toBe(1);
 
       // Verify the note was actually starred
       const note = db.prepare('SELECT starred FROM notes WHERE id = ?').get(noteId) as any;
@@ -247,7 +247,7 @@ describe('Notes Routes', () => {
         .send({ starred: 0 });
 
       expect(res.status).toBe(200);
-      expect(res.body.data.success).toBe(true);
+      expect(res.body.data.starred).toBe(0);
 
       // Verify the note was actually unstarred
       const note = db.prepare('SELECT starred FROM notes WHERE id = ?').get(noteId) as any;
@@ -279,7 +279,7 @@ describe('Notes Routes', () => {
         .send({ pinned: 1 });
 
       expect(res.status).toBe(200);
-      expect(res.body.data.success).toBe(true);
+      expect(res.body.data.pinned).toBe(1);
 
       // Verify the note was actually pinned
       const note = db.prepare('SELECT pinned FROM notes WHERE id = ?').get(noteId) as any;
@@ -300,7 +300,7 @@ describe('Notes Routes', () => {
         .send({ pinned: 0 });
 
       expect(res.status).toBe(200);
-      expect(res.body.data.success).toBe(true);
+      expect(res.body.data.pinned).toBe(0);
 
       // Verify the note was actually unpinned
       const note = db.prepare('SELECT pinned FROM notes WHERE id = ?').get(noteId) as any;

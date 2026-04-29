@@ -197,7 +197,7 @@ describe('Agents Routes (Lobster Keys)', () => {
         });
 
       expect(res.status).toBe(400);
-      expect(res.body.error).toContain('Validation Error');
+      expect(res.body.error).toContain('Shell Check Failed');
     });
 
     it('requires human key type (human-only endpoint)', async () => {

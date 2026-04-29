@@ -36,7 +36,7 @@ describe('Auth Errors — Error Path Coverage', () => {
       });
 
       expect(response.status).toBe(400);
-      expect(response.body.error).toContain('Validation Error');
+      expect(response.body.error).toContain('Shell Check Failed');
     });
 
     it('returns 400 when username is missing', async () => {
@@ -46,7 +46,7 @@ describe('Auth Errors — Error Path Coverage', () => {
       });
 
       expect(response.status).toBe(400);
-      expect(response.body.error).toContain('Validation Error');
+      expect(response.body.error).toContain('Shell Check Failed');
     });
 
     it('returns 400 when keyHash is missing', async () => {
@@ -56,7 +56,7 @@ describe('Auth Errors — Error Path Coverage', () => {
       });
 
       expect(response.status).toBe(400);
-      expect(response.body.error).toContain('Validation Error');
+      expect(response.body.error).toContain('Shell Check Failed');
     });
 
     it('returns 409 on duplicate username', async () => {
@@ -228,7 +228,7 @@ describe('Auth Errors — Error Path Coverage', () => {
 
       expect([400, 429]).toContain(response.status);
       if (response.status === 400) {
-        expect(response.body.error).toContain('Validation Error');
+        expect(response.body.error).toContain('Shell Check Failed');
       }
     });
   });
