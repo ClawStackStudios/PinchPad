@@ -56,5 +56,9 @@ export const agentService = {
 
   async revoke(id: string): Promise<void> {
     await restAdapter.PUT(`/api/agents/${id}/revoke`, {});
+  },
+
+  async delete(id: string): Promise<void> {
+    await restAdapter.DELETE(`/api/agents/${id}`);
   }
 };

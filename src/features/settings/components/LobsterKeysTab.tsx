@@ -47,7 +47,7 @@ export function LobsterKeysTab() {
 
   const executeDelete = async (id: string) => {
     try {
-      await agentService.revoke(id); // revoke acts as delete for now
+      await agentService.delete(id);
       setKeys((prev) => prev.filter((k) => k.id !== id));
     } catch (err) {
       console.error('[LobsterKeysTab] Delete failed:', err);

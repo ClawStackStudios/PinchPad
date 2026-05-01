@@ -6,7 +6,7 @@ import path from 'path';
 import { readFileSync } from 'fs';
 import { createServer as createHttpsServer } from 'https';
 
-import { getCorsConfig } from './src/config/corsConfig';
+import { getCorsConfig } from './src/shared/config/corsConfig';
 import { generateSelfSignedCert, getCertPaths } from './src/server/ssl/generateCert';
 import { errorHandler } from './src/server/middleware/errorHandler';
 import { httpsRedirect } from './src/server/middleware/httpsRedirect';

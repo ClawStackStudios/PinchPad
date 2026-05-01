@@ -106,4 +106,32 @@ router.put('/:id/revoke', requireAuth, requireHuman, (req: any, res: Response) =
   }
 });
 
+router.delete('/:id', requireAuth, requireHuman, (req: any, res: Response) => {
+  const { id } = req.params;
+  const userUuid = req.userUuid;
+
+  try {
+    const result = db.prepare('DELETE FROM agent_keys WHERE id = ? AND user_uuid = ?').run(id, userUuid);
+
+    if (result.changes === 0) {
+      return res.status(404).json({ error: 'Lobster key not found' });
+    }
+
+    audit.log('AGENT_KEY_DELETE', {
+      actor: userUuid,
+      actor_type: 'human',
+      action: 'delete',
+      outcome: 'success',
+      resource: 'agent_key',
+      details: { key_id: id },
+      ip_address: req.ip,
+      user_agent: (req.headers?.['user-agent'] as string) || 'unknown'
+    });
+
+    res.json({ data: { success: true } });
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to delete Lobster key' });
+  }
+});
+
 export default router;
