@@ -9,8 +9,10 @@
  */
 
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
-import { potService, Pot } from '../services/potService';
-import { useAuth } from './AuthContext';
+import { potService, Pot } from '../../services/pots';
+import { useAuth } from '../auth/AuthContext';
+
+console.log('[CrustAgent] 🦞 Implementation: Reconnecting feature bridge in PotContext');
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 

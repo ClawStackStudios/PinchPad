@@ -4,9 +4,9 @@ import {
   Sun, Moon, Monitor, List, LayoutGrid, FileText, FileSpreadsheet,
   CheckCircle,
 } from 'lucide-react';
-import { useAuth } from '../../context/AuthContext';
-import { useViewTransitionTheme } from '../../components/Theme/ThemeToggle';
-import { useSettings } from '../../context/SettingsContext';
+import { useAuth } from '../auth/AuthContext';
+import { useViewTransitionTheme } from '../../shared/theme/ThemeToggle';
+import { useSettings } from './SettingsContext';
 import { LobsterKeysTab } from './components/LobsterKeysTab';
 import { LobsterImportModal } from './components/LobsterImportModal';
 import { clsx, type ClassValue } from 'clsx';

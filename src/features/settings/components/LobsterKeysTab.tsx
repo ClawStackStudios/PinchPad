@@ -13,10 +13,12 @@
 
 import React, { useState, useEffect, useCallback } from 'react';
 import { Plus, Key, Loader2 } from 'lucide-react';
-import { agentService, LobsterKey } from '../../../services/agentService';
+import { agentService, LobsterKey } from '../../../services/agents';
 import { LobsterKeyCard } from './LobsterKeyCard';
 import { LobsterKeyWizard } from './LobsterKeyWizard';
-import { ConfirmModal } from '../../../components/Modals/ConfirmModal';
+import { ConfirmModal } from '../../dashboard/components/modals/ConfirmModal';
+
+console.log('[CrustAgent] 🦞 Implementation: Reconnecting feature bridge in LobsterKeysTab');
 
 export function LobsterKeysTab() {
   const [keys, setKeys] = useState<LobsterKey[]>([]);

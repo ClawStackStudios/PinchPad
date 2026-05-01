@@ -7,7 +7,9 @@
  * Maintained by CrustAgent©™
  */
 
-import { restAdapter } from '../lib/api';
+import { restAdapter } from '../../shared/lib/api';
+
+console.log('[CrustAgent] 🦞 Scuttling foundational imports for potService...');
 
 export interface Pot {
   id: string;

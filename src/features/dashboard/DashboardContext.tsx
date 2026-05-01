@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState } from 'react';
-import { noteService } from '../../../services/notes';
+import { Note } from '../services/noteService';
 
 interface DashboardContextType {
   isAddPearlOpen: boolean;
@@ -54,15 +54,8 @@ export function DashboardProvider({ children }: { children: React.ReactNode }) {
 export function useDashboard() {
   const context = useContext(DashboardContext);
   if (!context) throw new Error('useDashboard must be used within DashboardProvider');
-
-  return {
-    isAddPearlOpen,
-    openAddPearl,
-    closeAddPearl,
-    lastCreatedNote,
-    editingNote,
-    notifyNoteCreated
-  };
+  return context;
 }
 
+export { DashboardContext };
 export type { DashboardContextType };

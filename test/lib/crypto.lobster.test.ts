@@ -3,7 +3,7 @@
  * @vitest-environment jsdom
  */
 import { describe, it, expect } from 'vitest';
-import { generateBase62, hashToken } from '../../src/lib/crypto';
+import { generateBase62, hashToken } from '../../src/shared/lib/crypto';
 
 describe('generateBase62', () => {
   it('generates string of correct length', () => {

@@ -29,7 +29,9 @@ describe('Infrastructure Validation — Build Gates', () => {
 
     it('should have the src directory structure', () => {
       expect(fs.existsSync(path.join(PROJECT_ROOT, 'src/server'))).toBe(true);
-      expect(fs.existsSync(path.join(PROJECT_ROOT, 'src/config'))).toBe(true);
+      expect(fs.existsSync(path.join(PROJECT_ROOT, 'src/features'))).toBe(true);
+      expect(fs.existsSync(path.join(PROJECT_ROOT, 'src/shared'))).toBe(true);
+      expect(fs.existsSync(path.join(PROJECT_ROOT, 'src/hooks'))).toBe(true);
     });
   });
 

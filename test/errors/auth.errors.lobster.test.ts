@@ -189,7 +189,7 @@ describe('Auth Errors — Error Path Coverage', () => {
       });
 
       expect(response.status).toBe(400);
-      expect(response.body.error).toBe('Invalid agent key');
+      expect(response.body.error).toBe('Invalid Lobster key');
     });
 
     it('returns 401 when agent key not found', async () => {
@@ -201,7 +201,7 @@ describe('Auth Errors — Error Path Coverage', () => {
       });
 
       expect(response.status).toBe(401);
-      expect(response.body.error).toContain('Invalid');
+      expect(response.body.error).toContain('Invalid or revoked Lobster key');
     });
 
     it('returns 401 when agent key is inactive', async () => {
@@ -214,7 +214,7 @@ describe('Auth Errors — Error Path Coverage', () => {
       });
 
       expect(response.status).toBe(401);
-      expect(response.body.error).toContain('Invalid');
+      expect(response.body.error).toContain('Invalid or revoked Lobster key');
     });
   });
 

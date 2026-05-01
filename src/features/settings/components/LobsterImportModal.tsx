@@ -12,7 +12,7 @@
 
 import React, { useState } from 'react';
 import { Upload, X, Copy, CheckCircle, AlertTriangle } from 'lucide-react';
-import { restAdapter } from '../../../lib/api';
+import { restAdapter } from '../../../shared/lib/api';
 
 type ImportStep = 'idle' | 'session' | 'done';
 

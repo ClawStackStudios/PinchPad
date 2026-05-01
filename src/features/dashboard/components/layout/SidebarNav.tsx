@@ -10,8 +10,10 @@
 
 import { LayoutDashboard, Gem, Star, Pin, Settings, LogOut, User, Palette, Shield, Database } from 'lucide-react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { useReef, FilterTab } from '../../context/ReefContext';
-import { useAuth } from '../../context/AuthContext';
+import { useReef, FilterTab } from '../../../notes/ReefContext';
+import { useAuth } from '../../../auth/AuthContext';
+
+console.log('[CrustAgent] 🦞 Implementation: Reconnecting feature bridge in SidebarNav');
 import { clsx } from 'clsx';
 import { twMerge } from 'tailwind-merge';
 

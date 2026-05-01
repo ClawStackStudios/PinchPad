@@ -1,8 +1,8 @@
 import { useLocation, useNavigate } from 'react-router-dom';
 import { LogOut, Settings, Key } from 'lucide-react';
-import { useAuth } from '../../context/AuthContext';
-import { InteractiveBrand } from '../Branding/InteractiveBrand';
-import { ThemeToggle } from '../Theme/ThemeToggle';
+import { useAuth } from '../../../auth/AuthContext';
+import { InteractiveBrand } from '../../../../shared/branding/InteractiveBrand';
+import { ThemeToggle } from '../../../../shared/theme/ThemeToggle';
 import { clsx, type ClassValue } from 'clsx';
 import { twMerge } from 'tailwind-merge';
 

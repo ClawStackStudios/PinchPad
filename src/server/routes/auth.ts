@@ -134,7 +134,7 @@ router.post('/token', authLimiter, validateBody(AuthSchemas.token), (req: any, r
 
   } else if (type === 'agent' || (ownerKey && detectKeyType(ownerKey) === 'agent')) {
     const agentKey = ownerKey;
-    if (!agentKey?.startsWith('lb-')) return res.status(400).json({ success: false, error: 'Invalid agent key' });
+    if (!agentKey?.startsWith('lb-')) return res.status(400).json({ success: false, error: 'Invalid Lobster key' });
 
     // Sentinel: Fetch by key, then verify with timingSafeEqual to ensure constant-time response profiles
     const agent = db.prepare('SELECT * FROM agent_keys WHERE api_key = ? AND is_active = 1').get(agentKey) as any;
@@ -159,7 +159,7 @@ router.post('/token', authLimiter, validateBody(AuthSchemas.token), (req: any, r
         ip_address: req.ip,
         user_agent: req.headers['user-agent'] as string
       });
-      return res.status(401).json({ success: false, error: 'Invalid or revoked agent key' });
+      return res.status(401).json({ success: false, error: 'Invalid or revoked Lobster key' });
     }
 
     if (agent.expiration_date && new Date(agent.expiration_date) < new Date()) {

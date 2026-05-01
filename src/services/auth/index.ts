@@ -1,6 +1,8 @@
-import { getApiBaseUrl } from '../lib/api';
-import { apiFetch } from '../lib/apiFetch';
-import { generateBase62, hashToken } from '../lib/crypto';
+import { getApiBaseUrl } from '../../shared/lib/api';
+import { apiFetch } from '../../shared/lib/apiFetch';
+import { generateBase62, hashToken } from '../../shared/lib/crypto';
+
+console.log('[CrustAgent] 🦞 Scuttling foundational imports for authService...');
 
 const SESSION_KEYS = {
   token: 'cc_api_token',

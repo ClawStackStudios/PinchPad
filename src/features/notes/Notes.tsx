@@ -11,11 +11,13 @@
 import React, { useEffect, useState } from 'react';
 import { Loader2, AlertCircle, Calendar, Star, Trash2, Pin } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { useDashboard } from '../../context/DashboardContext';
-import { useReef } from '../../context/ReefContext';
-import { usePot } from '../../context/PotContext';
-import { ConfirmModal } from '../../components/Modals/ConfirmModal';
-import { noteService, Note } from '../../services/noteService';
+import { useDashboard } from '../dashboard/DashboardContext';
+import { useReef } from './ReefContext';
+import { usePot } from '../pots/PotContext';
+import { ConfirmModal } from '../dashboard/components/modals/ConfirmModal';
+import { noteService, Note } from '../../services/notes';
+
+console.log('[CrustAgent] 🦞 Implementation: Reconnecting feature bridge in Notes');
 
 // ── Filter label map ──────────────────────────────────────────────────────────
 const FILTER_LABELS: Record<string, string> = {

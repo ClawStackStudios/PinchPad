@@ -79,8 +79,8 @@ export function requireAuth(req: Request, res: Response, next: NextFunction): vo
 
   if (keyType === 'agent') {
     const row = db.prepare('SELECT id, user_uuid, api_key, permissions, is_active, expiration_date, rate_limit FROM agent_keys WHERE api_key = ? AND is_active = 1').get(key) as any;
-    if (!row) { res.status(401).json({ success: false, error: 'Lobster Key Revoked, Are you art of this reef?' }); return; }
-    if (row.expiration_date && new Date(row.expiration_date) < new Date()) { res.status(401).json({ success: false, error: 'Lobster Key expired' }); return; }
+    if (!row) { res.status(401).json({ success: false, error: 'Lobster key revoked, Are you part of this reef?' }); return; }
+    if (row.expiration_date && new Date(row.expiration_date) < new Date()) { res.status(401).json({ success: false, error: 'Lobster key expired' }); return; }
     db.prepare('UPDATE agent_keys SET last_used = ? WHERE api_key = ?').run(new Date().toISOString(), key);
     finalUserUuid = row.user_uuid;
     finalPermissions = JSON.parse(row.permissions || '{}');

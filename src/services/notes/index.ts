@@ -1,4 +1,14 @@
-import { restAdapter } from '../lib/api';
+/**
+ * noteService.ts — PinchPad©™
+ *
+ * CRUD calls for Notes (Pearls).
+ *
+ * Maintained by CrustAgent©™
+ */
+
+import { restAdapter } from '../../shared/lib/api';
+
+console.log('[CrustAgent] 🦞 Scuttling foundational imports for noteService...');
 
 // Browser-compatible UUID v4 generator
 function generateUUID(): string {
@@ -84,7 +94,7 @@ export const noteService = {
   },
 
   async toggleStarred(id: string, starred: boolean): Promise<Note> {
-    const response = await restAdapter.PATCH(`/api/notes/${id}/starred`, { starred: starred ? 1 : 0 });
+    const response = await restAdapter.PATCH(`/api/notes/${id}/starred`, { value: starred });
     const note = response.data;
     return {
       ...note,
@@ -94,7 +104,7 @@ export const noteService = {
   },
 
   async togglePinned(id: string, pinned: boolean): Promise<Note> {
-    const response = await restAdapter.PATCH(`/api/notes/${id}/pinned`, { pinned: pinned ? 1 : 0 });
+    const response = await restAdapter.PATCH(`/api/notes/${id}/pinned`, { value: pinned });
     const note = response.data;
     return {
       ...note,
@@ -132,3 +142,4 @@ export const noteService = {
     await restAdapter.DELETE(`/api/photos/${photoId}`);
   }
 };
+

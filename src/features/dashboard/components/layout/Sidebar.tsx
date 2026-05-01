@@ -10,12 +10,14 @@
 import React, { useState } from 'react';
 import { X } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
-import { InteractiveBrand } from '../Branding/InteractiveBrand';
+import { InteractiveBrand } from '../../../../shared/branding/InteractiveBrand';
 import { SidebarNav } from './SidebarNav';
-import { PotList } from './PotList';
-import { PotModal } from '../Modals/PotModal';
-import { usePot } from '../../context/PotContext';
-import { Pot } from '../../services/potService';
+import { PotList } from '../../../pots/PotList';
+import { PotModal } from '../modals/PotModal';
+import { usePot } from '../../../pots/PotContext';
+import { Pot } from '../../../../services/pots';
+
+console.log('[CrustAgent] 🦞 Sealing the feature bridge: Sidebar imports aligned');
 import { clsx } from 'clsx';
 import { twMerge } from 'tailwind-merge';
 

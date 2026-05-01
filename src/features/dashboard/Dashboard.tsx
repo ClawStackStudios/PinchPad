@@ -9,9 +9,9 @@
 
 import React, { useEffect } from 'react';
 import { Loader2, Star, Calendar, AlertCircle, Pin } from 'lucide-react';
-import { useDashboard } from '../../context/DashboardContext';
-import { useReef } from '../../context/ReefContext';
-import { Note } from '../../services/noteService';
+import { useDashboard } from './DashboardContext';
+import { useReef } from '../notes/ReefContext';
+import { Note } from '../services/notes';
 
 // ── Pearl Card ────────────────────────────────────────────────────────────────
 

@@ -1,5 +1,7 @@
-import { restAdapter } from '../lib/api';
-import { generateBase62, hashToken } from '../lib/crypto';
+import { restAdapter } from '../../shared/lib/api';
+import { generateBase62, hashToken } from '../../shared/lib/crypto';
+
+console.log('[CrustAgent] 🦞 Scuttling foundational imports for agentService...');
 
 // Browser-compatible UUID v4 generator
 function generateUUID(): string {

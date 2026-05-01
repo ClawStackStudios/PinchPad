@@ -10,8 +10,8 @@ import {
   CheckCircle, 
   Loader2 
 } from 'lucide-react';
-import { useAuth } from '../../context/AuthContext';
-import { InteractiveBrand } from '../../components/Branding/InteractiveBrand';
+import { useAuth } from './AuthContext';
+import { InteractiveBrand } from '../../shared/branding/InteractiveBrand';
 import { clsx, type ClassValue } from 'clsx';
 import { twMerge } from 'tailwind-merge';
 

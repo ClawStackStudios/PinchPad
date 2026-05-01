@@ -11,14 +11,16 @@
 import React, { useState } from 'react';
 import { Sidebar } from './Sidebar';
 import { AppHeader } from './AppHeader';
-import { AddPearlModal } from '../Modals/AddPearlModal';
-import { DashboardProvider, useDashboard } from '../../context/DashboardContext';
-import { ReefProvider, useReef } from '../../context/ReefContext';
-import { SettingsProvider, useSettings } from '../../context/SettingsContext';
-import { PotProvider } from '../../context/PotContext';
+import { AddPearlModal } from '../../../notes/components/AddPearlModal';
+import { DashboardProvider, useDashboard } from '../../DashboardContext';
+import { ReefProvider, useReef } from '../../../notes/ReefContext';
+import { SettingsProvider, useSettings } from '../../../settings/SettingsContext';
+import { PotProvider } from '../../../pots/PotContext';
 import { Menu } from 'lucide-react';
-import { Note } from '../../services/noteService';
+import { Note } from '../../../../services/notes';
 import { useLocation } from 'react-router-dom';
+
+console.log('[CrustAgent] 🦞 Implementation: Reconnecting feature bridge in DashboardLayout');
 
 interface DashboardLayoutProps {
   children: React.ReactNode;

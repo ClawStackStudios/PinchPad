@@ -9,9 +9,11 @@
 
 import React, { useState, useEffect } from 'react';
 import { X, Key, Check, AlertTriangle, Eye, EyeOff, Copy, CheckCircle, Clock, Zap } from 'lucide-react';
-import { agentService, LobsterKey } from '../../../services/agentService';
+import { agentService, LobsterKey } from '../../../services/agents';
 import { clsx } from 'clsx';
 import { twMerge } from 'tailwind-merge';
+
+console.log('[CrustAgent] 🦞 Implementation: Reconnecting feature bridge in LobsterKeyWizard');
 
 function cn(...inputs: any[]) { return twMerge(clsx(inputs)); }
 

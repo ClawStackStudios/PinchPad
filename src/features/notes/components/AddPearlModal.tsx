@@ -1,9 +1,11 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { X, Loader2, Star, Eye, Save } from 'lucide-react';
-import { noteService, Note, PearlPhoto } from '../../services/noteService';
+import { noteService, Note, PearlPhoto } from '../../../services/notes';
 import { MarkdownToolbar } from './MarkdownToolbar';
 import { MarkdownPreviewModal } from './MarkdownPreviewModal';
 import { PearlPhotoGallery } from './PearlPhotoGallery';
+
+console.log('[CrustAgent] 🦞 Implementation: Reconnecting feature bridge in AddPearlModal');
 
 interface AddPearlModalProps {
   isOpen: boolean;

@@ -8,6 +8,8 @@ import { AgentKeySchemas } from '../validation/schemas';
 const router = Router();
 const audit = createAuditLogger(db);
 
+console.log('[CrustAgent] 🦞 Hardening the lobster key management routes...');
+
 router.get('/', requireAuth, requireHuman, (req: any, res: Response) => {
   const userUuid = req.userUuid;
   try {
@@ -19,7 +21,7 @@ router.get('/', requireAuth, requireHuman, (req: any, res: Response) => {
     `).all(userUuid);
     res.json({ data: keys });
   } catch (error) {
-    res.status(500).json({ error: 'Failed to fetch agent keys' });
+    res.status(500).json({ error: 'Failed to fetch Lobster keys' });
   }
 });
 
@@ -71,8 +73,8 @@ router.post('/', requireAuth, requireHuman, validateBody(AgentKeySchemas.create)
       }
     });
   } catch (error) {
-    console.error('[Agents] Failed to create agent key:', error);
-    res.status(500).json({ error: 'Failed to create agent key' });
+    console.error('[Agents] Failed to create Lobster key:', error);
+    res.status(500).json({ error: 'Failed to create Lobster key' });
   }
 });
 
@@ -84,7 +86,7 @@ router.put('/:id/revoke', requireAuth, requireHuman, (req: any, res: Response) =
     const result = db.prepare('UPDATE agent_keys SET is_active = 0 WHERE id = ? AND user_uuid = ?').run(id, userUuid);
 
     if (result.changes === 0) {
-      return res.status(404).json({ error: 'Agent key not found' });
+      return res.status(404).json({ error: 'Lobster key not found' });
     }
 
     audit.log('AGENT_KEY_REVOKE', {
@@ -100,7 +102,7 @@ router.put('/:id/revoke', requireAuth, requireHuman, (req: any, res: Response) =
 
     res.json({ data: { success: true } });
   } catch (error) {
-    res.status(500).json({ error: 'Failed to revoke agent key' });
+    res.status(500).json({ error: 'Failed to revoke Lobster key' });
   }
 });
 

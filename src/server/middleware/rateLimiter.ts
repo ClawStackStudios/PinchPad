@@ -3,6 +3,8 @@ import { Request, Response, NextFunction } from 'express';
 import db from '../database/index';
 import { AuthRequest } from './auth';
 
+console.log('[CrustAgent] 🦞 Hardening the rate limiting armor...');
+
 function parseWindow(windowStr: string | undefined): number | null {
   if (!windowStr) return null;
   if (windowStr.endsWith('m')) return parseInt(windowStr) * 60 * 1000;
@@ -34,44 +36,30 @@ export const apiLimiter = rateLimit({
   },
 });
 
-export const createAgentKeyRateLimiter = () => {
-  const limiterCache = new Map<string, ReturnType<typeof rateLimit>>();
-  const MAX_CACHE_SIZE = 100;
-
-  return async (req: Request, res: Response, next: NextFunction) => {
+/**
+ * Lobster Key Rate Limiter
+ * Refactored to avoid ERR_ERL_CREATED_IN_REQUEST_HANDLER by using a single
+ * pre-initialized limiter with dynamic 'max' and 'keyGenerator' functions.
+ */
+export const agentKeyLimiter = rateLimit({
+  windowMs: 60 * 1000,
+  max: (req) => (req as AuthRequest).agentRateLimit || 100,
+  keyGenerator: (req) => (req as AuthRequest).agentApiKey || 'anonymous-lobster',
+  skip: (req) => {
     const authReq = req as AuthRequest;
-    if (
+    return (
       authReq.keyType === 'human' ||
-      !authReq.apiKey ||
+      !authReq.agentApiKey ||
       (req.method === 'POST' && req.path === '/notes/bulk')
-    ) return next();
+    );
+  },
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { 
+    success: false, 
+    error: 'Your carapace lacks the capacity! Lobster rate limit exceeded.' 
+  },
+});
 
-    let limit: number | null = null;
-    let agentApiKey: string | null = null;
-
-    if (authReq.keyType === 'agent' && authReq.agentApiKey && authReq.agentRateLimit) {
-      limit = authReq.agentRateLimit;
-      agentApiKey = authReq.agentApiKey;
-    }
-
-    if (!limit || !agentApiKey) return next();
-
-    if (!limiterCache.has(agentApiKey)) {
-      if (limiterCache.size >= MAX_CACHE_SIZE) {
-        const firstKey = limiterCache.keys().next().value as string;
-        limiterCache.delete(firstKey);
-      }
-
-      limiterCache.set(agentApiKey, rateLimit({
-        windowMs: 60 * 1000,
-        max: limit,
-        standardHeaders: true,
-        legacyHeaders: false,
-        keyGenerator: () => agentApiKey as string,
-        message: { success: false, error: 'Your carapace lacks the capacity! Agent rate limit exceeded.' },
-      }));
-    }
-
-    limiterCache.get(agentApiKey)!(req, res, next);
-  };
-};
+// Legacy wrapper to maintain compatibility with existing middleware chains
+export const createAgentKeyRateLimiter = () => agentKeyLimiter;

@@ -1,14 +1,14 @@
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate, useLocation } from 'react-router-dom';
-import { AuthProvider, useAuth } from './context/AuthContext';
-import { Navbar } from './components/Layout/Navbar';
-import { DashboardLayout } from './components/Layout/DashboardLayout';
-import { Landing } from './pages/Landing/Landing';
-import { Register } from './pages/Auth/Register';
-import { Login } from './pages/Auth/Login';
-import { Dashboard } from './pages/Dashboard/Dashboard';
-import { Notes } from './pages/Pot/Notes';
-import { Settings } from './pages/Settings/Settings';
+import { AuthProvider, useAuth } from './features/auth/AuthContext';
+import { Navbar } from './features/dashboard/components/layout/Navbar';
+import { DashboardLayout } from './features/dashboard/components/layout/DashboardLayout';
+import { Landing } from './features/landing/Landing';
+import { Register } from './features/auth/Register';
+import { Login } from './features/auth/Login';
+import { Dashboard } from './features/dashboard/Dashboard';
+import { Notes } from './features/notes/Notes';
+import { Settings } from './features/settings/Settings';
 import { Loader2 } from 'lucide-react';
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
