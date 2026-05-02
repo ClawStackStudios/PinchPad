@@ -40,7 +40,7 @@ describe('Auth Security — Attack Vector Testing', () => {
       // Both should be rejected, but timing should be identical (constant-time)
       const startTime1 = Date.now();
       const response1 = await request(app).post('/api/auth/token').send({
-        username: 'testuser',
+        uuid: user.uuid,
         keyHash: 'a'.repeat(64),
         type: 'human',
       });
@@ -48,7 +48,7 @@ describe('Auth Security — Attack Vector Testing', () => {
 
       const startTime2 = Date.now();
       const response2 = await request(app).post('/api/auth/token').send({
-        username: 'testuser',
+        uuid: user.uuid,
         keyHash: 'z'.repeat(64),
         type: 'human',
       });
@@ -64,7 +64,7 @@ describe('Auth Security — Attack Vector Testing', () => {
 
     it('rejects mismatched key hashes consistently', async () => {
       const correctHash = crypto.createHash('sha256').update('correct').digest('hex');
-      createTestUser(db, { username: 'testuser', keyHash: correctHash });
+      const user = createTestUser(db, { username: 'testuser', keyHash: correctHash });
 
       // Multiple wrong keys should all be rejected
       const wrongKeys = [
@@ -75,7 +75,7 @@ describe('Auth Security — Attack Vector Testing', () => {
 
       for (const wrongKey of wrongKeys) {
         const response = await request(app).post('/api/auth/token').send({
-          username: 'testuser',
+          uuid: user.uuid,
           keyHash: wrongKey,
           type: 'human',
         });

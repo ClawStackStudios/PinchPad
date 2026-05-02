@@ -118,7 +118,7 @@ describe('Audit Logging — Auth Events', () => {
 
       const wrongHash = crypto.createHash('sha256').update('wrong').digest('hex');
       const response = await request(app).post('/api/auth/token').send({
-        username: 'testuser',
+        uuid: userUuid,
         keyHash: wrongHash,
         type: 'human',
       });

@@ -130,7 +130,7 @@ describe('Auth Errors — Error Path Coverage', () => {
       const user = createTestUser(db, { username: 'testuser' });
 
       const response = await request(app).post('/api/auth/token').send({
-        username: 'testuser',
+        uuid: user.uuid,
         keyHash: 'a'.repeat(64), // Valid 64-char hash but wrong
         type: 'human',
       });
@@ -141,7 +141,8 @@ describe('Auth Errors — Error Path Coverage', () => {
 
     it('returns 404 when user not found (username without keyHash)', async () => {
       const response = await request(app).post('/api/auth/token').send({
-        username: 'nonexistent',
+        uuid: '00000000-0000-0000-0000-000000000000',
+        keyHash: 'a'.repeat(64),
         type: 'human',
       });
 
@@ -161,17 +162,17 @@ describe('Auth Errors — Error Path Coverage', () => {
 
     it('rejects login with timing-safe comparison', async () => {
       const keyHash = crypto.createHash('sha256').update('correctkey').digest('hex');
-      createTestUser(db, { username: 'testuser', keyHash });
+      const user = createTestUser(db, { username: 'testuser', keyHash });
 
       // Both should fail, even if one has a common prefix with correct key
       const response1 = await request(app).post('/api/auth/token').send({
-        username: 'testuser',
+        uuid: user.uuid,
         keyHash: 'a'.repeat(64),
         type: 'human',
       });
 
       const response2 = await request(app).post('/api/auth/token').send({
-        username: 'testuser',
+        uuid: user.uuid,
         keyHash: 'b'.repeat(64),
         type: 'human',
       });
