@@ -88,7 +88,6 @@ gantt
 - [x] **Browser UUID Compatibility** — Fixed `crypto.randomUUID()` for client-side services
 
 **In Progress:**
-- [ ] **ClawKeys Portability** — Design for cross-service key transfer via remote SQLite
 - [ ] **Test Coverage Improvement** — Currently 56.84% overall → target 75%
 - [ ] **Screenshot Documentation** — Visual guide for UI and key workflows
 - [ ] **CRUSTSECURITY.md** — Comprehensive security framework document
@@ -116,6 +115,7 @@ gantt
 - [ ] Note linking and backlinks
 - [ ] Full-text search optimization
 - [ ] Progressive Web App (PWA) offline support
+- [ ] **ClawKeys Portability** — Design for cross-service key transfer via remote SQLite
 
 ---
 

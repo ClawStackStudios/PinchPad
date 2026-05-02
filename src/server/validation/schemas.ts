@@ -10,7 +10,6 @@ export const AuthSchemas = {
   token: z.object({
     type: z.enum(['human', 'agent']),
     uuid: z.string().uuid().optional(),
-    username: z.string().optional(),
     keyHash: z.string().length(64).optional(),
     ownerKey: z.string().optional(),
   }),

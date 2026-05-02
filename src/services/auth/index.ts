@@ -93,8 +93,7 @@ export const authService = {
       body: JSON.stringify({
         keyHash,
         type: 'human',
-        ...(uuid && { uuid }),
-        ...(username && { username })
+        ...(uuid && { uuid })
       })
     });
 

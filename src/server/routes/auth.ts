@@ -2,7 +2,7 @@ import { Router, Response } from 'express';
 import crypto from 'crypto';
 import db from '../database/index';
 import { createAuditLogger } from '../utils/auditLogger';
-import { generateString, timingSafeEqualWithHashing } from '../utils/crypto';
+import { generateString } from '../utils/crypto';
 import { validateBody } from '../middleware/validate';
 import { AuthSchemas } from '../validation/schemas';
 import { calculateExpiry } from '../utils/tokenExpiry';
@@ -58,26 +58,14 @@ router.post('/register', authLimiter, validateBody(AuthSchemas.register), (req: 
 });
 
 router.post('/token', authLimiter, validateBody(AuthSchemas.token), (req: any, res: Response) => {
-  const { type, uuid, username, keyHash, ownerKey } = req.body;
+  const { type, uuid, keyHash, ownerKey } = req.body;
   const ttl = process.env.TOKEN_TTL_DEFAULT || '1d';
   const expiresAt = calculateExpiry(ttl);
 
   if (type === 'human') {
     let user: any;
-    const searchKey = uuid || username || keyHash;
-    if (!searchKey) {
-      return res.status(400).json({ success: false, error: 'Invalid authentication request' });
-    }
-
-    const keyHashToUse = keyHash || (uuid ? null : crypto.createHash('sha256').update(searchKey).digest('hex'));
-
-    if (uuid) {
-      user = db.prepare('SELECT * FROM users WHERE uuid = ?').get(uuid);
-    } else if (username) {
-      user = db.prepare('SELECT * FROM users WHERE username = ?').get(username);
-    } else if (keyHashToUse) {
-      user = db.prepare('SELECT * FROM users WHERE key_hash = ?').get(keyHashToUse);
-    }
+    if (uuid)        user = db.prepare('SELECT * FROM users WHERE uuid = ?').get(uuid);
+    else if (keyHash) user = db.prepare('SELECT * FROM users WHERE key_hash = ?').get(keyHash);
 
     if (!user) {
       audit.log('AUTH_FAILURE', {
@@ -87,10 +75,19 @@ router.post('/token', authLimiter, validateBody(AuthSchemas.token), (req: any, r
         ip_address: req.ip,
         user_agent: req.headers['user-agent'] as string
       });
-      return res.status(404).json({ success: false, error: 'Identity not registered on this node' });
+      return res.status(404).json({
+        success: false,
+        error: 'Identity not registered on this node',
+        suggestion: 'Try providing your username for better error details if this is a registration issue.'
+      });
     }
 
-    const keyMatch = timingSafeEqualWithHashing(user.key_hash, keyHashToUse || '');
+    let keyMatch = false;
+    try {
+      keyMatch = crypto.timingSafeEqual(Buffer.from(user.key_hash), Buffer.from(keyHash || ''));
+    } catch {
+      keyMatch = false;
+    }
 
     if (!keyMatch) {
       audit.log('AUTH_FAILURE', {
@@ -101,7 +98,11 @@ router.post('/token', authLimiter, validateBody(AuthSchemas.token), (req: any, r
         user_agent: req.headers['user-agent'] as string,
         details: { user_uuid: user.uuid }
       });
-      return res.status(401).json({ success: false, error: 'Invalid identity key' });
+      return res.status(401).json({
+        success: false,
+        error: 'Invalid identity key',
+        suggestion: 'Ensure you are using the correct ClawKey©™ for this server instance.'
+      });
     }
 
     // Invalidate previous tokens for this human user

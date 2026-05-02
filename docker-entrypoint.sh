@@ -27,10 +27,11 @@ else
   fi
 fi
 
-# Fix /app/data directory ownership to PUID:PGID
-if [ -d /app/data ]; then
-  chown -R "$PUID:$PGID" /app/data
+# Create /app/data directory if it doesn't exist and fix ownership
+if [ ! -d /app/data ]; then
+  mkdir -p /app/data
 fi
+chown -R "$PUID:$PGID" /app/data
 
 # Drop privileges and execute the server as PUID:PGID
 exec gosu "$PUID:$PGID" "$@"
