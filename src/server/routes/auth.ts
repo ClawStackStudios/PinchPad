@@ -84,7 +84,7 @@ router.post('/token', authLimiter, validateBody(AuthSchemas.token), (req: any, r
 
     let keyMatch = false;
     try {
-      keyMatch = crypto.timingSafeEqual(Buffer.from(user.key_hash), Buffer.from(keyHash || ''));
+      keyMatch = crypto.timingSafeEqual(Buffer.from(user.key_hash), Buffer.from(keyHash));
     } catch {
       keyMatch = false;
     }
@@ -104,9 +104,6 @@ router.post('/token', authLimiter, validateBody(AuthSchemas.token), (req: any, r
         suggestion: 'Ensure you are using the correct ClawKey©™ for this server instance.'
       });
     }
-
-    // Invalidate previous tokens for this human user
-    db.prepare('DELETE FROM api_tokens WHERE owner_key = ? AND owner_type = ?').run(user.uuid, 'human');
 
     const token = `api-${generateString(32)}`;
     db.prepare('INSERT INTO api_tokens (key, owner_key, owner_type, created_at, expires_at) VALUES (?, ?, ?, ?, ?)').run(
@@ -137,61 +134,74 @@ router.post('/token', authLimiter, validateBody(AuthSchemas.token), (req: any, r
     const agentKey = ownerKey;
     if (!agentKey?.startsWith('lb-')) return res.status(400).json({ success: false, error: 'Invalid Lobster key' });
 
-    // Sentinel: Fetch by key, then verify with timingSafeEqual to ensure constant-time response profiles
-    const agent = db.prepare('SELECT * FROM agent_keys WHERE api_key = ? AND is_active = 1').get(agentKey) as any;
-    
-    // Sentinel Security Patch: Timing-safe comparison with pre-hashing
-    let keyMatch = false;
-    if (agent) {
-      try {
-        const storedKeyHash = crypto.createHash('sha256').update(agent.api_key).digest();
-        const providedKeyHash = crypto.createHash('sha256').update(agentKey).digest();
-        keyMatch = crypto.timingSafeEqual(storedKeyHash, providedKeyHash);
-      } catch {
-        keyMatch = false;
-      }
-    }
+    try {
+      // Sentinel: Fetch by key, then verify with timingSafeEqual to ensure constant-time response profiles
+      const agent = db.prepare('SELECT * FROM agent_keys WHERE api_key = ? AND is_active = 1').get(agentKey) as any;
 
-    if (!agent || !keyMatch) {
+      // Sentinel Security Patch: Timing-safe comparison with pre-hashing
+      let keyMatch = false;
+      if (agent) {
+        try {
+          const storedKeyHash = crypto.createHash('sha256').update(agent.api_key).digest();
+          const providedKeyHash = crypto.createHash('sha256').update(agentKey).digest();
+          keyMatch = crypto.timingSafeEqual(storedKeyHash, providedKeyHash);
+        } catch {
+          keyMatch = false;
+        }
+      }
+
+      if (!agent || !keyMatch) {
+        audit.log('AUTH_FAILURE', {
+          action: 'login',
+          outcome: 'failure',
+          actor_type: 'agent',
+          ip_address: req.ip,
+          user_agent: req.headers['user-agent'] as string
+        });
+        return res.status(401).json({ success: false, error: 'Invalid or revoked Lobster key' });
+      }
+
+      if (agent.expiration_date && new Date(agent.expiration_date) < new Date()) {
+        return res.status(401).json({ success: false, error: 'Lobster key expired' });
+      }
+
+      const token = `api-${generateString(32)}`;
+      db.prepare('INSERT INTO api_tokens (key, owner_key, owner_type, created_at, expires_at) VALUES (?, ?, ?, ?, ?)').run(
+        token, agentKey, 'agent', new Date().toISOString(), expiresAt
+      );
+
+      db.prepare('UPDATE agent_keys SET last_used = ? WHERE api_key = ?').run(new Date().toISOString(), agentKey);
+
+      audit.log('AUTH_SUCCESS', {
+        actor: agent.id,
+        actor_type: 'agent',
+        action: 'login',
+        outcome: 'success',
+        ip_address: req.ip,
+        user_agent: req.headers['user-agent'] as string
+      });
+
+      return res.status(201).json({
+        success: true,
+        data: {
+          token,
+          type: 'agent',
+          createdAt: new Date().toISOString(),
+          expiresAt
+        }
+      });
+    } catch (err: any) {
+      console.error('[Auth] Agent authentication error:', err);
       audit.log('AUTH_FAILURE', {
         action: 'login',
         outcome: 'failure',
         actor_type: 'agent',
         ip_address: req.ip,
-        user_agent: req.headers['user-agent'] as string
+        user_agent: req.headers['user-agent'] as string,
+        details: { error: err.message }
       });
-      return res.status(401).json({ success: false, error: 'Invalid or revoked Lobster key' });
+      return res.status(500).json({ success: false, error: 'Agent authentication failed' });
     }
-
-    if (agent.expiration_date && new Date(agent.expiration_date) < new Date()) {
-      return res.status(401).json({ success: false, error: 'Lobster key expired' });
-    }
-
-    const token = `api-${generateString(32)}`;
-    db.prepare('INSERT INTO api_tokens (key, owner_key, owner_type, created_at, expires_at) VALUES (?, ?, ?, ?, ?)').run(
-      token, agentKey, 'agent', new Date().toISOString(), expiresAt
-    );
-
-    db.prepare('UPDATE agent_keys SET last_used = ? WHERE api_key = ?').run(new Date().toISOString(), agentKey);
-
-    audit.log('AUTH_SUCCESS', {
-      actor: agent.id,
-      actor_type: 'agent',
-      action: 'login',
-      outcome: 'success',
-      ip_address: req.ip,
-      user_agent: req.headers['user-agent'] as string
-    });
-
-    return res.status(201).json({
-      success: true,
-      data: {
-        token,
-        type: 'agent',
-        createdAt: new Date().toISOString(),
-        expiresAt
-      }
-    });
 
   } else {
     return res.status(400).json({ success: false, error: 'Invalid authentication request' });

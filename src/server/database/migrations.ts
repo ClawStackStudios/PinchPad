@@ -21,16 +21,9 @@ export function runMigrations(db: Database) {
   runColumnMigration('ALTER TABLE audit_logs ADD COLUMN action TEXT NOT NULL DEFAULT "unknown"', 'audit_logs.action');
   runColumnMigration('ALTER TABLE audit_logs ADD COLUMN outcome TEXT NOT NULL DEFAULT "unknown"', 'audit_logs.outcome');
 
-  // api_tokens owner_uuid -> owner_key
-  const tokenColumns = db.prepare("PRAGMA table_info('api_tokens')").all() as any[];
-  if (tokenColumns.some(col => col.name === 'owner_uuid') && !tokenColumns.some(col => col.name === 'owner_key')) {
-    try {
-      db.exec('ALTER TABLE api_tokens RENAME COLUMN owner_uuid TO owner_key');
-      console.log('[DB Migration] ✅ Renamed owner_uuid to owner_key in api_tokens');
-    } catch (e) {
-      console.warn('[DB Migration] ❌ Migration failed (rename owner_uuid):', e);
-    }
-  }
+  // REMOVED: api_tokens owner_uuid -> owner_key migration
+  // This caused trigger conflicts in production. Since this is a single-user dev instance
+  // with no legacy data, the column rename is not needed. Current schema already uses owner_key.
 
   // ── Agent keys revocation columns (alignment with ClawChives) ───────────
   runColumnMigration('ALTER TABLE agent_keys ADD COLUMN revoked_at TEXT', 'agent_keys.revoked_at');

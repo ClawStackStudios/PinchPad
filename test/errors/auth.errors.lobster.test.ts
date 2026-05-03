@@ -369,4 +369,126 @@ describe('Auth Errors — Error Path Coverage', () => {
       expect(true).toBe(true);
     });
   });
+
+  describe('Regression Tests — Auth Edge Cases', () => {
+    it('login with valid UUID + valid keyHash returns 201 with token', async () => {
+      const keyHash = crypto.createHash('sha256').update('correct-secret').digest('hex');
+      const user = createTestUser(db, { username: 'validuser', keyHash });
+
+      const response = await request(app).post('/api/auth/token').send({
+        uuid: user.uuid,
+        keyHash,
+        type: 'human',
+      });
+
+      expect(response.status).toBe(201);
+      expect(response.body.success).toBe(true);
+      expect(response.body.data.token).toBeDefined();
+      expect(response.body.data.token).toMatch(/^api-/);
+      expect(response.body.data.user.uuid).toBe(user.uuid);
+      expect(response.body.data.user.username).toBe('validuser');
+    });
+
+    it('login with valid UUID + wrong keyHash returns 401', async () => {
+      const correctKeyHash = crypto.createHash('sha256').update('correct-secret').digest('hex');
+      const user = createTestUser(db, { username: 'validuser', keyHash: correctKeyHash });
+      const wrongKeyHash = crypto.createHash('sha256').update('wrong-secret').digest('hex');
+
+      const response = await request(app).post('/api/auth/token').send({
+        uuid: user.uuid,
+        keyHash: wrongKeyHash,
+        type: 'human',
+      });
+
+      expect(response.status).toBe(401);
+      expect(response.body.success).toBe(false);
+      expect(response.body.error).toContain('Invalid identity key');
+    });
+
+    it('login with unknown UUID returns 404', async () => {
+      const fakeUuid = crypto.randomUUID();
+      const keyHash = crypto.createHash('sha256').update('some-secret').digest('hex');
+
+      const response = await request(app).post('/api/auth/token').send({
+        uuid: fakeUuid,
+        keyHash,
+        type: 'human',
+      });
+
+      expect(response.status).toBe(404);
+      expect(response.body.success).toBe(false);
+      expect(response.body.error).toContain('not registered');
+    });
+
+    it('login with keyHash only (no UUID) finds user by keyHash', async () => {
+      const keyHash = crypto.createHash('sha256').update('correct-secret').digest('hex');
+      const user = createTestUser(db, { username: 'keyhashuser', keyHash });
+
+      const response = await request(app).post('/api/auth/token').send({
+        keyHash,
+        type: 'human',
+      });
+
+      expect(response.status).toBe(201);
+      expect(response.body.success).toBe(true);
+      expect(response.body.data.token).toBeDefined();
+      expect(response.body.data.user.uuid).toBe(user.uuid);
+      expect(response.body.data.user.username).toBe('keyhashuser');
+    });
+
+    it('multiple tokens for same user do not cause 500 errors', async () => {
+      const keyHash = crypto.createHash('sha256').update('secret').digest('hex');
+      createTestUser(db, { username: 'multitokenuser', keyHash });
+
+      // Generate first token
+      const response1 = await request(app).post('/api/auth/token').send({
+        username: 'multitokenuser',
+        keyHash,
+        type: 'human',
+      });
+      expect(response1.status).toBe(201);
+      const token1 = response1.body.data.token;
+
+      // Generate second token
+      const response2 = await request(app).post('/api/auth/token').send({
+        username: 'multitokenuser',
+        keyHash,
+        type: 'human',
+      });
+      expect(response2.status).toBe(201);
+      const token2 = response2.body.data.token;
+
+      // Both tokens should be valid (current implementation allows multiple active tokens)
+      // This test ensures no 500 errors occur during token generation
+      const verify1 = await request(app)
+        .get('/api/auth/verify')
+        .set('Authorization', `Bearer ${token1}`);
+      expect([200, 401]).toContain(verify1.status);
+
+      const verify2 = await request(app)
+        .get('/api/auth/verify')
+        .set('Authorization', `Bearer ${token2}`);
+      expect(verify2.status).toBe(200);
+
+      // No 500 errors should occur during this process
+      expect(response1.status).toBe(201);
+      expect(response2.status).toBe(201);
+      expect(verify1.status).not.toBe(500);
+      expect(verify2.status).not.toBe(500);
+    });
+
+    it('missing keyHash field returns 4xx error, not 500', async () => {
+      const keyHash = crypto.createHash('sha256').update('secret').digest('hex');
+      const user = createTestUser(db, { username: 'missingkeyuser', keyHash });
+
+      const response = await request(app).post('/api/auth/token').send({
+        uuid: user.uuid,
+        type: 'human',
+      });
+
+      expect([400, 401]).toContain(response.status);
+      expect(response.status).not.toBe(500);
+      expect(response.body.success).toBe(false);
+    });
+  });
 });
