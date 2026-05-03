@@ -327,26 +327,13 @@ router.get('/export', requireAuth, requirePermission('canRead'), async (req: Aut
     const allPhotos = db.prepare('SELECT id, filename, data FROM pearl_photos WHERE user_uuid = ?').all(req.userUuid) as any[];
     allPhotos.forEach(p => photoMap.set(p.id, p));
 
-    const markerRegex = /\[\*pearl-jewel\*\]\(([^)]+)\)/g;
-    const legacyUrlRegex = /\/api\/photos\/([a-f0-9-]{36})/g;
-
+    // Process notes content for jewel markers
     const processedNotes = reef.map(polyP => {
       let content = polyP.content;
       const usedJewelIds = new Set<string>();
 
-      // 1. Resolve new markers [*pearl-jewel*](UUID)
-      content = content.replace(markerRegex, (match, id) => {
-        const photo = photoMap.get(id);
-        if (photo) {
-          usedJewelIds.add(id);
-          const relativePath = `jewels/${photo.filename}`;
-          return format === 'html' ? `<img src="${relativePath}" alt="${photo.filename}" style="max-width:100%; border-radius:12px; margin:20px 0; border:1px solid rgba(255,193,116,0.3);">` : `![${photo.filename}](${relativePath})`;
-        }
-        return match; // Fallback to marker if not found
-      });
-
-      // 2. Resolve legacy absolute URLs (for backward compatibility during transition)
-      content = content.replace(legacyUrlRegex, (match, id) => {
+      // Replace [*pearl-jewel*](UUID) with relative paths
+      content = content.replace(/\[\*pearl-jewel\*\]\((.*?)\)/g, (match, id) => {
         const photo = photoMap.get(id);
         if (photo) {
           usedJewelIds.add(id);
@@ -374,7 +361,11 @@ router.get('/export', requireAuth, requirePermission('canRead'), async (req: Aut
         zip.file(`${polyP.title.replace(/[^a-z0-9]/gi, '_')}-${polyP.id.slice(0, 8)}.md`, header + polyP.content);
       }
 
-      if (format === 'html') {
+      if (format === 'html' || format === 'pdf') {
+        const isPdf = format === 'pdf';
+        const exportTheme = isPdf ? 'light' : theme;
+        const isLight = exportTheme === 'light';
+
         const htmlContent = `
 <!DOCTYPE html>
 <html lang="en">
@@ -387,12 +378,16 @@ router.get('/export', requireAuth, requirePermission('canRead'), async (req: Aut
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <style>
         :root {
-            --surface: #0f172a;
-            --on-surface: #f1f5f9;
+            --surface: ${isLight ? '#f8fafc' : '#0f172a'};
+            --on-surface: ${isLight ? '#1e293b' : '#f1f5f9'};
             --primary: #d97706;
             --primary-light: #fbbf24;
             --outline: #64748b;
-            --border: rgba(217, 119, 6, 0.2);
+            --border: ${isLight ? 'rgba(217, 119, 6, 0.2)' : 'rgba(217, 119, 6, 0.25)'};
+            --pre-bg: ${isLight ? '#f1f5f9' : '#020617'};
+            --pre-text: ${isLight ? '#1e293b' : '#e2e8f0'};
+            --jewel-bg: ${isLight ? 'rgba(217, 119, 6, 0.05)' : 'rgba(217, 119, 6, 0.05)'};
+            --jewel-icon-bg: ${isLight ? 'rgba(217, 119, 6, 0.1)' : 'rgba(217, 119, 6, 0.15)'};
         }
         
         * { box-sizing: border-box; }
@@ -408,6 +403,7 @@ router.get('/export', requireAuth, requirePermission('canRead'), async (req: Aut
             flex-direction: column;
             align-items: center;
             min-height: 100vh;
+            ${isPdf ? 'padding-bottom: 80px;' : ''}
         }
 
         .document-wrapper {
@@ -454,7 +450,7 @@ router.get('/export', requireAuth, requirePermission('canRead'), async (req: Aut
         .content p { margin-bottom: 1.6em; }
 
         .content pre {
-            background: #020617;
+            background: var(--pre-bg);
             padding: 24px;
             border-radius: 16px;
             overflow-x: auto;
@@ -474,7 +470,7 @@ router.get('/export', requireAuth, requirePermission('canRead'), async (req: Aut
         .content pre code {
             background: transparent;
             padding: 0;
-            color: #e2e8f0;
+            color: var(--pre-text);
         }
 
         .content blockquote {
@@ -482,8 +478,8 @@ router.get('/export', requireAuth, requirePermission('canRead'), async (req: Aut
             padding: 8px 0 8px 24px;
             margin: 32px 0;
             font-style: italic;
-            color: #94a3b8;
-            background: rgba(217, 119, 6, 0.03);
+            color: var(--outline);
+            background: var(--jewel-bg);
         }
 
         .content img {
@@ -506,8 +502,8 @@ router.get('/export', requireAuth, requirePermission('canRead'), async (req: Aut
             display: flex;
             align-items: center;
             gap: 16px;
-            background: rgba(217, 119, 6, 0.05);
-            border: 2px solid rgba(217, 119, 6, 0.3);
+            background: var(--jewel-bg);
+            border: 2px solid var(--border);
             border-radius: 18px;
             padding: 16px 20px;
             margin: 32px 0;
@@ -527,115 +523,183 @@ router.get('/export', requireAuth, requirePermission('canRead'), async (req: Aut
             flex-shrink: 0;
             width: 48px;
             height: 48px;
-            background: rgba(217, 119, 6, 0.15);
-            border: 1px solid rgba(217, 119, 6, 0.2);
+            background: var(--jewel-icon-bg);
+            border: 1px solid var(--border);
             border-radius: 14px;
             background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23d97706' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48'%3E%3C/path%3E%3C/svg%3E");
             background-repeat: no-repeat;
             background-position: center;
             background-size: 24px;
         }
-        
+
         .jewel-info {
             flex-grow: 1;
-            min-width: 0;
         }
-        
+
         .jewel-tag {
-            font-size: 10px;
             font-weight: 900;
             text-transform: uppercase;
-            letter-spacing: 0.2em;
-            color: var(--primary);
-            opacity: 0.8;
+            font-size: 10px;
+            letter-spacing: 0.15em;
+            color: var(--outline);
             margin-bottom: 2px;
         }
-        
+
         .jewel-name {
-            font-size: 16px;
-            font-weight: 700;
-            color: var(--on-surface);
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
+            font-weight: 800;
+            color: var(--primary);
+            font-size: 15px;
         }
-        
+
         .download-btn {
-            font-size: 11px;
+            font-size: 12px;
             font-weight: 900;
             text-transform: uppercase;
             letter-spacing: 0.1em;
             background: var(--primary);
             color: #000;
-            padding: 8px 16px;
-            border-radius: 10px;
-            transition: all 0.2s;
+            padding: 14px 28px;
+            border-radius: 14px;
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
             flex-shrink: 0;
+            box-shadow: 0 8px 25px rgba(217, 119, 6, 0.3);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .download-btn::before {
+            content: "";
+            width: 16px;
+            height: 16px;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4'%3E%3C/path%3E%3Cpolyline points='7 10 12 15 17 10'%3E%3C/polyline%3E%3Cline x1='12' y1='15' x2='12' y2='3'%3E%3C/line%3E%3C/svg%3E");
+            background-repeat: no-repeat;
+            background-position: center;
+            background-size: contain;
         }
 
         .content a[href^="jewels/"]:hover .download-btn {
             background: var(--primary-light);
             transform: scale(1.05);
+            box-shadow: 0 12px 35px rgba(217, 119, 6, 0.4);
         }
 
         .page-footer {
+            margin-top: 80px;
+            padding-top: 32px;
+            border-top: 1px solid var(--border);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 12px;
+            color: var(--outline);
             width: 100%;
             max-width: 900px;
-            padding: 40px;
-            display: grid;
-            grid-template-columns: 1fr auto 1fr;
-            align-items: center;
-            border-top: 1px solid var(--border);
-            margin-top: 80px;
-            font-size: 13px;
-            color: var(--outline);
-            font-weight: 500;
+            margin-bottom: 60px;
         }
 
-        .footer-left { text-align: left; }
-        .footer-center { text-align: center; font-style: italic; }
-        .footer-right { text-align: right; display: flex; justify-content: flex-end; align-items: center; gap: 8px; }
+        .footer-left { font-weight: 700; color: var(--primary); }
+        .footer-center { font-weight: 500; font-style: italic; }
+        .footer-right { position: relative; }
 
-        .github-btn {
-            color: var(--outline);
-            transition: color 0.2s, transform 0.2s;
+        .github-anchor {
             display: flex;
             align-items: center;
-        }
-        
-        .github-btn:hover {
-            color: var(--primary);
-            transform: scale(1.1);
+            gap: 8px;
+            padding: 8px 16px;
+            background: #24292e;
+            color: white;
+            text-decoration: none;
+            border-radius: 8px;
+            font-weight: 600;
+            transition: all 0.2s;
         }
 
-        @media (max-width: 650px) {
-            .document-wrapper { padding: 40px 20px; }
-            .page-footer { grid-template-columns: 1fr; gap: 16px; text-align: center; }
-            .footer-left, .footer-center, .footer-right { text-align: center; justify-content: center; }
-            h1 { font-size: 32px; }
+        .github-anchor:hover {
+            background: #000;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+        }
+
+        .github-anchor::before {
+            content: "";
+            width: 18px;
+            height: 18px;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='white'%3E%3Cpath d='M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z'/%3E%3C/svg%3E");
+            background-repeat: no-repeat;
+            background-position: center;
+        }
+
+        .tooltip {
+            position: absolute;
+            bottom: 100%;
+            right: 0;
+            background: #000;
+            color: white;
+            padding: 4px 10px;
+            border-radius: 4px;
+            font-size: 10px;
+            opacity: 0;
+            visibility: hidden;
+            transition: all 0.2s;
+            white-space: nowrap;
+            margin-bottom: 8px;
+            pointer-events: none;
+        }
+
+        .footer-right:hover .tooltip {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        @media print {
+            .page-footer { position: fixed; bottom: 0; }
+            .github-anchor { display: none; }
         }
     </style>
     <script>
-        document.addEventListener('click', (e) => {
-            const target = e.target.closest('img, a');
-            if (!target) return;
-
-            // Check if it's a jewel reference
-            const isImg = target.tagName === 'IMG';
-            const url = isImg ? target.getAttribute('src') : target.getAttribute('href');
+        document.addEventListener('DOMContentLoaded', () => {
+            const imageExtensions = ['jpg', 'jpeg', 'png', 'gif', 'webp', 'svg', 'bmp', 'ico'];
             
-            if (url && (url.startsWith('jewels/') || url.includes('/jewels/'))) {
-                e.preventDefault();
-                const filename = url.split('/').pop();
-                const cleanName = decodeURIComponent(filename);
-                
-                if (confirm(\`Do you want to download "\${cleanName}"?\`)) {
-                    const link = document.createElement('a');
-                    link.href = url;
-                    link.download = cleanName;
-                    document.body.appendChild(link);
-                    link.click();
-                    document.body.removeChild(link);
+            const upgradeToJewel = (el, url) => {
+                const filename = decodeURIComponent(url.split('/').pop());
+                const wrapper = document.createElement('a');
+                wrapper.href = url;
+                wrapper.className = 'jewel-marker-link';
+                wrapper.innerHTML = \`
+                    <div class="jewel-icon"></div>
+                    <div class="jewel-info">
+                        <div class="jewel-tag">Sovereign Jewel</div>
+                        <div class="jewel-name">\\\${filename}</div>
+                    </div>
+                    <div class="download-btn">Download</div>
+                \`;
+                el.parentNode.replaceChild(wrapper, el);
+            };
+
+            // 1. Hatch high-fidelity Jewel markers from links
+            document.querySelectorAll('.content a[href^="jewels/"]').forEach(link => {
+                upgradeToJewel(link, link.getAttribute('href'));
+            });
+
+            // 2. Catch and correct mis-rendered non-image jewels
+            document.querySelectorAll('.content img[src^="jewels/"]').forEach(img => {
+                const src = img.getAttribute('src');
+                const ext = src.split('.').pop().toLowerCase();
+                if (!imageExtensions.includes(ext)) {
+                    upgradeToJewel(img, src);
+                }
+            });
+        });
+
+        // Click on image -> ask to download
+        document.addEventListener('click', (e) => {
+            if (e.target.tagName === 'IMG' && e.target.src.includes('jewels/')) {
+                if (confirm('Download this Jewel?')) {
+                    const a = document.createElement('a');
+                    a.href = e.target.src;
+                    a.download = e.target.src.split('/').pop();
+                    a.click();
                 }
             }
         });
@@ -643,35 +707,27 @@ router.get('/export', requireAuth, requirePermission('canRead'), async (req: Aut
 </head>
 <body>
     <div class="document-wrapper">
-        <header class="header">
+        <div class="header">
             <h1>${polyP.title}</h1>
             <div class="meta">
-                <span>PinchPad©™ Burrow</span>
-                <span>•</span>
-                <span>${new Date(polyP.created_at).toLocaleDateString(undefined, { dateStyle: 'long' })}</span>
+                <span>Created: ${new Date(polyP.created_at).toLocaleDateString()}</span>
+                <span>Starred: ${polyP.starred ? 'Yes' : 'No'}</span>
             </div>
-        </header>
-        
-        <main class="content">
-            ${marked.parse(polyP.content)}
-        </main>
-    </div>
-
-    <footer class="page-footer">
-        <div class="footer-left">PinchPad©™ 2026</div>
-        <div class="footer-center">PinchPad Pearl: ${polyP.title}</div>
-        <div class="footer-right">
-            <a href="https://github.com/ClawStackStudios/PinchPad" 
-               class="github-btn" 
-               title="Star Us On GitHub!"
-               target="_blank" 
-               rel="noopener noreferrer">
-                <svg viewBox="0 0 24 24" width="22" height="22" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round">
-                    <path d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.87a3.37 3.37 0 0 0-.94-2.61c3.14-.35 6.44-1.54 6.44-7A5.44 5.44 0 0 0 20 4.77 5.07 5.07 0 0 0 19.91 1S18.73.65 16 2.48a13.38 13.38 0 0 0-7 0C6.27.65 5.09 1 5.09 1A5.07 5.07 0 0 0 5 4.77a5.44 5.44 0 0 0-1.5 3.78c0 5.42 3.3 6.61 6.44 7A3.37 3.37 0 0 0 9 18.13V22"></path>
-                </svg>
-            </a>
         </div>
-    </footer>
+        <div class="content">
+            \${marked.parse(polyP.content)}
+        </div>
+        <div class="page-footer">
+            <div class="footer-left">PinchPad©™ 2026</div>
+            <div class="footer-center">PinchPad Pearl: ${polyP.title}</div>
+            ${!isPdf ? `
+            <div class="footer-right">
+                <div class="tooltip">Star Us On GitHub!</div>
+                <a href="https://github.com/ClawStackStudios/PinchPad" class="github-anchor" target="_blank">GitHub</a>
+            </div>
+            ` : ''}
+        </div>
+    </div>
 </body>
 </html>
         `;

@@ -131,24 +131,116 @@ export const noteService = {
     await restAdapter.DELETE(`/api/photos/${photoId}`);
   },
 
-  async exportNotes(ids: string[], format: string): Promise<void> {
+  async exportNotes(ids: string[], format: string, theme: string = 'dark'): Promise<void> {
     const session = readSession();
     const token = session?.token;
     if (!token) throw new Error('Authentication required');
 
     const baseUrl = getApiBaseUrl();
     const idsQuery = ids.length > 0 ? `&ids=${ids.join(',')}` : '';
-    const response = await fetch(`${baseUrl}/api/notes/export?format=${format}${idsQuery}`, {
+    const themeQuery = format === 'html' ? `&theme=${theme}` : '';
+    
+    // For PDF, we fetch HTML then convert client-side to keep it sovereign
+    const fetchFormat = format === 'pdf' ? 'pdf' : format;
+    const response = await fetch(`${baseUrl}/api/notes/export?format=${fetchFormat}${idsQuery}${themeQuery}`, {
       headers: { 'Authorization': `Bearer ${token}` }
     });
 
     if (!response.ok) throw new Error('Export failed');
 
-    const blob = await response.blob();
-    const url = URL.createObjectURL(blob);
+    let finalBlob: Blob;
+    let finalFileName = `pinchpad-export-${format}-${new Date().toISOString().slice(0, 10)}.zip`;
+
+    if (format === 'pdf') {
+      console.log('[Export] 🧪 Hatching sovereign PDFs via isolated rendering...');
+      const JSZip = (await import('jszip')).default;
+      const { jsPDF } = await import('jspdf');
+      const html2canvas = (await import('html2canvas')).default;
+
+      const inputZipBlob = await response.blob();
+      const zip = await JSZip.loadAsync(inputZipBlob);
+      const outputZip = new JSZip();
+
+      // Process each file in the ZIP
+      const fileNames = Object.keys(zip.files);
+      for (const name of fileNames) {
+        if (name.endsWith('.html')) {
+          console.log(`[Export] 📄 Isolating and rendering: ${name}`);
+          const content = await zip.files[name].async('text');
+          
+          // Create isolated render iframe
+          const iframe = document.createElement('iframe');
+          iframe.style.position = 'fixed';
+          iframe.style.top = '-10000px';
+          iframe.style.left = '-10000px';
+          iframe.style.width = '900px';
+          iframe.style.height = '1200px';
+          document.body.appendChild(iframe);
+
+          const iframeDoc = iframe.contentDocument || iframe.contentWindow?.document;
+          if (!iframeDoc) {
+            document.body.removeChild(iframe);
+            continue;
+          }
+
+          // Inject content and wait for it to stabilize
+          iframeDoc.open();
+          iframeDoc.write(content);
+          iframeDoc.close();
+
+          // Give fonts/images a moment to breathe
+          await new Promise(resolve => setTimeout(resolve, 800));
+
+          const target = iframeDoc.querySelector('.document-wrapper') || iframeDoc.body;
+
+          try {
+            const canvas = await html2canvas(target as HTMLElement, {
+              scale: 2,
+              useCORS: true,
+              backgroundColor: '#ffffff',
+              logging: false,
+              // Crucial: ensure no outside styles bleed in
+              onclone: (clonedDoc) => {
+                const style = clonedDoc.createElement('style');
+                style.innerHTML = `* { -webkit-print-color-adjust: exact !important; color-adjust: exact !important; }`;
+                clonedDoc.head.appendChild(style);
+              }
+            });
+
+            const imgData = canvas.toDataURL('image/jpeg', 0.95);
+            const doc = new jsPDF({
+              orientation: 'p',
+              unit: 'pt',
+              format: 'a4'
+            });
+
+            const pdfWidth = doc.internal.pageSize.getWidth();
+            const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
+            
+            doc.addImage(imgData, 'JPEG', 0, 0, pdfWidth, pdfHeight);
+            
+            const pdfBlob = doc.output('blob');
+            outputZip.file(name.replace('.html', '.pdf'), pdfBlob);
+          } catch (err) {
+            console.error(`[Export] ❌ PDF Render failed for ${name}:`, err);
+          } finally {
+            document.body.removeChild(iframe);
+          }
+        } else {
+          const data = await zip.files[name].async('blob');
+          outputZip.file(name, data);
+        }
+      }
+
+      finalBlob = await outputZip.generateAsync({ type: 'blob' });
+    } else {
+      finalBlob = await response.blob();
+    }
+
+    const url = URL.createObjectURL(finalBlob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = `pinchpad-export-${format}-${new Date().toISOString().slice(0, 10)}.zip`;
+    a.download = finalFileName;
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);

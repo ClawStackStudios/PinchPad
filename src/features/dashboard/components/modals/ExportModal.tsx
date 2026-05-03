@@ -30,6 +30,7 @@ export function ExportModal({ isOpen, onClose, initialFormat = 'html' }: ExportM
   const { reef } = useReef();
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [format, setFormat] = useState(initialFormat);
+  const [htmlTheme, setHtmlTheme] = useState<'light' | 'dark'>('dark');
   const [search, setSearch] = useState('');
   const [isExporting, setIsExporting] = useState(false);
 
@@ -60,7 +61,7 @@ export function ExportModal({ isOpen, onClose, initialFormat = 'html' }: ExportM
     if (selectedIds.size === 0) return;
     setIsExporting(true);
     try {
-      await noteService.exportNotes(Array.from(selectedIds), format);
+      await noteService.exportNotes(Array.from(selectedIds), format, htmlTheme);
       onClose();
     } catch (err) {
       console.error('[ExportModal] Hatching failed:', err);
@@ -163,10 +164,35 @@ export function ExportModal({ isOpen, onClose, initialFormat = 'html' }: ExportM
         <div className="p-6 border-t border-amber-500/20 bg-slate-50/50 dark:bg-slate-800/30">
           <div className="flex flex-col md:flex-row items-center justify-between gap-6">
             <div className="flex flex-col gap-2 w-full md:w-auto">
-              <label className="text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-widest px-1">Archive Format</label>
+              <div className="flex items-center justify-between gap-4 px-1 h-6">
+                <label className="text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-widest leading-none">Archive Format</label>
+                
+                {format === 'html' && (
+                  <div className="flex bg-slate-200 dark:bg-slate-900 p-0.5 rounded-lg gap-0.5 transition-all animate-in fade-in slide-in-from-right-2">
+                    {[
+                      { id: 'light', label: 'Light' },
+                      { id: 'dark', label: 'Dark' },
+                    ].map(t => (
+                      <button
+                        key={t.id}
+                        onClick={() => setHtmlTheme(t.id as any)}
+                        className={`px-2 py-0.5 rounded-md text-[9px] font-black uppercase tracking-tighter transition-all ${
+                          htmlTheme === t.id 
+                            ? 'bg-white dark:bg-slate-800 text-amber-600 dark:text-amber-400 shadow-sm' 
+                            : 'text-slate-500 hover:text-slate-700 dark:hover:text-slate-300'
+                        }`}
+                      >
+                        {t.label}
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+
               <div className="flex bg-slate-200 dark:bg-slate-900 p-1 rounded-xl gap-1">
                 {[
                   { id: 'html', label: 'HTML', icon: LayoutGrid },
+                  { id: 'pdf', label: 'PDF', icon: FileText },
                   { id: 'md', label: 'MD', icon: FileText },
                   { id: 'json', label: 'JSON', icon: Database },
                 ].map(fmt => (
