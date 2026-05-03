@@ -14,7 +14,6 @@ import { copyToClipboard } from '../../../shared/lib/clipboard';
 import { clsx } from 'clsx';
 import { twMerge } from 'tailwind-merge';
 
-console.log('[CrustAgent] 🦞 Implementation: Reconnecting feature bridge in LobsterKeyWizard');
 
 function cn(...inputs: any[]) { return twMerge(clsx(inputs)); }
 

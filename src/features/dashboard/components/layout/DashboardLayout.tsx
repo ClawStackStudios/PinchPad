@@ -27,7 +27,6 @@ function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
 }
 
-console.log('[CrustAgent] 🦞 Implementation: Reconnecting feature bridge in DashboardLayout');
 
 interface DashboardLayoutProps {
   children: React.ReactNode;

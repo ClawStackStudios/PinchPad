@@ -1,7 +1,6 @@
 import { restAdapter } from '../../shared/lib/api';
 import { generateRandomString, generateUUID, hashToken } from '../../shared/lib/crypto';
 
-console.log('[CrustAgent] 🦞 Scuttling foundational imports for agentService...');
 
 export interface LobsterKey {
   id: string;

@@ -3,7 +3,6 @@ import { Request, Response, NextFunction } from 'express';
 import db from '../database/index';
 import { AuthRequest } from './auth';
 
-console.log('[CrustAgent] 🦞 Hardening the rate limiting armor...');
 
 function parseWindow(windowStr: string | undefined): number | null {
   if (!windowStr) return null;

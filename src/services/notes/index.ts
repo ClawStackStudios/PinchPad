@@ -10,7 +10,6 @@ import { restAdapter, getApiBaseUrl } from '../../shared/lib/api';
 import { readSession } from '../auth';
 import { generateUUID } from '../../shared/lib/crypto';
 
-console.log('[CrustAgent] 🦞 Scuttling foundational imports for noteService...');
 
 export interface PearlPhoto {
   id: string;
@@ -41,11 +40,8 @@ export const noteService = {
       pinned: !!note.pinned
     }));
   },
-
   async create(title: string, content: string, starred = false, pinned = false): Promise<Note> {
     const tempId = generateUUID();
-    console.log('[NoteService] 🧪 Creating pearl with tempId:', tempId);
-
     try {
       const response = await restAdapter.POST('/api/notes', {
         id: tempId,
@@ -54,7 +50,6 @@ export const noteService = {
         starred: starred ? 1 : 0,
         pinned: pinned ? 1 : 0
       });
-      console.log('[NoteService] 📥 POST /api/notes response received:', response);
 
       return {
         ...response.data,
@@ -62,7 +57,7 @@ export const noteService = {
         pinned: !!response.data.pinned
       };
     } catch (err) {
-      console.error('[NoteService] ❌ POST /api/notes failed:', err);
+      console.error('[NoteService] ❌ Create failed:', err);
       throw err;
     }
   },
@@ -152,7 +147,7 @@ export const noteService = {
     let finalFileName = `pinchpad-export-${format}-${new Date().toISOString().slice(0, 10)}.zip`;
 
     if (format === 'pdf') {
-      console.log('[Export] 🧪 Hatching sovereign PDFs via isolated rendering...');
+      console.log('[Export] 🧪 Hatching sovereign PDFs...');
       const JSZip = (await import('jszip')).default;
       const { jsPDF } = await import('jspdf');
       const html2canvas = (await import('html2canvas')).default;
@@ -165,7 +160,7 @@ export const noteService = {
       const fileNames = Object.keys(zip.files);
       for (const name of fileNames) {
         if (name.endsWith('.html')) {
-          console.log(`[Export] 📄 Isolating and rendering: ${name}`);
+          console.log(`[Export] 📄 Rendering: ${name}`);
           const content = await zip.files[name].async('text');
           
           // Create isolated render iframe

@@ -9,7 +9,6 @@ import {
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../../auth/AuthContext';
 
-console.log('[CrustAgent] 🦞 Implementation: Reconnecting feature bridge in AppHeader');
 import { clsx, type ClassValue } from 'clsx';
 import { twMerge } from 'tailwind-merge';
 

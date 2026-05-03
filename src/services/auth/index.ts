@@ -2,7 +2,6 @@ import { getApiBaseUrl } from '../../shared/lib/api';
 import { apiFetch } from '../../shared/lib/apiFetch';
 import { generateUUID, generateHumanKey, hashToken, validateIdentityFile } from '../../shared/lib/crypto';
 
-console.log('[CrustAgent] 🦞 Scuttling foundational imports for authService...');
 
 const SESSION_KEYS = {
   token: 'pp_api_token',

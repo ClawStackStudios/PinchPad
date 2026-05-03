@@ -12,7 +12,6 @@ import React, { createContext, useContext, useState, useEffect, useCallback } fr
 import { potService, Pot } from '../../services/pots';
 import { useAuth } from '../auth/AuthContext';
 
-console.log('[CrustAgent] 🦞 Implementation: Reconnecting feature bridge in PotContext');
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -45,7 +44,6 @@ export function PotProvider({ children }: { children: React.ReactNode }) {
     try {
       const fetched = await potService.getAll();
       setPots(fetched);
-      console.log(`[PotContext] 🪸 Loaded ${fetched.length} pots`);
     } catch (err) {
       console.error('[PotContext] ❌ Failed to load pots:', err);
     } finally {

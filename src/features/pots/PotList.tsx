@@ -14,7 +14,6 @@ import { useNavigate } from 'react-router-dom';
 import { usePot } from './PotContext';
 import { Pot } from '../../services/pots';
 
-console.log('[CrustAgent] 🦞 Implementation: Reconnecting feature bridge in PotList');
 
 interface PotListProps {
   onOpenCreate: () => void;

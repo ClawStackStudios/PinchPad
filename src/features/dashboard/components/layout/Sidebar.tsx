@@ -17,7 +17,6 @@ import { PotModal } from '../modals/PotModal';
 import { usePot } from '../../../pots/PotContext';
 import { Pot } from '../../../../services/pots';
 
-console.log('[CrustAgent] 🦞 Sealing the feature bridge: Sidebar imports aligned');
 import { clsx } from 'clsx';
 import { twMerge } from 'tailwind-merge';
 

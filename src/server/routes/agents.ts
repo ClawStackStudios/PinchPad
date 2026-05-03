@@ -8,7 +8,6 @@ import { AgentKeySchemas } from '../validation/schemas';
 const router = Router();
 const audit = createAuditLogger(db);
 
-console.log('[CrustAgent] 🦞 Hardening the lobster key management routes...');
 
 router.get('/', requireAuth, requireHuman, (req: any, res: Response) => {
   const userUuid = req.userUuid;

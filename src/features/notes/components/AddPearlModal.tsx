@@ -5,7 +5,6 @@ import { MarkdownToolbar } from './MarkdownToolbar';
 import { MarkdownPreviewModal } from './MarkdownPreviewModal';
 import { PearlPhotoGallery } from './PearlPhotoGallery';
 
-console.log('[CrustAgent] 🦞 Implementation: Reconnecting feature bridge in AddPearlModal');
 
 interface AddPearlModalProps {
   isOpen: boolean;
@@ -50,12 +49,9 @@ export function AddPearlModal({ isOpen, onClose, onSuccess, onAutosave, editNote
 
   const doSave = async () => {
     if (currentNoteId.current) {
-      console.log('[AddPearlModal] 🔄 Updating existing pearl:', currentNoteId.current);
       return noteService.update(currentNoteId.current, title.trim(), content.trim(), starred, pinned);
     }
-    console.log('[AddPearlModal] ✨ Creating new pearl...');
     const note = await noteService.create(title.trim(), content.trim(), starred, pinned);
-    console.log('[AddPearlModal] 🏷️ New pearl created with ID:', note.id);
     currentNoteId.current = note.id;
     return note;
   };
@@ -63,38 +59,34 @@ export function AddPearlModal({ isOpen, onClose, onSuccess, onAutosave, editNote
   // ── Manual save (Shell It! button) ────────────────────────────────────────
 
   const handleShellIt = async () => {
-    console.log('[AddPearlModal] 🐚 Shell It! triggered');
     if (!title.trim() || !content.trim()) {
       setError('Title and content are required');
-      console.warn('[AddPearlModal] ⚠️ Validation failed: empty fields');
       return;
     }
 
     setError('');
     setIsSubmitting(true);
     try {
-      console.log('[AddPearlModal] 🚀 Calling doSave()...');
       const note = await doSave();
-      console.log('[AddPearlModal] ✅ doSave() successful:', note.id);
+      console.log(`[AddPearl] 🐚 Pearl shelved: ${note.id}`);
       setLastSaved(new Date());
-      
-      console.log('[AddPearlModal] 📢 Calling onSuccess()...');
       onSuccess(note);
-      console.log('[AddPearlModal] 🔒 Closing modal...');
       onClose();
     } catch (err: any) {
-      console.error('[AddPearlModal] ❌ Shell It failed:', err);
+      console.error('[AddPearl] ❌ Shell It failed:', err);
       setError(err?.message || 'Failed to save pearl');
     } finally {
       setIsSubmitting(false);
-      console.log('[AddPearlModal] 🏁 handleShellIt finished');
     }
   };
 
   // ── Autosave (3s debounce) ────────────────────────────────────────────────
-
   useEffect(() => {
     if (!isOpen) return;
+
+    // Check if autosave is enabled in settings
+    const autosaveEnabled = localStorage.getItem('pp_autosave') !== 'false';
+    if (!autosaveEnabled) return;
 
     if (!title.trim() || !content.trim()) {
       setSaveStatus('incomplete');

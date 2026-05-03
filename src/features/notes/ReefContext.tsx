@@ -13,7 +13,6 @@ import React, { createContext, useContext, useState, useEffect, useCallback } fr
 import { noteService, Note } from '../../services/notes';
 import { useAuth } from '../auth/AuthContext';
 
-console.log('[CrustAgent] 🦞 Implementation: Reconnecting feature bridge in ReefContext');
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 

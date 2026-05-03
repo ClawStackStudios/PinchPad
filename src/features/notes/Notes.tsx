@@ -17,7 +17,6 @@ import { usePot } from '../pots/PotContext';
 import { ConfirmModal } from '../dashboard/components/modals/ConfirmModal';
 import { noteService, Note } from '../../services/notes';
 
-console.log('[CrustAgent] 🦞 Implementation: Reconnecting feature bridge in Notes');
 
 // ── Filter label map ──────────────────────────────────────────────────────────
 const FILTER_LABELS: Record<string, string> = {
@@ -63,22 +62,31 @@ export function Notes() {
 
   // ── Handlers ─────────────────────────────────────────────────────────────
   const openDeleteConfirm = (pearl: Note) => {
-    setPearlToDelete(pearl);
-    setDeleteModalOpen(true);
+    const confirmRequired = localStorage.getItem('pp_confirm_delete') !== 'false';
+    if (confirmRequired) {
+      setPearlToDelete(pearl);
+      setDeleteModalOpen(true);
+    } else {
+      // Instant discard if requested
+      handleConfirmDelete(pearl);
+    }
   };
 
-  const handleConfirmDelete = async () => {
-    if (!pearlToDelete) return;
+  const handleConfirmDelete = async (bypassNote?: Note) => {
+    const target = bypassNote || pearlToDelete;
+    if (!target) return;
+    
     setIsDeleting(true);
     try {
-      await noteService.delete(pearlToDelete.id);
-      removePearlFromReef(pearlToDelete.id);
-      console.log(`[Notes] 🗑️ Discarded pearl: ${pearlToDelete.id}`);
+      await noteService.delete(target.id);
+      removePearlFromReef(target.id);
+      console.log(`[Notes] 🗑️ Discarded pearl: ${target.id}`);
     } catch (err) {
       console.error('[Notes] Delete failed:', err);
     } finally {
       setIsDeleting(false);
       setPearlToDelete(null);
+      setDeleteModalOpen(false);
     }
   };
 
