@@ -26,13 +26,15 @@ interface SidebarNavProps {
   settingsMode?: boolean;
   activeSettingsTab?: string;
   onSettingsTabChange?: (tab: any) => void;
+  onOpenDatabase?: () => void;
 }
 
 export function SidebarNav({ 
   onClose, 
   settingsMode = false, 
   activeSettingsTab, 
-  onSettingsTabChange 
+  onSettingsTabChange,
+  onOpenDatabase
 }: SidebarNavProps) {
   const navigate = useNavigate();
   const location = useLocation();
@@ -90,6 +92,24 @@ export function SidebarNav({
         >
           <LayoutDashboard className="w-4 h-4" />
           Back to Dashboard
+        </button>
+
+        <button
+          onClick={() => { onOpenDatabase?.(); onClose?.(); }}
+          className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+        >
+          <Database className="w-4 h-4" />
+          Database Stats
+        </button>
+
+        <div className="border-t border-slate-200 dark:border-slate-800 my-2" />
+
+        <button
+          onClick={() => { clawOut(); onClose?.(); }}
+          className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
+        >
+          <LogOut className="w-4 h-4" />
+          Claw Out
         </button>
       </nav>
     );
@@ -179,6 +199,14 @@ export function SidebarNav({
       >
         <Settings className="w-4 h-4" />
         Settings
+      </button>
+
+      <button
+        onClick={() => { onOpenDatabase?.(); onClose?.(); }}
+        className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+      >
+        <Database className="w-4 h-4" />
+        Database Stats
       </button>
 
       <div className="border-t border-slate-200 dark:border-slate-800 my-2" />
