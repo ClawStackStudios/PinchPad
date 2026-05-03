@@ -7,7 +7,8 @@ console.log('[CrustAgent] 🦞 Scuttling foundational imports for authService...
 const SESSION_KEYS = {
   token: 'cc_api_token',
   username: 'cc_username',
-  uuid: 'cc_user_uuid'
+  uuid: 'cc_user_uuid',
+  displayName: 'cc_display_name'
 } as const;
 
 const EXPIRY_KEY = 'cc_session_expiry';
@@ -17,10 +18,11 @@ const EXPIRY_KEY = 'cc_session_expiry';
  * Returns null if no session exists or if it has expired.
  * If expired, clears all session keys.
  */
-export function readSession(): { token: string; uuid: string; username: string } | null {
+export function readSession(): { token: string; uuid: string; username: string; displayName: string | null } | null {
   const token = localStorage.getItem(SESSION_KEYS.token);
   const uuid = localStorage.getItem(SESSION_KEYS.uuid);
   const username = localStorage.getItem(SESSION_KEYS.username);
+  const displayName = localStorage.getItem(SESSION_KEYS.displayName);
   const expiry = localStorage.getItem(EXPIRY_KEY);
 
   // Check if any required field is missing
@@ -39,7 +41,7 @@ export function readSession(): { token: string; uuid: string; username: string }
     }
   }
 
-  return { token, uuid, username };
+  return { token, uuid, username, displayName };
 }
 
 /**
@@ -68,7 +70,7 @@ export const authService = {
     return { uuid, huKey };
   },
 
-  async loginWithKey(token: string, uuid?: string, username?: string): Promise<{ token: string, username: string, uuid: string }> {
+  async loginWithKey(token: string, uuid?: string, username?: string, displayName?: string | null): Promise<{ token: string, username: string, uuid: string, displayName: string | null }> {
     if (!token || !token.startsWith('hu-')) {
       throw new Error('Invalid ClawKey©™ format');
     }
@@ -95,6 +97,9 @@ export const authService = {
     localStorage.setItem(SESSION_KEYS.token, data.token);
     localStorage.setItem(SESSION_KEYS.username, data.user.username);
     localStorage.setItem(SESSION_KEYS.uuid, data.user.uuid);
+    if (displayName) {
+      localStorage.setItem(SESSION_KEYS.displayName, displayName);
+    }
     
     // Store exact expiry if provided, otherwise default to 24h fallback
     if (data.expiresAt) {
@@ -103,10 +108,10 @@ export const authService = {
       localStorage.setItem(EXPIRY_KEY, String(Date.now() + 86400000));
     }
 
-    return { token: data.token, username: data.user.username, uuid: data.user.uuid };
+    return { token: data.token, username: data.user.username, uuid: data.user.uuid, displayName: displayName || null };
   },
 
-  async login(identityFileContent: string): Promise<{ token: string, username: string, uuid: string }> {
+  async login(identityFileContent: string): Promise<{ token: string, username: string, uuid: string, displayName: string | null }> {
     let identity;
     try {
       identity = JSON.parse(identityFileContent);
@@ -121,6 +126,7 @@ export const authService = {
 
     const huKey = identity.token;
     const uuid = identity.uuid;
+    const displayName = identity.displayName || null;
     const keyHash = await hashToken(huKey);
 
     const response = await apiFetch(`${getApiBaseUrl()}/api/auth/token`, {
@@ -139,6 +145,9 @@ export const authService = {
     localStorage.setItem(SESSION_KEYS.token, data.token);
     localStorage.setItem(SESSION_KEYS.username, data.user.username);
     localStorage.setItem(SESSION_KEYS.uuid, data.user.uuid);
+    if (displayName) {
+      localStorage.setItem(SESSION_KEYS.displayName, displayName);
+    }
     
     if (data.expiresAt) {
       localStorage.setItem(EXPIRY_KEY, String(new Date(data.expiresAt).getTime()));
@@ -146,10 +155,10 @@ export const authService = {
       localStorage.setItem(EXPIRY_KEY, String(Date.now() + 86400000));
     }
 
-    return { token: data.token, username: data.user.username, uuid: data.user.uuid };
+    return { token: data.token, username: data.user.username, uuid: data.user.uuid, displayName: displayName || null };
   },
 
-  async verifyToken(token: string): Promise<{ uuid: string, username: string }> {
+  async verifyToken(token: string): Promise<{ uuid: string, username: string, displayName: string | null }> {
     const response = await apiFetch(`${getApiBaseUrl()}/api/auth/validate`, {
       method: 'GET',
       headers: {
@@ -165,7 +174,8 @@ export const authService = {
     return {
       uuid: result.data.userUuid,
       // fallback to local storage since validate only returns uuid and keyType
-      username: localStorage.getItem(SESSION_KEYS.username) || 'User'
+      username: localStorage.getItem(SESSION_KEYS.username) || 'User',
+      displayName: localStorage.getItem(SESSION_KEYS.displayName)
     };
   },
 

@@ -40,7 +40,7 @@ export function Register() {
     setIsMolting(true);
     setIsCracked('');
     try {
-      const pearl = await authService.register(username, displayName);
+      const pearl = await authService.register(username);
       setLobster(pearl);
       setStep(2); // Move to review step
     } catch (err: any) {
@@ -60,7 +60,13 @@ export function Register() {
 
   const onDownload = () => {
     if (lobster) {
-      downloadIdentityFile(username, lobster.uuid, lobster.huKey);
+      downloadIdentityFile({
+        username,
+        uuid: lobster.uuid,
+        token: lobster.huKey,
+        displayName: displayName || null,
+        createdAt: new Date().toISOString()
+      });
       setHasDownloaded(true);
     }
   };
@@ -69,7 +75,7 @@ export function Register() {
     if (lobster) {
       setIsMolting(true);
       try {
-        await pinchWithKey(lobster.huKey, lobster.uuid, username);
+        await pinchWithKey(lobster.huKey, lobster.uuid, username, displayName);
         setStep(3); // Success step
         setTimeout(() => navigate('/dashboard'), 2000);
       } catch (err: any) {
@@ -153,6 +159,8 @@ export function Register() {
                     placeholder="Larry Lobster"
                   />
                 </div>
+
+
                 
                 <button 
                   disabled={isMolting || !username} 

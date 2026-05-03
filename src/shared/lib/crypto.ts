@@ -69,6 +69,7 @@ export interface IdentityData {
   username: string;
   uuid: string;
   token: string;       // The hu-* key — this IS the secret credential
+  displayName?: string | null;
   createdAt: string;
 }
 

@@ -12,7 +12,7 @@ interface AuthContextType {
   isMolting: boolean;
   lobster: LobsterProfile | null;
   pinchAccessToken: (fileContent: string) => Promise<void>;
-  pinchWithKey: (token: string, uuid?: string, username?: string) => Promise<void>;
+  pinchWithKey: (token: string, uuid?: string, username?: string, displayName?: string | null) => Promise<void>;
   clawOut: () => void;
 }
 
@@ -74,9 +74,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setIsClawSigned(true);
   };
 
-  const pinchWithKey = async (token: string, uuid?: string, username?: string) => {
-    const { username: u, uuid: id, displayName } = await authService.loginWithKey(token, uuid, username);
-    setLobster({ username: u, uuid: id, displayName });
+  const pinchWithKey = async (token: string, uuid?: string, username?: string, displayName?: string | null) => {
+    const pearl = await authService.loginWithKey(token, uuid, username, displayName);
+    setLobster({ 
+      username: pearl.username, 
+      uuid: pearl.uuid, 
+      displayName: pearl.displayName 
+    });
     setIsClawSigned(true);
   };
 
