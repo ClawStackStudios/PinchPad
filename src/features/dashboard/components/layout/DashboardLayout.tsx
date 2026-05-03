@@ -12,6 +12,7 @@ import React, { useState } from 'react';
 import { Sidebar } from './Sidebar';
 import { AppHeader } from './AppHeader';
 import { AddPearlModal } from '../../../notes/components/AddPearlModal';
+import { DatabaseStatsModal } from '../modals/DatabaseStatsModal';
 import { DashboardProvider, useDashboard } from '../../DashboardContext';
 import { ReefProvider, useReef } from '../../../notes/ReefContext';
 import { SettingsProvider, useSettings } from '../../../settings/SettingsContext';
@@ -32,6 +33,7 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
   const { activeTab, setActiveTab } = useSettings();
   const location = useLocation();
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const [isDatabaseOpen, setIsDatabaseOpen] = useState(false);
 
   const isOnSettings = location.pathname === '/settings';
 
@@ -69,7 +71,12 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
           />
 
           <main className="flex-1 flex flex-col min-w-0">
-            {!isOnSettings && <AppHeader onAddPearl={openAddPearl} />}
+            {!isOnSettings && (
+              <AppHeader 
+                onAddPearl={openAddPearl} 
+                onOpenDatabase={() => setIsDatabaseOpen(true)}
+              />
+            )}
             <div className="flex-1 overflow-auto">
               {children}
             </div>
@@ -83,6 +90,11 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
         onSuccess={handlePearlSuccess}
         onAutosave={handlePearlUpdate}
         editNote={editingNote || undefined}
+      />
+
+      <DatabaseStatsModal
+        isOpen={isDatabaseOpen}
+        onClose={() => setIsDatabaseOpen(false)}
       />
     </>
   );

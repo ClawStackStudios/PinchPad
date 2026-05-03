@@ -19,9 +19,10 @@ function cn(...inputs: ClassValue[]) {
 
 interface AppHeaderProps {
   onAddPearl?: (editNote?: any) => void;
+  onOpenDatabase?: () => void;
 }
 
-export function AppHeader({ onAddPearl }: AppHeaderProps) {
+export function AppHeader({ onAddPearl, onOpenDatabase }: AppHeaderProps) {
   const { lobster, clawOut } = useAuth();
   const navigate = useNavigate();
 
@@ -49,6 +50,7 @@ export function AppHeader({ onAddPearl }: AppHeaderProps) {
         {/* Action Group */}
         <div className="flex items-center gap-2">
           <button 
+            onClick={onOpenDatabase}
             className="inline-flex items-center justify-center gap-2 whitespace-nowrap font-medium transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-amber-500 disabled:pointer-events-none disabled:opacity-50 h-8 rounded-md px-3 text-xs text-amber-600 dark:text-amber-400 border border-amber-500 dark:border-amber-500/60 hover:bg-amber-50 dark:hover:bg-amber-900/20"
           >
             <Database className="w-4 h-4 mr-1" />
