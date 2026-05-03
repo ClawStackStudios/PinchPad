@@ -1,5 +1,6 @@
 import { apiFetch } from './apiFetch';
-export { getApiBaseUrl } from '../config/apiConfig';
+import { getApiBaseUrl } from '../config/apiConfig';
+export { getApiBaseUrl };
 
 async function parseErrorResponse(response: Response, endpoint: string, method: string): Promise<never> {
   let errorMsg = `${method} ${endpoint} failed: ${response.status} ${response.statusText}`;
