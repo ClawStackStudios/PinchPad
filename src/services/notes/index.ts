@@ -7,6 +7,7 @@
  */
 
 import { restAdapter, getApiBaseUrl } from '../../shared/lib/api';
+import { readSession } from '../auth';
 import { generateUUID } from '../../shared/lib/crypto';
 
 console.log('[CrustAgent] 🦞 Scuttling foundational imports for noteService...');
@@ -110,7 +111,7 @@ export const noteService = {
     formData.append('photo', file);
     formData.append('pearlId', pearlId);
 
-    const token = localStorage.getItem('cc_api_token');
+    const token = localStorage.getItem('pp_api_token');
     const response = await fetch(`${getApiBaseUrl()}/api/photos/upload`, {
       method: 'POST',
       headers: { 'Authorization': `Bearer ${token}` },
@@ -128,6 +129,30 @@ export const noteService = {
 
   async deletePhoto(photoId: string): Promise<void> {
     await restAdapter.DELETE(`/api/photos/${photoId}`);
+  },
+
+  async exportNotes(ids: string[], format: string): Promise<void> {
+    const session = readSession();
+    const token = session?.token;
+    if (!token) throw new Error('Authentication required');
+
+    const baseUrl = getApiBaseUrl();
+    const idsQuery = ids.length > 0 ? `&ids=${ids.join(',')}` : '';
+    const response = await fetch(`${baseUrl}/api/notes/export?format=${format}${idsQuery}`, {
+      headers: { 'Authorization': `Bearer ${token}` }
+    });
+
+    if (!response.ok) throw new Error('Export failed');
+
+    const blob = await response.blob();
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `pinchpad-export-${format}-${new Date().toISOString().slice(0, 10)}.zip`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
   }
 };
 

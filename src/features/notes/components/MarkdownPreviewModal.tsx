@@ -1,5 +1,4 @@
-import React from 'react';
-import { X, Eye } from 'lucide-react';
+import { X, Eye, Image, FileText } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import remarkMath from 'remark-math';
 import rehypeKatex from 'rehype-katex';
@@ -7,6 +6,7 @@ import remarkGfm from 'remark-gfm';
 import 'katex/dist/katex.min.css';
 import { clsx, type ClassValue } from 'clsx';
 import { twMerge } from 'tailwind-merge';
+import { PearlPhoto } from '../../../services/notes';
 
 function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
@@ -17,10 +17,17 @@ interface MarkdownPreviewModalProps {
   onClose: () => void;
   title: string;
   content: string;
+  photos?: PearlPhoto[];
 }
 
-export function MarkdownPreviewModal({ isOpen, onClose, title, content }: MarkdownPreviewModalProps) {
+export function MarkdownPreviewModal({ isOpen, onClose, title, content, photos = [] }: MarkdownPreviewModalProps) {
   if (!isOpen) return null;
+
+  // Resolve Jewel Markers [*pearl-jewel*](UUID) to a format we can intercept
+  const processedContent = content.replace(
+    /\[\*pearl-jewel\*\]\(([^)]+)\)/g,
+    (_, id) => `![JEWEL_MARKER](${id})`
+  );
 
   return (
     <div
@@ -58,8 +65,32 @@ export function MarkdownPreviewModal({ isOpen, onClose, title, content }: Markdo
             <ReactMarkdown
               remarkPlugins={[remarkMath, remarkGfm]}
               rehypePlugins={[rehypeKatex]}
+              components={{
+                img: ({ src, alt }) => {
+                  if (alt === 'JEWEL_MARKER') {
+                    const photo = photos.find(p => p.id === src);
+                    return (
+                      <div className="bg-amber-50 dark:bg-amber-900/20 border-2 border-amber-500/40 rounded-xl p-4 my-6 flex items-center gap-4 shadow-sm">
+                        <div className="p-2.5 bg-amber-500/20 rounded-lg border border-amber-500/30">
+                          <Image className="w-5 h-5 text-amber-600 dark:text-amber-400" />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <div className="text-[10px] font-black text-amber-600/80 dark:text-amber-500/80 uppercase tracking-[0.2em] mb-0.5">Sovereign Jewel</div>
+                          <div className="text-sm font-bold text-slate-800 dark:text-slate-200 truncate">
+                            {photo?.filename || `Jewel: ${src?.slice(0,8)}...`}
+                          </div>
+                        </div>
+                        <div className="hidden sm:block text-[10px] font-bold px-2 py-1 bg-amber-500 text-white rounded-md uppercase tracking-wider">
+                          Marker
+                        </div>
+                      </div>
+                    );
+                  }
+                  return <img src={src} alt={alt} className="max-w-full rounded-xl" />;
+                }
+              }}
             >
-              {content || '*No content provided*'}
+              {processedContent || '*No content provided*'}
             </ReactMarkdown>
           </div>
         </div>

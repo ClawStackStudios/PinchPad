@@ -5,13 +5,13 @@ import { generateUUID, generateHumanKey, hashToken, validateIdentityFile } from 
 console.log('[CrustAgent] 🦞 Scuttling foundational imports for authService...');
 
 const SESSION_KEYS = {
-  token: 'cc_api_token',
-  username: 'cc_username',
-  uuid: 'cc_user_uuid',
-  displayName: 'cc_display_name'
+  token: 'pp_api_token',
+  username: 'pp_username',
+  uuid: 'pp_user_uuid',
+  displayName: 'pp_display_name'
 } as const;
 
-const EXPIRY_KEY = 'cc_session_expiry';
+const EXPIRY_KEY = 'pp_session_expiry';
 
 /**
  * Reads the session from localStorage and validates expiry.

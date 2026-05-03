@@ -1,14 +1,17 @@
 import React, { useState } from 'react';
 import {
   User, Palette, Shield, Database, Upload, Save, Download,
-  Sun, Moon, Monitor, List, LayoutGrid, FileText, FileSpreadsheet,
-  CheckCircle,
+  Sun, Moon, Monitor, List, LayoutGrid, FileText,
+  CheckCircle, Archive, Package,
 } from 'lucide-react';
 import { useAuth } from '../auth/AuthContext';
+import { readSession } from '../../services/auth';
+import { getApiBaseUrl } from '../../shared/lib/api';
 import { useViewTransitionTheme } from '../../shared/theme/ThemeToggle';
 import { useSettings } from './SettingsContext';
 import { LobsterKeysTab } from './components/LobsterKeysTab';
 import { LobsterImportModal } from './components/LobsterImportModal';
+import { ExportModal } from '../dashboard/components/modals/ExportModal';
 import { clsx, type ClassValue } from 'clsx';
 import { twMerge } from 'tailwind-merge';
 
@@ -21,6 +24,8 @@ export function Settings() {
   const { lobster } = useAuth();
   const { themeSetting, moltTheme } = useViewTransitionTheme();
   const [lobsterImportOpen, setLobsterImportOpen] = useState(false);
+  const [exportModalOpen, setExportModalOpen] = useState(false);
+  const [exportFormat, setExportFormat] = useState('html');
 
   // Set page title
   React.useEffect(() => {
@@ -76,28 +81,10 @@ export function Settings() {
   };
 
   // ── Export Real ────────────────────────────────────────────────────
-  const exportData = async (format: string) => {
-    try {
-      const token = localStorage.getItem('cc_api_token');
-      const response = await fetch(`${import.meta.env.VITE_API_URL || ''}/api/notes/export?format=${format}`, {
-        headers: { 'Authorization': `Bearer ${token}` }
-      });
-
-      if (!response.ok) throw new Error('Export failed');
-
-      const blob = await response.blob();
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = `pinchpad-export-${new Date().toISOString().split('T')[0]}.zip`;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      URL.revokeObjectURL(url);
-    } catch (err) {
-      console.error('Export failed:', err);
-      alert('Failed to export pearls. Please try again.');
-    }
+  // ── Export Trigger ────────────────────────────────────────────────
+  const openExportWizard = (format: string) => {
+    setExportFormat(format);
+    setExportModalOpen(true);
   };
 
   // ── Import Mock ────────────────────────────────────────────────────
@@ -416,33 +403,26 @@ export function Settings() {
                 </div>
 
                 {/* Export */}
-                <div className="bg-white dark:bg-slate-900 rounded-xl border-2 border-amber-500/30 dark:border-amber-500/50 shadow-sm transition-colors">
-                  <div className="p-6 border-b border-slate-200 dark:border-slate-800">
-                    <h3 className="text-lg font-semibold leading-none tracking-tight text-amber-600 dark:text-amber-400 mb-1.5">Export Pearls</h3>
-                    <p className="text-sm text-slate-500 dark:text-slate-400">Download your Pearls in various formats for backup or migration</p>
-                  </div>
-                  <div className="p-6">
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                      {[
-                        { format: 'json', label: 'JSON', desc: 'Full backup with metadata', icon: Database },
-                        { format: 'md', label: 'Markdown', desc: 'Plain text for portability', icon: FileText },
-                        { format: 'csv', label: 'CSV', desc: 'Spreadsheet compatible', icon: FileSpreadsheet },
-                      ].map(({ format, label, desc, icon: Icon }) => (
-                        <button
-                          key={format}
-                          onClick={() => exportData(format)}
-                          className="flex flex-col items-center gap-3 p-6 rounded-lg border-2 border-slate-200 dark:border-slate-800 hover:border-amber-500 dark:hover:border-amber-500 hover:bg-amber-50 dark:hover:bg-amber-950/30 transition-all text-left w-full h-full bg-transparent"
-                        >
-                          <div className="w-full flex justify-start">
-                            <Icon className="w-8 h-8 text-amber-600" />
-                          </div>
-                          <div className="w-full">
-                            <div className="font-medium text-slate-900 dark:text-slate-100">{label}</div>
-                            <div className="text-xs text-slate-500 dark:text-slate-400 mt-1">{desc}</div>
-                          </div>
-                        </button>
-                      ))}
+                <div className="bg-white dark:bg-slate-900 rounded-xl border-2 border-slate-200 dark:border-slate-800 shadow-sm transition-colors overflow-hidden">
+                  <div className="p-8 flex flex-col md:flex-row items-center justify-between gap-6 bg-gradient-to-r from-amber-500/5 to-transparent">
+                    <div className="flex items-center gap-5">
+                      <div className="p-4 bg-amber-100 dark:bg-amber-900/30 rounded-2xl border border-amber-200 dark:border-amber-800/50">
+                        <Archive className="w-8 h-8 text-amber-600 dark:text-amber-400" />
+                      </div>
+                      <div>
+                        <h3 className="text-xl font-bold text-slate-900 dark:text-slate-100 mb-1">Export Your Habitat</h3>
+                        <p className="text-sm text-slate-500 dark:text-slate-400 max-w-md">
+                          Package your collection of Pearls into a hardened archive. Support for MD, Styled HTML, and JSON with automated Jewel handling.
+                        </p>
+                      </div>
                     </div>
+                    <button
+                      onClick={() => openExportWizard('html')}
+                      className="w-full md:w-auto flex items-center justify-center gap-3 px-8 py-4 bg-amber-600 hover:bg-amber-700 text-white font-black rounded-xl shadow-xl shadow-amber-600/30 transition-all active:scale-95"
+                    >
+                      <Package className="w-5 h-5" />
+                      Hatch Exports
+                    </button>
                   </div>
                 </div>
 
@@ -470,6 +450,11 @@ export function Settings() {
       <LobsterImportModal
         isOpen={lobsterImportOpen}
         onClose={() => setLobsterImportOpen(false)}
+      />
+      <ExportModal
+        isOpen={exportModalOpen}
+        onClose={() => setExportModalOpen(false)}
+        initialFormat={exportFormat}
       />
     </div>
   );

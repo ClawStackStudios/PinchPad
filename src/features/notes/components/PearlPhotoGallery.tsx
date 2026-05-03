@@ -14,9 +14,8 @@ export function PearlPhotoGallery({ photos, onUpload, onDelete, isUploading, dis
   const [copiedId, setCopiedId] = useState<string | null>(null);
 
   const handleCopyLink = (photo: PearlPhoto) => {
-    const fullUrl = `${window.location.origin}${photo.url}`;
-    const mdLink = `![${photo.filename}](${fullUrl})`;
-    navigator.clipboard.writeText(mdLink);
+    const marker = `[*pearl-jewel*](${photo.id})`;
+    navigator.clipboard.writeText(marker);
     setCopiedId(photo.id);
     setTimeout(() => setCopiedId(null), 2000);
   };

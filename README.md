@@ -56,9 +56,9 @@
 
 - 🔒 **ClawKeys©™** — login with a decentralized identity key instead of passwords. Your `hu-` key is your passport.
 - 🐚 **ShellCryption©™** — zero-knowledge AES-256-GCM encryption for all notes at rest. Only you can decrypt your thoughts.
-- 🦞 **LobsterKeys©™** — issue granular, revocable API keys to AI agents. Let your Lobsters scuttle the reef securely.
-- 🤖 **Gemini AI Integration** — native agent notepad with Google Gemini. Ask questions, get answers, save insights.
-- 🗄️ **SQLite Bedrock** — a fast, reliable, zero-dependency backend with WAL mode and cascade-delete integrity.
+- 🦞 **LobsterKeys©™** — Granular, revocable API keys for autonomous agents.
+- 🗄️ **Secure Reef** — Persistent SQLite storage with multi-cipher encryption.
+- 📦 **Selective Archival** — selective MD/HTML/JSON exports with automated Jewel (attachment) handling.
 - 🌓 **MoltTheme** — View Transition-based theme engine. Watching the world shift colors.
 
 ---
@@ -146,7 +146,6 @@ npm install
 PORT=8282                    # Server listen port (single container)
 NODE_ENV=production          # production or development
 CORS_ORIGIN=http://yourdomain.com  # restrict CORS origin, or leave unset for open LAN
-GEMINI_API_KEY=your-key-here # For AI agent integration
 ```
 
 **Option A: Production (Pull from GHCR) ⚓**

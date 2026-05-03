@@ -13,6 +13,7 @@ This document serves as the MAIN locus for high-level **CrustCode©™** pattern
 - **PinchKeys©™ Authorization**: Client-side cryptography happens strictly within browser contexts. Do not offload `hu-` key generation to the server.
 - **ShellCryption©™ Integrity**: AES-256-GCM is non-negotiable for `title` and `content` fields. Keys (`hk-`) must never be transmitted over the wire un-hashed.
 - **SQLite Transactions**: Database actions must avoid race conditions. Given Node.js async nature and `better-sqlite3`'s synchronous API, ensure thread-safe wrapping where necessary.
+- **Jewel Marker Protocol**: Attachments must be referenced using the `[*pearl-jewel*](UUID)` syntax. Absolute API URLs in content are legacy and should be scuttled.
 - **Port Parity**: Maintain 8282 (UI) and 8383 (API) separation. Any change to these ports must be reflected in the Scuttle scripts and Vite proxy config.
 - **Security Mirror**: CORS and Helmet logic MUST remain synchronized with ClawChives.
 

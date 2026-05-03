@@ -1,5 +1,6 @@
 import { Router, Response } from 'express';
 import crypto from 'crypto';
+import { marked } from 'marked';
 import db from '../database/index';
 import JSZip from 'jszip';
 import { requireAuth, requirePermission, type AuthRequest } from '../middleware/auth';
@@ -302,7 +303,16 @@ router.post('/bulk', requireAuth, requirePermission('canWrite'), (req: AuthReque
  */
 router.get('/export', requireAuth, requirePermission('canRead'), async (req: AuthRequest, res: Response) => {
   const format = req.query.format || 'json';
-  const reef = db.prepare('SELECT * FROM notes WHERE user_uuid = ?').all(req.userUuid) as any[];
+  const idsParam = req.query.ids as string | undefined;
+  const ids = idsParam ? idsParam.split(',') : null;
+
+  let reef: any[];
+  if (ids) {
+    const placeholders = ids.map(() => '?').join(',');
+    reef = db.prepare(`SELECT * FROM notes WHERE user_uuid = ? AND id IN (${placeholders})`).all(req.userUuid, ...ids) as any[];
+  } else {
+    reef = db.prepare('SELECT * FROM notes WHERE user_uuid = ?').all(req.userUuid) as any[];
+  }
 
   if (reef.length === 0) {
     return res.status(404).json({ error: 'No pearls found to export' });
@@ -310,45 +320,280 @@ router.get('/export', requireAuth, requirePermission('canRead'), async (req: Aut
 
   try {
     const zip = new JSZip();
-    const photosFolder = zip.folder('photos');
-    let hasPhotos = false;
+    const jewelsFolder = zip.folder('jewels');
+    
+    // Map of photo ID to filename for link replacement
+    const photoMap = new Map<string, { filename: string, data: Buffer }>();
+    const allPhotos = db.prepare('SELECT id, filename, data FROM pearl_photos WHERE user_uuid = ?').all(req.userUuid) as any[];
+    allPhotos.forEach(p => photoMap.set(p.id, p));
 
-    for (const polyP of reef) {
-      const photos = db.prepare('SELECT id, filename, data, mime_type FROM pearl_photos WHERE pearl_id = ?').all(polyP.id) as any[];
+    const markerRegex = /\[\*pearl-jewel\*\]\(([^)]+)\)/g;
+    const legacyUrlRegex = /\/api\/photos\/([a-f0-9-]{36})/g;
 
-      let polyPContent = polyP.content;
-      if (photos.length > 0) {
-        hasPhotos = true;
-        for (const photo of photos) {
-          photosFolder?.file(`${photo.id}-${photo.filename}`, photo.data);
-          const remoteUrl = `/api/photos/${photo.id}`;
-          const localPath = `photos/${photo.id}-${photo.filename}`;
-          polyPContent = polyPContent.split(remoteUrl).join(localPath);
+    const processedNotes = reef.map(polyP => {
+      let content = polyP.content;
+      const usedJewelIds = new Set<string>();
+
+      // 1. Resolve new markers [*pearl-jewel*](UUID)
+      content = content.replace(markerRegex, (match, id) => {
+        const photo = photoMap.get(id);
+        if (photo) {
+          usedJewelIds.add(id);
+          const relativePath = `jewels/${photo.filename}`;
+          return format === 'html' ? `<img src="${relativePath}" alt="${photo.filename}" style="max-width:100%; border-radius:12px; margin:20px 0; border:1px solid rgba(255,193,116,0.3);">` : `![${photo.filename}](${relativePath})`;
         }
-      }
+        return match; // Fallback to marker if not found
+      });
 
+      // 2. Resolve legacy absolute URLs (for backward compatibility during transition)
+      content = content.replace(legacyUrlRegex, (match, id) => {
+        const photo = photoMap.get(id);
+        if (photo) {
+          usedJewelIds.add(id);
+          const relativePath = `jewels/${photo.filename}`;
+          return relativePath;
+        }
+        return match;
+      });
+
+      // Ensure used jewels are added to zip
+      usedJewelIds.forEach(id => {
+        const photo = photoMap.get(id);
+        if (photo) {
+          jewelsFolder?.file(photo.filename, photo.data);
+        }
+      });
+
+      return { ...polyP, content };
+    });
+
+    // Generate specific files
+    for (const polyP of processedNotes) {
       if (format === 'md') {
         const header = `# ${polyP.title}\n\n**Created:** ${polyP.created_at}\n**Starred:** ${!!polyP.starred}\n\n---\n\n`;
-        zip.file(`${polyP.id}-${polyP.title.replace(/[^a-z0-9]/gi, '_')}.md`, header + polyPContent);
+        zip.file(`${polyP.title.replace(/[^a-z0-9]/gi, '_')}-${polyP.id.slice(0, 8)}.md`, header + polyP.content);
+      }
+
+      if (format === 'html') {
+        const htmlContent = `
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>${polyP.title} | PinchPad©™</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --surface: #0f172a;
+            --on-surface: #f1f5f9;
+            --primary: #d97706;
+            --primary-light: #fbbf24;
+            --outline: #64748b;
+            --border: rgba(217, 119, 6, 0.2);
+        }
+        
+        * { box-sizing: border-box; }
+        
+        body {
+            background-color: var(--surface);
+            color: var(--on-surface);
+            font-family: 'Inter', system-ui, -apple-system, sans-serif;
+            line-height: 1.7;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 100vh;
+        }
+
+        .document-wrapper {
+            width: 100%;
+            max-width: 900px;
+            padding: 100px 40px;
+            flex-grow: 1;
+        }
+
+        .header {
+            margin-bottom: 48px;
+            padding-bottom: 32px;
+            border-bottom: 1px solid var(--border);
+        }
+
+        h1 {
+            color: var(--primary);
+            font-size: 42px;
+            font-weight: 800;
+            margin: 0;
+            letter-spacing: -0.03em;
+            line-height: 1.1;
+        }
+
+        .meta {
+            display: flex;
+            gap: 16px;
+            margin-top: 16px;
+            font-size: 14px;
+            color: var(--outline);
+            font-weight: 500;
+        }
+
+        .content {
+            font-size: 18px;
+            color: var(--on-surface);
+            overflow-wrap: break-word;
+        }
+
+        .content h1, .content h2, .content h3 { color: var(--primary); margin-top: 2em; margin-bottom: 0.5em; }
+        .content h2 { font-size: 30px; }
+        .content h3 { font-size: 24px; }
+        
+        .content p { margin-bottom: 1.6em; }
+
+        .content pre {
+            background: #020617;
+            padding: 24px;
+            border-radius: 16px;
+            overflow-x: auto;
+            border: 1px solid var(--border);
+            margin: 32px 0;
+        }
+
+        .content code {
+            font-family: 'ui-monospace', 'Cascadia Code', monospace;
+            background: rgba(217, 119, 6, 0.1);
+            color: var(--primary-light);
+            padding: 2px 6px;
+            border-radius: 6px;
+            font-size: 0.9em;
+        }
+        
+        .content pre code {
+            background: transparent;
+            padding: 0;
+            color: #e2e8f0;
+        }
+
+        .content blockquote {
+            border-left: 4px solid var(--primary);
+            padding: 8px 0 8px 24px;
+            margin: 32px 0;
+            font-style: italic;
+            color: #94a3b8;
+            background: rgba(217, 119, 6, 0.03);
+        }
+
+        .content img {
+            max-width: 100%;
+            height: auto;
+            border-radius: 16px;
+            margin: 32px 0;
+            border: 1px solid var(--border);
+        }
+
+        .page-footer {
+            width: 100%;
+            max-width: 900px;
+            padding: 40px;
+            display: grid;
+            grid-template-columns: 1fr auto 1fr;
+            align-items: center;
+            border-top: 1px solid var(--border);
+            margin-top: 80px;
+            font-size: 13px;
+            color: var(--outline);
+            font-weight: 500;
+        }
+
+        .footer-left { text-align: left; }
+        .footer-center { text-align: center; font-style: italic; }
+        .footer-right { text-align: right; display: flex; justify-content: flex-end; align-items: center; gap: 8px; }
+
+        .github-btn {
+            color: var(--outline);
+            transition: color 0.2s, transform 0.2s;
+            display: flex;
+            align-items: center;
+        }
+        
+        .github-btn:hover {
+            color: var(--primary);
+            transform: scale(1.1);
+        }
+
+        @media (max-width: 650px) {
+            .document-wrapper { padding: 40px 20px; }
+            .page-footer { grid-template-columns: 1fr; gap: 16px; text-align: center; }
+            .footer-left, .footer-center, .footer-right { text-align: center; justify-content: center; }
+            h1 { font-size: 32px; }
+        }
+    </style>
+</head>
+<body>
+    <div class="document-wrapper">
+        <header class="header">
+            <h1>${polyP.title}</h1>
+            <div class="meta">
+                <span>PinchPad©™ Burrow</span>
+                <span>•</span>
+                <span>${new Date(polyP.created_at).toLocaleDateString(undefined, { dateStyle: 'long' })}</span>
+            </div>
+        </header>
+        
+        <main class="content">
+            ${marked.parse(polyP.content)}
+        </main>
+    </div>
+
+    <footer class="page-footer">
+        <div class="footer-left">PinchPad©™ 2026</div>
+        <div class="footer-center">PinchPad Pearl: ${polyP.title}</div>
+        <div class="footer-right">
+            <a href="https://github.com/ClawStackStudios/PinchPad" 
+               class="github-btn" 
+               title="Star Us On GitHub!"
+               target="_blank" 
+               rel="noopener noreferrer">
+                <svg viewBox="0 0 24 24" width="22" height="22" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.87a3.37 3.37 0 0 0-.94-2.61c3.14-.35 6.44-1.54 6.44-7A5.44 5.44 0 0 0 20 4.77 5.07 5.07 0 0 0 19.91 1S18.73.65 16 2.48a13.38 13.38 0 0 0-7 0C6.27.65 5.09 1 5.09 1A5.07 5.07 0 0 0 5 4.77a5.44 5.44 0 0 0-1.5 3.78c0 5.42 3.3 6.61 6.44 7A3.37 3.37 0 0 0 9 18.13V22"></path>
+                </svg>
+            </a>
+        </div>
+    </footer>
+</body>
+</html>
+        `;
+        zip.file(`${polyP.title.replace(/[^a-z0-9]/gi, '_')}-${polyP.id.slice(0, 8)}.html`, htmlContent);
       }
     }
 
+    // Add metadata
+    zip.file('pinchpad_metadata.json', JSON.stringify({
+      brand: 'ClawStack Studios©™',
+      application: 'PinchPad©™',
+      version: '1.0.0',
+      exported_at: new Date().toISOString(),
+      pearl_count: processedNotes.length,
+      format,
+      export_id: crypto.randomUUID()
+    }, null, 2));
+
+    // Full JSON backup option
     if (format === 'json') {
-      zip.file('pearls-export.json', JSON.stringify({
-        metadata: { brand: 'ClawStack Studios©™', application: 'PinchPad©™', exported_at: new Date().toISOString() },
-        data: reef
-      }, null, 2));
+      zip.file('pearls-data.json', JSON.stringify(processedNotes, null, 2));
     }
 
     const binaryPearl = await zip.generateAsync({ type: 'nodebuffer' });
     res.setHeader('Content-Type', 'application/zip');
-    res.setHeader('Content-Disposition', 'attachment; filename="pinchpad-burrow-export.zip"');
+    res.setHeader('Content-Disposition', `attachment; filename="pinchpad-export-${format}-${new Date().toISOString().slice(0,10)}.zip"`);
     res.send(binaryPearl);
-  } catch (isCracked: any) {
-    console.error('[Export] ❌ Shell failure:', isCracked.message);
-    res.status(500).json({ error: 'Failed to generate export' });
+  } catch (err) {
+    console.error('[Export] Error hatching archive:', err);
+    res.status(500).json({ error: 'Failed to hatch export archive' });
   }
 });
 
 export default router;
-

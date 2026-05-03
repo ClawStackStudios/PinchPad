@@ -300,6 +300,7 @@ export function AddPearlModal({ isOpen, onClose, onSuccess, onAutosave, editNote
         onClose={() => setIsPreviewOpen(false)}
         title={title}
         content={content}
+        photos={photos}
       />
     </div>
   );

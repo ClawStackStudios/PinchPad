@@ -18,6 +18,7 @@ PinchPad is a sovereign lobster pot designed for the modern web. It protects ide
 - **🦞 LobsterKeys©™**: Granular, revocable API keys (`lb-`) for Agent access.
 - **🗄️ Secure Reef**: Persistent SQLite storage with Docker volume binding (`./data/clawstack.db`).
 - **🌓 MoltTheme**: High-performance View Transition theme engine.
+- **📦 Selective Archival Suite**: High-fidelity MD/HTML/JSON exports with automated Jewel (attachment) handling and UUID marker protocol.
 
 ### 🏗️ Architecture Stack
 - **Frontend**: React 19, Vite, TailwindCSS 4, Framer Motion

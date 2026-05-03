@@ -43,7 +43,6 @@ npm install
 
 # 3. Copy the environment config
 cp .env.example .env.local
-# Add your GEMINI_API_KEY to .env.local
 
 # 4. Start the frontend and backend servers together
 npm run scuttle:dev-start
