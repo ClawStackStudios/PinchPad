@@ -19,7 +19,7 @@ if (!fs.existsSync(DATA_DIR) && process.env.NODE_ENV !== 'test') {
   fs.mkdirSync(DATA_DIR, { recursive: true, mode: 0o700 });
 }
 
-const dbPath = process.env.NODE_ENV === 'test' ? ':memory:' : path.join(DATA_DIR, 'clawstack.db');
+const dbPath = process.env.NODE_ENV === 'test' ? ':memory:' : path.join(DATA_DIR, 'db.sqlite');
 
 // Set restrictive umask for DB file creation (0o077 = owner only)
 const originalUmask = process.umask(0o077);

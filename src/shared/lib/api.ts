@@ -1,9 +1,5 @@
 import { apiFetch } from './apiFetch';
-
-export function getApiBaseUrl(): string {
-  // @ts-ignore
-  return import.meta.env.VITE_API_URL || '';
-}
+export { getApiBaseUrl } from '../config/apiConfig';
 
 async function parseErrorResponse(response: Response, endpoint: string, method: string): Promise<never> {
   let errorMsg = `${method} ${endpoint} failed: ${response.status} ${response.statusText}`;

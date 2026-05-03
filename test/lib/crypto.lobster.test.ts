@@ -3,28 +3,28 @@
  * @vitest-environment jsdom
  */
 import { describe, it, expect } from 'vitest';
-import { generateBase62, hashToken } from '../../src/shared/lib/crypto';
+import { generateRandomString, hashToken } from '../../src/shared/lib/crypto';
 
-describe('generateBase62', () => {
+describe('generateRandomString', () => {
   it('generates string of correct length', () => {
-    const key32 = generateBase62(32);
+    const key32 = generateRandomString(32);
     expect(key32).toHaveLength(32);
 
-    const key64 = generateBase62(64);
+    const key64 = generateRandomString(64);
     expect(key64).toHaveLength(64);
   });
 
   it('only uses base62 characters', () => {
     const charset = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
-    const key = generateBase62(64);
+    const key = generateRandomString(64);
     for (const char of key) {
       expect(charset).toContain(char);
     }
   });
 
   it('generates different strings on repeated calls (randomness)', () => {
-    const key1 = generateBase62(32);
-    const key2 = generateBase62(32);
+    const key1 = generateRandomString(32);
+    const key2 = generateRandomString(32);
     expect(key1).not.toBe(key2);
   });
 });

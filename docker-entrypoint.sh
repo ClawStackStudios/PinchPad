@@ -1,37 +1,40 @@
 #!/bin/sh
 set -e
 
-# Read PUID/PGID from environment, default to 1000 if not set
-PUID=${PUID:-1000}
-PGID=${PGID:-1000}
+echo "🦞 [PinchPad] Initializing Container..."
 
-# If PGID 1000 already exists (node:22-slim has node user/group at 1000), use existing group
-# This prevents "addgroup: The GID `1000' is already in use" error
-if getent group "$PGID" > /dev/null 2>&1; then
-  EXISTING_GROUP=$(getent group "$PGID" | cut -d: -f1)
+# PUID/PGID support: Match user ID to host user
+TARGET_UID=${PUID:-1000}
+TARGET_GID=${PGID:-1000}
 
-  # Create pinchpad user with existing group if pinchpad user doesn't exist
-  if ! getent passwd pinchpad > /dev/null 2>&1; then
-    adduser --disabled-password --no-create-home --gecos "" \
-      --uid "$PUID" --ingroup "$EXISTING_GROUP" pinchpad 2>/dev/null || true
-  fi
+# Modify 'node' user if running as root and IDs differ
+if [ "$(id -u)" = "0" ] && [ "$TARGET_UID" != "1000" ]; then
+    echo "🔧 [PinchPad] Updating 'node' user to UID: $TARGET_UID / GID: $TARGET_GID"
+    
+    # Check if group exists
+    if getent group "$TARGET_GID" >/dev/null; then
+        groupmod -o -g "$TARGET_GID" node || true
+    else
+        groupmod -g "$TARGET_GID" node
+    fi
+
+    usermod -o -u "$TARGET_UID" -g "$TARGET_GID" node
+fi
+
+# Ensure storage directory exists and is writable by the target user
+if [ -d "$DATA_DIR" ]; then
+    echo "📦 [PinchPad] Fixing permissions for $DATA_DIR..."
+    chown -R "$TARGET_UID:$TARGET_GID" "$DATA_DIR"
+elif [ -n "$DATA_DIR" ]; then
+    echo "📦 [PinchPad] Creating directory $DATA_DIR..."
+    mkdir -p "$DATA_DIR"
+    chown -R "$TARGET_UID:$TARGET_GID" "$DATA_DIR"
+fi
+
+# Switch to 'node' user if running as root
+if [ "$(id -u)" = "0" ]; then
+    echo "🔒 [PinchPad] Dropping privileges to user 'node' (UID: $(id -u node))..."
+    exec su-exec node "$@"
 else
-  # GID doesn't exist, create new group and user
-  if ! getent group pinchpad > /dev/null 2>&1; then
-    addgroup --gid "$PGID" pinchpad
-  fi
-
-  if ! getent passwd pinchpad > /dev/null 2>&1; then
-    adduser --disabled-password --no-create-home --gecos "" \
-      --uid "$PUID" --ingroup pinchpad pinchpad
-  fi
+    exec "$@"
 fi
-
-# Create /app/data directory if it doesn't exist and fix ownership
-if [ ! -d /app/data ]; then
-  mkdir -p /app/data
-fi
-chown -R "$PUID:$PGID" /app/data
-
-# Drop privileges and execute the server as PUID:PGID
-exec gosu "$PUID:$PGID" "$@"

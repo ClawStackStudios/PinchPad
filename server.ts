@@ -3,13 +3,9 @@ import express from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
 import path from 'path';
-import { readFileSync } from 'fs';
-import { createServer as createHttpsServer } from 'https';
 
 import { getCorsConfig } from './src/shared/config/corsConfig';
-import { generateSelfSignedCert, getCertPaths } from './src/server/ssl/generateCert';
 import { errorHandler } from './src/server/middleware/errorHandler';
-import { httpsRedirect } from './src/server/middleware/httpsRedirect';
 import { scheduleMoltCleanup } from './src/server/utils/tokenExpiry';
 import { createAuditLogger } from './src/server/utils/auditLogger';
 import db from './src/server/database/index';
@@ -24,129 +20,103 @@ import photosRoutes from './src/server/routes/photos';
 import potsRoutes from './src/server/routes/pots';
 import { apiLimiter } from './src/server/middleware/rateLimiter';
 
-async function startServer() {
-  const app = express();
-  const PORT = process.env.PORT ? parseInt(process.env.PORT, 10) : 8282;
+const PORT = parseInt(process.env.PORT ?? '8282', 10);
+const app = express();
 
-  // ─── Startup tasks ───────────────────────────────────────────────────────────
-  scheduleMoltCleanup(db);
-  audit.cleanup(90); // Purge logs older than 90 days
+// ─── Startup tasks ───────────────────────────────────────────────────────────
+scheduleMoltCleanup(db);
+audit.cleanup(90); // ⚡ Clean expired audit logs on startup
+setInterval(() => audit.cleanup(90), 24 * 60 * 60 * 1000); // Daily cleanup
 
-  // ─── Trust proxy ─────────────────────────────────────────────────────────────
-  if (process.env.TRUST_PROXY === 'true') app.set('trust proxy', 1);
+// ─── Trust proxy ─────────────────────────────────────────────────────────────
+if (process.env.TRUST_PROXY === 'true') app.set('trust proxy', 1);
 
-  // ─── Security Middleware ──────────────────────────────────────────────────────
-  app.use(httpsRedirect);
+// ─── Security Middleware ──────────────────────────────────────────────────────
+const isProduction = process.env.NODE_ENV === 'production';
 
-  const isProduction = process.env.NODE_ENV === 'production';
-
-  app.use(helmet({
-    strictTransportSecurity: process.env.ENFORCE_HTTPS === 'true' ? undefined : false,
-    contentSecurityPolicy: {
-      directives: {
-        defaultSrc: ["'self'"],
-        scriptSrc: ["'self'", "'unsafe-inline'", "'unsafe-eval'"],
-        styleSrc: ["'self'", "'unsafe-inline'", 'https://fonts.googleapis.com'],
-        fontSrc: ["'self'", 'https://fonts.gstatic.com', 'data:'],
-        imgSrc: ["'self'", 'data:', 'https:'],
-        connectSrc: ["'self'", 'wss:', 'ws:'],
-        frameAncestors: isProduction ? ["'self'"] : ["'self'", "*"],
-        upgradeInsecureRequests: process.env.ENFORCE_HTTPS === 'true' ? [] : null,
-      },
+app.use(helmet({
+  strictTransportSecurity: process.env.ENFORCE_HTTPS === 'true' ? undefined : false,
+  contentSecurityPolicy: {
+    directives: {
+      defaultSrc: ["'self'"],
+      scriptSrc: ["'self'", "'unsafe-inline'", "'unsafe-eval'"],
+      styleSrc: ["'self'", "'unsafe-inline'", 'https://fonts.googleapis.com'],
+      fontSrc: ["'self'", 'https://fonts.gstatic.com', 'data:'],
+      imgSrc: ["'self'", 'data:', 'https:'],
+      connectSrc: ["'self'", 'wss:', 'ws:'],
+      frameAncestors: isProduction ? ["'self'"] : ["'self'", "*"],
+      upgradeInsecureRequests: process.env.ENFORCE_HTTPS === 'true' ? [] : null,
     },
-    crossOriginEmbedderPolicy: false,
-    crossOriginResourcePolicy: false,
-    crossOriginOpenerPolicy: false,
-    originAgentCluster: false,
-    frameguard: isProduction ? { action: 'sameorigin' } : false,
-  }));
+  },
+  crossOriginEmbedderPolicy: false,
+  crossOriginResourcePolicy: false,
+  crossOriginOpenerPolicy: false,
+  originAgentCluster: false,
+  frameguard: isProduction ? { action: 'sameorigin' } : false,
+}));
 
-  app.use(cors(getCorsConfig()));
-  app.use(express.json());
-  app.use('/api', apiLimiter);
+app.use(cors(getCorsConfig()));
+app.use(express.json());
+app.use('/api', apiLimiter);
 
-  // Request logger
-  app.use((req, _res, next) => {
-    console.log(`[${new Date().toISOString()}] ${req.method} ${req.path}`);
-    next();
+// Request logger
+app.use((req, _res, next) => {
+  console.log(`[${new Date().toISOString()}] ${req.method} ${req.path}`);
+  next();
+});
+
+// ─── Routes ───────────────────────────────────────────────────────────────────
+app.use('/api/auth', authRoutes);
+app.use('/api/notes', notesRoutes);
+app.use('/api/pots', potsRoutes);
+app.use('/api/agents', agentsRoutes);
+app.use('/api/lobster-session', lobsterSessionRoutes);
+app.use('/api/photos', photosRoutes);
+
+// ─── Health ───────────────────────────────────────────────────────────────────
+app.get('/api/health', (req, res) => {
+  res.json({ 
+    success: true, 
+    status: 'ok', 
+    service: 'PinchPad API',
+    mode: 'sqlite',
+    uptime: process.uptime() 
   });
+});
 
-  // ─── API Routes ───────────────────────────────────────────────────────────────
-  app.use('/api/auth', authRoutes);
-  app.use('/api/notes', notesRoutes);
-  app.use('/api/pots', potsRoutes);
-  app.use('/api/agents', agentsRoutes);
-  app.use('/api/lobster-session', lobsterSessionRoutes);
-  app.use('/api/photos', photosRoutes);
-
-  app.get('/api/health', (req, res) => {
-    res.json({ 
-      success: true, 
-      status: 'ok', 
-      service: 'PinchPad API',
-      mode: 'sqlite',
-      uptime: process.uptime() 
-    });
-  });
-
-  // ─── Static Files (Production) ────────────────────────────────────────────────
-  if (process.env.NODE_ENV === 'production') {
-    const distPath = path.join(process.cwd(), 'dist');
-    app.use(express.static(distPath, {
-      maxAge: '1y',
-      immutable: true,
-      setHeaders(res, filePath) {
-        if (filePath.endsWith('index.html')) {
-          res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
-        }
-      },
-    }));
-    
-    app.get('*', (req, res) => {
-      res.sendFile(path.join(distPath, 'index.html'));
-    });
-  }
-
-  // ─── Error Handling ───────────────────────────────────────────────────────────
-  app.use(errorHandler);
-
-  // ─── Start ────────────────────────────────────────────────────────────────────
-  const ENABLE_HTTPS = process.env.ENABLE_HTTPS === 'true';
-
-  if (ENABLE_HTTPS) {
-    generateSelfSignedCert();
-    const certs = getCertPaths();
-
-    if (certs) {
-      try {
-        const options = {
-          cert: readFileSync(certs.cert),
-          key: readFileSync(certs.key),
-        };
-
-        createHttpsServer(options, app).listen(PORT, '0.0.0.0', () => {
-          console.log(`\n🔒 PinchPad API running securely (HTTPS) on port ${PORT}`);
-          console.log(`   Health: https://localhost:${PORT}/api/health\n`);
-        });
-      } catch (err: any) {
-        console.error('❌ Failed to start HTTPS server:', err.message);
-        console.log('🔗 Falling back to HTTP...');
-        startHttp(app, PORT);
-      }
+// ─── Static Files (Production) ────────────────────────────────────────────────
+const distPath = path.join(process.cwd(), 'dist');
+app.use(express.static(distPath, {
+  maxAge: '1y',  // Default cache header for hashed assets
+  immutable: true, // Tells browsers hashed assets never change
+  setHeaders(res, filePath) {
+    if (filePath.endsWith('index.html')) {
+      // Bypass cache for index.html — always fetch fresh on new releases
+      res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+      res.setHeader('Pragma', 'no-cache');
+      res.setHeader('Expires', '0');
     } else {
-      console.error('❌ HTTPS requested but no certificates found. Falling back to HTTP.');
-      startHttp(app, PORT);
+      // Hashed assets (JS/CSS chunks) can be cached indefinitely
+      res.setHeader('Cache-Control', 'public, max-age=31536000, immutable');
     }
-  } else {
-    startHttp(app, PORT);
-  }
-}
+  },
+}));
 
-function startHttp(app: express.Express, port: number) {
-  app.listen(port, '0.0.0.0', () => {
-    console.log(`\n🦞 PinchPad API running on port ${port} (HTTP)`);
-    console.log(`   Health: http://localhost:${port}/api/health\n`);
-  });
-}
+// SPA catch-all: serve index.html for any non-API, non-asset route
+// ⚠️ Do NOT change this regex — it prevents CSS/JS from being served as index.html
+app.get(/^(?!\/api\/)(?!\/assets\/).*/, (_req, res) => {
+  res.set('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
+  res.set('Pragma', 'no-cache');
+  res.set('Expires', '0');
+  res.sendFile(path.join(distPath, 'index.html'));
+});
 
-startServer();
+// ─── 404 + Error Handler ─────────────────────────────────────────────────────
+app.use('/api', (_req, res) => res.status(404).json({ success: false, error: 'Route not found' }));
+app.use(errorHandler);
+
+// ─── Start ────────────────────────────────────────────────────────────────────
+app.listen(PORT, '0.0.0.0', () => {
+  console.log(`\n🦞 PinchPad API running on port ${PORT}`);
+  console.log(`   Health: http://localhost:${PORT}/api/health\n`);
+});

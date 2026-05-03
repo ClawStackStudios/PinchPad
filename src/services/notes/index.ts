@@ -6,22 +6,10 @@
  * Maintained by CrustAgent©™
  */
 
-import { restAdapter } from '../../shared/lib/api';
+import { restAdapter, getApiBaseUrl } from '../../shared/lib/api';
+import { generateUUID } from '../../shared/lib/crypto';
 
 console.log('[CrustAgent] 🦞 Scuttling foundational imports for noteService...');
-
-// Browser-compatible UUID v4 generator
-function generateUUID(): string {
-  if (typeof crypto.randomUUID === 'function') {
-    return crypto.randomUUID();
-  }
-  const bytes = new Uint8Array(16);
-  crypto.getRandomValues(bytes);
-  bytes[6] = (bytes[6] & 0x0f) | 0x40;
-  bytes[8] = (bytes[8] & 0x3f) | 0x80;
-  const hex = Array.from(bytes, b => b.toString(16).padStart(2, '0')).join('');
-  return `${hex.slice(0, 8)}-${hex.slice(8, 12)}-${hex.slice(12, 16)}-${hex.slice(16, 20)}-${hex.slice(20)}`;
-}
 
 export interface PearlPhoto {
   id: string;
@@ -123,7 +111,7 @@ export const noteService = {
     formData.append('pearlId', pearlId);
 
     const token = localStorage.getItem('cc_api_token');
-    const response = await fetch(`${import.meta.env.VITE_API_URL || ''}/api/photos/upload`, {
+    const response = await fetch(`${getApiBaseUrl()}/api/photos/upload`, {
       method: 'POST',
       headers: { 'Authorization': `Bearer ${token}` },
       body: formData

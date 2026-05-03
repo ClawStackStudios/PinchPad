@@ -6,11 +6,11 @@
  */
 
 import { describe, test, expect } from "vitest";
-import { generateBase62 } from "../../src/shared/lib/crypto";
+import { generateRandomString } from "../../src/shared/lib/crypto";
 import { hashToken } from "../../src/shared/lib/crypto";
 
 describe("Performance Scuttling — Memory Leak Prevention", () => {
-  test("generateBase62 runs efficiently with various lengths", () => {
+  test("generateRandomString runs efficiently with various lengths", () => {
     const lengths = [8, 16, 32, 64];
 
     lengths.forEach(length => {
@@ -18,7 +18,7 @@ describe("Performance Scuttling — Memory Leak Prevention", () => {
 
       // Generate 1000 IDs of each length
       for (let i = 0; i < 1000; i++) {
-        generateBase62(length);
+        generateRandomString(length);
       }
 
       const endTime = performance.now();
@@ -28,7 +28,7 @@ describe("Performance Scuttling — Memory Leak Prevention", () => {
       expect(duration).toBeLessThan(500);
 
       // Verify output format
-      const id = generateBase62(length);
+      const id = generateRandomString(length);
       expect(id).toHaveLength(length);
       expect(/^[A-Za-z0-9]+$/.test(id)).toBe(true);
     });

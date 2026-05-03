@@ -1,17 +1,7 @@
 import { restAdapter } from '../../shared/lib/api';
-import { generateBase62, hashToken } from '../../shared/lib/crypto';
+import { generateRandomString, generateUUID, hashToken } from '../../shared/lib/crypto';
 
 console.log('[CrustAgent] 🦞 Scuttling foundational imports for agentService...');
-
-// Browser-compatible UUID v4 generator
-function generateUUID(): string {
-  const bytes = new Uint8Array(16);
-  crypto.getRandomValues(bytes);
-  bytes[6] = (bytes[6] & 0x0f) | 0x40;
-  bytes[8] = (bytes[8] & 0x3f) | 0x80;
-  const hex = Array.from(bytes, b => b.toString(16).padStart(2, '0')).join('');
-  return `${hex.slice(0, 8)}-${hex.slice(8, 12)}-${hex.slice(12, 16)}-${hex.slice(16, 20)}-${hex.slice(20)}`;
-}
 
 export interface LobsterKey {
   id: string;
@@ -35,7 +25,7 @@ export const agentService = {
 
   async create(name: string, permissions: Record<string, boolean>, expiration_type: string, expiration_date: string | null, rate_limit: number | null): Promise<LobsterKey> {
     const tempId = generateUUID();
-    const apiKey = `lb-${generateBase62(64)}`;
+    const apiKey = `lb-${generateRandomString(64)}`;
 
     // Hash for server authentication
     const apiKeyHash = await hashToken(apiKey);
