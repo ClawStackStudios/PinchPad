@@ -492,6 +492,90 @@ router.get('/export', requireAuth, requirePermission('canRead'), async (req: Aut
             border-radius: 16px;
             margin: 32px 0;
             border: 1px solid var(--border);
+            cursor: pointer;
+            transition: transform 0.2s;
+        }
+        
+        .content img:hover {
+            transform: scale(1.01);
+            box-shadow: 0 0 20px var(--border);
+        }
+
+        /* High-Fidelity Jewel Marker Style */
+        .content a[href^="jewels/"] {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            background: rgba(217, 119, 6, 0.05);
+            border: 2px solid rgba(217, 119, 6, 0.3);
+            border-radius: 18px;
+            padding: 16px 20px;
+            margin: 32px 0;
+            text-decoration: none;
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+            position: relative;
+        }
+        
+        .content a[href^="jewels/"]:hover {
+            background: rgba(217, 119, 6, 0.1);
+            border-color: rgba(217, 119, 6, 0.5);
+            transform: translateY(-2px);
+            box-shadow: 0 12px 30px rgba(217, 119, 6, 0.15);
+        }
+
+        .jewel-icon {
+            flex-shrink: 0;
+            width: 48px;
+            height: 48px;
+            background: rgba(217, 119, 6, 0.15);
+            border: 1px solid rgba(217, 119, 6, 0.2);
+            border-radius: 14px;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23d97706' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48'%3E%3C/path%3E%3C/svg%3E");
+            background-repeat: no-repeat;
+            background-position: center;
+            background-size: 24px;
+        }
+        
+        .jewel-info {
+            flex-grow: 1;
+            min-width: 0;
+        }
+        
+        .jewel-tag {
+            font-size: 10px;
+            font-weight: 900;
+            text-transform: uppercase;
+            letter-spacing: 0.2em;
+            color: var(--primary);
+            opacity: 0.8;
+            margin-bottom: 2px;
+        }
+        
+        .jewel-name {
+            font-size: 16px;
+            font-weight: 700;
+            color: var(--on-surface);
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        
+        .download-btn {
+            font-size: 11px;
+            font-weight: 900;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            background: var(--primary);
+            color: #000;
+            padding: 8px 16px;
+            border-radius: 10px;
+            transition: all 0.2s;
+            flex-shrink: 0;
+        }
+
+        .content a[href^="jewels/"]:hover .download-btn {
+            background: var(--primary-light);
+            transform: scale(1.05);
         }
 
         .page-footer {
@@ -531,6 +615,31 @@ router.get('/export', requireAuth, requirePermission('canRead'), async (req: Aut
             h1 { font-size: 32px; }
         }
     </style>
+    <script>
+        document.addEventListener('click', (e) => {
+            const target = e.target.closest('img, a');
+            if (!target) return;
+
+            // Check if it's a jewel reference
+            const isImg = target.tagName === 'IMG';
+            const url = isImg ? target.getAttribute('src') : target.getAttribute('href');
+            
+            if (url && (url.startsWith('jewels/') || url.includes('/jewels/'))) {
+                e.preventDefault();
+                const filename = url.split('/').pop();
+                const cleanName = decodeURIComponent(filename);
+                
+                if (confirm(\`Do you want to download "\${cleanName}"?\`)) {
+                    const link = document.createElement('a');
+                    link.href = url;
+                    link.download = cleanName;
+                    document.body.appendChild(link);
+                    link.click();
+                    document.body.removeChild(link);
+                }
+            }
+        });
+    </script>
 </head>
 <body>
     <div class="document-wrapper">
