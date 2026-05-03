@@ -10,6 +10,7 @@
 import React, { useState, useEffect } from 'react';
 import { X, Key, Check, AlertTriangle, Eye, EyeOff, Copy, CheckCircle, Clock, Zap } from 'lucide-react';
 import { agentService, LobsterKey } from '../../../services/agents';
+import { copyToClipboard } from '../../../shared/lib/clipboard';
 import { clsx } from 'clsx';
 import { twMerge } from 'tailwind-merge';
 
@@ -155,9 +156,11 @@ export function LobsterKeyWizard({ isOpen, onClose, onKeyGenerated }: LobsterKey
 
   const handleCopy = async () => {
     if (!generatedKey?.api_key) return;
-    await navigator.clipboard.writeText(generatedKey.api_key);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
+    const success = await copyToClipboard(generatedKey.api_key);
+    if (success) {
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    }
   };
 
   const formatExpirationDate = () => {

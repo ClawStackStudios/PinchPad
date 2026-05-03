@@ -18,6 +18,7 @@ import {
   Copy, CheckCircle, Download, AlertTriangle, Key,
 } from 'lucide-react';
 import { LobsterKey } from '../../../services/agentService';
+import { copyToClipboard } from '../../../shared/lib/clipboard';
 import { clsx } from 'clsx';
 import { twMerge } from 'tailwind-merge';
 
@@ -66,12 +67,10 @@ export function LobsterKeyCard({ lobster, onRevoke, onDelete }: LobsterKeyCardPr
 
   const handleCopy = async () => {
     if (!displayKey) return;
-    try {
-      await navigator.clipboard.writeText(displayKey);
+    const success = await copyToClipboard(displayKey);
+    if (success) {
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
-    } catch {
-      // Fallback for older browsers
     }
   };
 
