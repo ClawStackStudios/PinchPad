@@ -49,7 +49,7 @@ async function startServer() {
         styleSrc: ["'self'", "'unsafe-inline'", 'https://fonts.googleapis.com'],
         fontSrc: ["'self'", 'https://fonts.gstatic.com', 'data:'],
         imgSrc: ["'self'", 'data:', 'https:'],
-        connectSrc: ["'self'", 'wss:', 'ws:', 'http://localhost:8282'],
+        connectSrc: ["'self'", 'wss:', 'ws:'],
         frameAncestors: isProduction ? ["'self'"] : ["'self'", "*"],
         upgradeInsecureRequests: process.env.ENFORCE_HTTPS === 'true' ? [] : null,
       },
