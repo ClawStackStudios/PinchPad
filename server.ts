@@ -116,7 +116,9 @@ app.use('/api', (_req, res) => res.status(404).json({ success: false, error: 'Ro
 app.use(errorHandler);
 
 // ─── Start ────────────────────────────────────────────────────────────────────
-app.listen(PORT, '0.0.0.0', () => {
+const HOST = process.env.HOST ?? (isProduction ? '0.0.0.0' : '127.0.0.1');
+
+app.listen(PORT, HOST, () => {
   console.log(`\n🦞 PinchPad API running on port ${PORT}`);
   console.log(`   Health: http://localhost:${PORT}/api/health\n`);
 });
