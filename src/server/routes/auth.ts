@@ -57,100 +57,127 @@ router.post('/register', authLimiter, validateBody(AuthSchemas.register), (req: 
   }
 });
 
-router.post('/token', authLimiter, validateBody(AuthSchemas.token), (req: any, res: Response) => {
-  const { type, uuid, keyHash, ownerKey } = req.body;
-  const ttl = process.env.TOKEN_TTL_DEFAULT || '1d';
-  const expiresAt = calculateExpiry(ttl);
+router.post('/token', authLimiter, validateBody(AuthSchemas.token), (req: any, res: Response, next: any) => {
+  try {
+    const { type, uuid, keyHash, ownerKey } = req.body;
+    console.log(`[Auth] 🥥 Molting token for type: ${type} (UUID: ${uuid || 'none'}, keyHash: ${keyHash ? 'provided' : 'none'})`);
 
-  if (type === 'human') {
-    let user: any;
-    if (uuid)        user = db.prepare('SELECT * FROM users WHERE uuid = ?').get(uuid);
-    else if (keyHash) user = db.prepare('SELECT * FROM users WHERE key_hash = ?').get(keyHash);
+    const ttl = process.env.TOKEN_TTL_DEFAULT || '1d';
+    const expiresAt = calculateExpiry(ttl);
+    console.log(`[Auth] ⏳ Expiry calculated: ${expiresAt || 'never'}`);
 
-    if (!user) {
-      audit.log('AUTH_FAILURE', {
-        action: 'login',
-        outcome: 'failure',
+    if (type === 'human') {
+      let user: any;
+      if (uuid) {
+        console.log(`[Auth] 🔍 Searching for human user by UUID: ${uuid}`);
+        user = db.prepare('SELECT * FROM users WHERE uuid = ?').get(uuid);
+      } else if (keyHash) {
+        console.log(`[Auth] 🔍 Searching for human user by keyHash`);
+        user = db.prepare('SELECT * FROM users WHERE key_hash = ?').get(keyHash);
+      }
+
+      if (!user) {
+        console.log(`[Auth] ❌ User not found for ${uuid || 'keyHash'}`);
+        audit.log('AUTH_FAILURE', {
+          action: 'login',
+          outcome: 'failure',
+          actor_type: 'human',
+          ip_address: req.ip,
+          user_agent: req.headers['user-agent'] as string
+        });
+        return res.status(404).json({
+          success: false,
+          error: 'Identity not registered on this node',
+          suggestion: 'Try providing your username for better error details if this is a registration issue.'
+        });
+      }
+
+      console.log(`[Auth] ✅ User found: ${user.username} (${user.uuid})`);
+
+      let keyMatch = false;
+      try {
+        console.log(`[Auth] 🔐 Performing timing-safe key comparison...`);
+        keyMatch = crypto.timingSafeEqual(Buffer.from(user.key_hash), Buffer.from(keyHash));
+      } catch (err: any) {
+        console.warn(`[Auth] ⚠️ Key comparison failed or length mismatch: ${err.message}`);
+        keyMatch = false;
+      }
+
+      if (!keyMatch) {
+        console.log(`[Auth] ❌ Key mismatch for user: ${user.username}`);
+        audit.log('AUTH_FAILURE', {
+          action: 'login',
+          outcome: 'failure',
+          actor_type: 'human',
+          ip_address: req.ip,
+          user_agent: req.headers['user-agent'] as string,
+          details: { user_uuid: user.uuid }
+        });
+        return res.status(401).json({
+          success: false,
+          error: 'Invalid identity key',
+          suggestion: 'Ensure you are using the correct ClawKey©™ for this server instance.'
+        });
+      }
+
+      console.log(`[Auth] 💎 Key verified. Generating session token...`);
+      const token = `api-${generateString(32)}`;
+      
+      console.log(`[Auth] 💾 Inserting token into api_tokens reef...`);
+      db.prepare('INSERT INTO api_tokens (key, owner_key, owner_type, created_at, expires_at) VALUES (?, ?, ?, ?, ?)').run(
+        token, user.uuid, 'human', new Date().toISOString(), expiresAt
+      );
+
+      audit.log('AUTH_SUCCESS', {
+        actor: user.uuid,
         actor_type: 'human',
+        action: 'login',
+        outcome: 'success',
         ip_address: req.ip,
         user_agent: req.headers['user-agent'] as string
       });
-      return res.status(404).json({
-        success: false,
-        error: 'Identity not registered on this node',
-        suggestion: 'Try providing your username for better error details if this is a registration issue.'
+
+      console.log(`[Auth] 🦞 Success! Token issued for ${user.username}`);
+      return res.status(201).json({
+        success: true,
+        data: {
+          token,
+          type: 'human',
+          createdAt: new Date().toISOString(),
+          expiresAt,
+          user: { uuid: user.uuid, username: user.username }
+        }
       });
-    }
 
-    let keyMatch = false;
-    try {
-      keyMatch = crypto.timingSafeEqual(Buffer.from(user.key_hash), Buffer.from(keyHash));
-    } catch {
-      keyMatch = false;
-    }
-
-    if (!keyMatch) {
-      audit.log('AUTH_FAILURE', {
-        action: 'login',
-        outcome: 'failure',
-        actor_type: 'human',
-        ip_address: req.ip,
-        user_agent: req.headers['user-agent'] as string,
-        details: { user_uuid: user.uuid }
-      });
-      return res.status(401).json({
-        success: false,
-        error: 'Invalid identity key',
-        suggestion: 'Ensure you are using the correct ClawKey©™ for this server instance.'
-      });
-    }
-
-    const token = `api-${generateString(32)}`;
-    db.prepare('INSERT INTO api_tokens (key, owner_key, owner_type, created_at, expires_at) VALUES (?, ?, ?, ?, ?)').run(
-      token, user.uuid, 'human', new Date().toISOString(), expiresAt
-    );
-
-    audit.log('AUTH_SUCCESS', {
-      actor: user.uuid,
-      actor_type: 'human',
-      action: 'login',
-      outcome: 'success',
-      ip_address: req.ip,
-      user_agent: req.headers['user-agent'] as string
-    });
-
-    return res.status(201).json({
-      success: true,
-      data: {
-        token,
-        type: 'human',
-        createdAt: new Date().toISOString(),
-        expiresAt,
-        user: { uuid: user.uuid, username: user.username }
+    } else if (type === 'agent' || (ownerKey && detectKeyType(ownerKey) === 'agent')) {
+      const agentKey = ownerKey;
+      console.log(`[Auth] 🤖 Processing agent login for key starting with: ${agentKey?.substring(0, 10)}...`);
+      
+      if (!agentKey?.startsWith('lb-')) {
+        console.log(`[Auth] ❌ Invalid agent key prefix`);
+        return res.status(400).json({ success: false, error: 'Invalid Lobster key' });
       }
-    });
 
-  } else if (type === 'agent' || (ownerKey && detectKeyType(ownerKey) === 'agent')) {
-    const agentKey = ownerKey;
-    if (!agentKey?.startsWith('lb-')) return res.status(400).json({ success: false, error: 'Invalid Lobster key' });
-
-    try {
       // Sentinel: Fetch by key, then verify with timingSafeEqual to ensure constant-time response profiles
+      console.log(`[Auth] 🔍 Fetching agent from DB...`);
       const agent = db.prepare('SELECT * FROM agent_keys WHERE api_key = ? AND is_active = 1').get(agentKey) as any;
 
       // Sentinel Security Patch: Timing-safe comparison with pre-hashing
       let keyMatch = false;
       if (agent) {
+        console.log(`[Auth] 🔐 Performing hashed timing-safe comparison for agent...`);
         try {
           const storedKeyHash = crypto.createHash('sha256').update(agent.api_key).digest();
           const providedKeyHash = crypto.createHash('sha256').update(agentKey).digest();
           keyMatch = crypto.timingSafeEqual(storedKeyHash, providedKeyHash);
-        } catch {
+        } catch (err: any) {
+          console.warn(`[Auth] ⚠️ Agent key comparison error: ${err.message}`);
           keyMatch = false;
         }
       }
 
       if (!agent || !keyMatch) {
+        console.log(`[Auth] ❌ Agent not found or key mismatch`);
         audit.log('AUTH_FAILURE', {
           action: 'login',
           outcome: 'failure',
@@ -162,14 +189,19 @@ router.post('/token', authLimiter, validateBody(AuthSchemas.token), (req: any, r
       }
 
       if (agent.expiration_date && new Date(agent.expiration_date) < new Date()) {
+        console.log(`[Auth] ❌ Agent key expired: ${agent.expiration_date}`);
         return res.status(401).json({ success: false, error: 'Lobster key expired' });
       }
 
+      console.log(`[Auth] 💎 Agent verified. Generating session token...`);
       const token = `api-${generateString(32)}`;
+      
+      console.log(`[Auth] 💾 Inserting agent token into api_tokens reef...`);
       db.prepare('INSERT INTO api_tokens (key, owner_key, owner_type, created_at, expires_at) VALUES (?, ?, ?, ?, ?)').run(
         token, agentKey, 'agent', new Date().toISOString(), expiresAt
       );
 
+      console.log(`[Auth] ⏱️ Updating last_used for agent: ${agent.id}`);
       db.prepare('UPDATE agent_keys SET last_used = ? WHERE api_key = ?').run(new Date().toISOString(), agentKey);
 
       audit.log('AUTH_SUCCESS', {
@@ -181,6 +213,7 @@ router.post('/token', authLimiter, validateBody(AuthSchemas.token), (req: any, r
         user_agent: req.headers['user-agent'] as string
       });
 
+      console.log(`[Auth] 🦞 Success! Agent token issued`);
       return res.status(201).json({
         success: true,
         data: {
@@ -190,21 +223,14 @@ router.post('/token', authLimiter, validateBody(AuthSchemas.token), (req: any, r
           expiresAt
         }
       });
-    } catch (err: any) {
-      console.error('[Auth] Agent authentication error:', err);
-      audit.log('AUTH_FAILURE', {
-        action: 'login',
-        outcome: 'failure',
-        actor_type: 'agent',
-        ip_address: req.ip,
-        user_agent: req.headers['user-agent'] as string,
-        details: { error: err.message }
-      });
-      return res.status(500).json({ success: false, error: 'Agent authentication failed' });
-    }
 
-  } else {
-    return res.status(400).json({ success: false, error: 'Invalid authentication request' });
+    } else {
+      console.log(`[Auth] ❌ Invalid authentication request type: ${type}`);
+      return res.status(400).json({ success: false, error: 'Invalid authentication request' });
+    }
+  } catch (err: any) {
+    console.error('[Auth] 🚨 CRITICAL ERROR during token generation:', err);
+    next(err);
   }
 });
 

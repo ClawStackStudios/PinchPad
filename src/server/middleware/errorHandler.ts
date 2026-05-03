@@ -2,7 +2,9 @@ import { Request, Response, NextFunction } from 'express';
 
 export const errorHandler = (err: any, _req: Request, res: Response, _next: NextFunction) => {
   console.error(`[Error] ${err.name || 'Error'}: ${err.message}`);
-  if (err.stack && process.env.NODE_ENV !== 'production') {
+  
+  // Debug mode: Log stack traces for 500 errors even in production to catch LAN predators
+  if (err.stack && (process.env.NODE_ENV !== 'production' || res.statusCode === 500 || (err.status && err.status === 500))) {
     console.error(err.stack);
   }
 

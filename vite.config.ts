@@ -35,6 +35,12 @@ export default defineConfig(({mode}) => {
       port: 8282,
       host: true,
       strictPort: true,
+      proxy: {
+        '/api': {
+          target: 'http://localhost:8383',
+          changeOrigin: true,
+        }
+      },
     },
     build: {
       chunkSizeWarningLimit: 1000,
