@@ -132,11 +132,12 @@ export function LobsterKeyWizard({ isOpen, onClose, onKeyGenerated }: LobsterKey
     setError(null);
     try {
       let permissions: Record<string, boolean> = {};
-      if (form.permissionLevel === 'CUSTOM' && form.customPermissions) {
-        permissions = { ...form.customPermissions };
-      } else {
-        permissions = { ...PERMISSION_CONFIGS[form.permissionLevel] };
-      }
+      const basePerms = form.permissionLevel === 'CUSTOM' && form.customPermissions
+        ? form.customPermissions
+        : PERMISSION_CONFIGS[form.permissionLevel];
+
+      const { level: _, ...permsOnly } = basePerms;
+      permissions = permsOnly;
 
       const expirationDate = form.expirationType === 'custom' ? form.customExpirationDate
         : form.expirationType === 'never' ? null

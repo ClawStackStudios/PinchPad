@@ -17,7 +17,7 @@ import {
   Shield, Clock, Trash2, XCircle, Eye, EyeOff,
   Copy, CheckCircle, Download, AlertTriangle, Key,
 } from 'lucide-react';
-import { LobsterKey } from '../../../services/agentService';
+import { LobsterKey } from '../../../services/agents';
 import { copyToClipboard } from '../../../shared/lib/clipboard';
 import { clsx } from 'clsx';
 import { twMerge } from 'tailwind-merge';
