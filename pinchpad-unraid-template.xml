@@ -1,0 +1,31 @@
+<?xml version="1.0"?>
+<Container version="2">
+  <Name>PinchPad</Name>
+  <Repository>ghcr.io/clawstackstudios/pinchpad:main</Repository>
+  <Registry>https://github.com/ClawStackStudios/PinchPad/pkgs/container/pinchpad</Registry>
+  <Network>bridge</Network>
+  <MyIP/>
+  <Shell>sh</Shell>
+  <Privileged>false</Privileged>
+  <Support>https://github.com/ClawStackStudios/PinchPad/issues</Support>
+  <Project>https://github.com/ClawStackStudios/PinchPad</Project>
+  <Overview>&#x1F99E; PinchPad is a privacy-first, self-hostable pearl (note) notebook designed for the Human-Agent ecosystem. Features end-to-end sovereign encryption, multi-format exports (PDF/HTML/MD), and a premium maritime aesthetic. Built for those who own their data. [br][br]&#x1F512; End-to-End Encryption [br]&#x1F41E; Human-Agent Native [br]&#x1F4D6; High-Fidelity Exports [br]&#x1F40D; No Third-Party Tracking</Overview>
+  <Category>Productivity: Tools: Security: Web:</Category>
+  <WebUI>http://[IP]:[PORT:8282]/</WebUI>
+  <TemplateURL/>
+  <Icon>https://raw.githubusercontent.com/ClawStackStudios/PinchPad/main/public/assets/logo.png</Icon>
+  <ExtraParams>--health-cmd="wget -qO- http://localhost:8282/api/health" --health-interval=30s --health-timeout=10s --health-retries=5 --health-start-period=15s</ExtraParams>
+  <PostArgs/>
+  <CPUset/>
+  <DateInstalled/>
+  <DonateText/>
+  <DonateLink/>
+  <Requires/>
+  <Config Name="Web Port" Target="8282" Default="8282" Mode="tcp" Description="The default port for the PinchPad Web Interface." Type="Port" Display="always" Required="true" Mask="false">8282</Config>
+  <Config Name="App Data" Target="/app/data" Default="/mnt/user/appdata/PinchPad" Mode="rw" Description="Storage for the encrypted SQLite database and uploaded photos." Type="Path" Display="always" Required="true" Mask="false">/mnt/user/appdata/PinchPad</Config>
+  <Config Name="DB Encryption Key" Target="DB_ENCRYPTION_KEY" Default="" Mode="" Description="Optional key to enable at-rest database encryption. If omitted, the database will be unencrypted." Type="Variable" Display="always" Required="false" Mask="true"/>
+  <Config Name="Trust Proxy" Target="TRUST_PROXY" Default="false" Mode="" Description="Set to 'true' if running behind a reverse proxy (Nginx, Traefik, etc.) to correctly handle client IPs." Type="Variable" Display="advanced" Required="false" Mask="false">false</Config>
+  <Config Name="CORS Origin" Target="CORS_ORIGIN" Default="" Mode="" Description="Optional comma-separated list of allowed origins (e.g., https://pinchpad.yourdomain.com) for restricted API access." Type="Variable" Display="advanced" Required="false" Mask="false"/>
+  <Config Name="PUID" Target="PUID" Default="99" Mode="" Description="Container User ID for file permissions (99 is Unraid default)." Type="Variable" Display="advanced" Required="true" Mask="false">99</Config>
+  <Config Name="PGID" Target="PGID" Default="100" Mode="" Description="Container Group ID for file permissions (100 is Unraid default)." Type="Variable" Display="advanced" Required="true" Mask="false">100</Config>
+</Container>
