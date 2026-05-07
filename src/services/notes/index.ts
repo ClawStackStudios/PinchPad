@@ -106,7 +106,7 @@ export const noteService = {
     formData.append('photo', file);
     formData.append('pearlId', pearlId);
 
-    const token = localStorage.getItem('pp_api_token');
+    const token = localStorage.getItem('cc_api_token');
     const response = await fetch(`${getApiBaseUrl()}/api/photos/upload`, {
       method: 'POST',
       headers: { 'Authorization': `Bearer ${token}` },
@@ -119,7 +119,10 @@ export const noteService = {
     }
 
     const json = await response.json();
-    return json.data;
+    const result = json.data;
+    // Append auth token for browser <img> tags (can't send Authorization headers)
+    result.url = `${result.url}?token=${token}`;
+    return result;
   },
 
   async deletePhoto(photoId: string): Promise<void> {

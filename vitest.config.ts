@@ -9,8 +9,7 @@ export default defineConfig({
     coverage: {
       provider: 'v8',
       reporter: ['text', 'html'],
-      include: ['src/server/**', 'src/lib/**', 'src/services/**'],
-      exclude: ['src/server/db.ts']
+      include: ['src/server/**', 'src/shared/lib/**', 'src/services/**'],
     }
   }
 });

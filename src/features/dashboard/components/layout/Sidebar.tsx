@@ -8,7 +8,7 @@
  */
 
 import React, { useState } from 'react';
-import { X, Search } from 'lucide-react';
+import { X } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { InteractiveBrand } from '../../../../shared/branding/InteractiveBrand';
 import { SidebarNav } from './SidebarNav';
@@ -109,18 +109,6 @@ export function Sidebar({
           >
             <X className="w-5 h-5" />
           </button>
-        </div>
-
-        {/* ── Search Bar (Moved from Header) ──────────────────────────────── */}
-        <div className="px-4 py-3 border-b border-slate-200 dark:border-slate-800">
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
-            <input 
-              type="text"
-              placeholder="Search Pearls..."
-              className="flex h-9 w-full rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 px-3 py-1 text-sm shadow-sm transition-colors text-slate-900 dark:text-slate-50 placeholder:text-slate-400 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-amber-500 pl-10"
-            />
-          </div>
         </div>
 
         {/* ── Scrollable Body ─────────────────────────────────────────────── */}

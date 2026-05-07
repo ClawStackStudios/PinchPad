@@ -10,9 +10,18 @@
 export async function apiFetch(url: string, options: RequestInit = {}): Promise<Response> {
   const response = await fetch(url, options);
 
-  // If token expired (401), dispatch event for AuthContext to listen
+  // Only dispatch auth:expired when the server explicitly signals token expiration,
+  // not for every 401 (which could be invalid credentials, malformed headers, etc.)
   if (response.status === 401) {
-    window.dispatchEvent(new Event('auth:expired'));
+    try {
+      const body = await response.clone().json();
+      if (body.error === 'Token expired. Please authenticate again.') {
+        window.dispatchEvent(new Event('auth:expired'));
+      }
+    } catch {
+      // Non-JSON 401 response — treat as auth expiry to be safe
+      window.dispatchEvent(new Event('auth:expired'));
+    }
   }
 
   return response;

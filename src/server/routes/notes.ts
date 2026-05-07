@@ -19,13 +19,28 @@ router.get('/', requireAuth, requirePermission('canRead'), (req: AuthRequest, re
   try {
     const reef = db.prepare('SELECT * FROM notes WHERE user_uuid = ? ORDER BY updated_at DESC').all(req.userUuid) as any[];
 
+    // Batch fetch all photos in one query instead of N+1 per-note queries
+    const noteIds = reef.map(n => n.id);
+    const photosByNote: Record<string, any[]> = {};
+    if (noteIds.length > 0) {
+      const placeholders = noteIds.map(() => '?').join(',');
+      const allPhotos = db.prepare(
+        `SELECT id, filename, mime_type, pearl_id FROM pearl_photos WHERE pearl_id IN (${placeholders})`
+      ).all(...noteIds) as any[];
+      for (const p of allPhotos) {
+        if (!photosByNote[p.pearl_id]) photosByNote[p.pearl_id] = [];
+        photosByNote[p.pearl_id].push(p);
+      }
+    }
+
     const reefWithPhotos = reef.map(polyP => {
-      const photos = db.prepare('SELECT id, filename, mime_type FROM pearl_photos WHERE pearl_id = ?').all(polyP.id) as any[];
+      const photos = photosByNote[polyP.id] || [];
       return {
         ...polyP,
         photos: photos.map(p => ({
           ...p,
-          url: `/api/photos/${p.id}`
+          url: `/api/photos/${p.id}`,
+          tokenUrl: `/api/photos/${p.id}?token=${encodeURIComponent(req.apiKey)}`
         }))
       };
     });

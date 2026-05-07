@@ -56,7 +56,7 @@ app.use(helmet({
 }));
 
 app.use(cors(getCorsConfig()));
-app.use(express.json());
+app.use(express.json({ limit: '5mb' }));
 app.use('/api', apiLimiter);
 
 // Request logger
@@ -79,8 +79,7 @@ app.get('/api/health', (req, res) => {
     success: true, 
     status: 'ok', 
     service: 'PinchPad API',
-    mode: 'sqlite',
-    uptime: process.uptime() 
+    mode: 'sqlite'
   });
 });
 

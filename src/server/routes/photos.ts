@@ -74,7 +74,13 @@ router.post('/upload', requireAuth, requirePermission('canWrite'), upload.single
   }
 });
 
-router.get('/:id', requireAuth, requirePermission('canRead'), (req: AuthRequest, res: Response) => {
+router.get('/:id', (req, _res, next) => {
+  // Allow auth via query param for browser <img> tags (can't send Authorization headers)
+  if (!req.headers.authorization && req.query.token) {
+    req.headers.authorization = `Bearer ${req.query.token}`;
+  }
+  next();
+}, requireAuth, requirePermission('canRead'), (req: AuthRequest, res: Response) => {
   const { id } = req.params;
 
   try {

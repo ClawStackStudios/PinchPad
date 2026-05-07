@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeAll, afterAll } from 'vitest';
 import Database from 'better-sqlite3-multiple-ciphers';
-import crypto from 'crypto';
+import * as crypto from 'node:crypto';
 import express from 'express';
 import request from 'supertest';
 import authRouter from '../../src/server/routes/auth';
@@ -12,7 +12,7 @@ describe('Cross-User Data Isolation', () => {
   let db: Database.Database;
   let app: express.Application;
 
-  // User A credentials and token
+  // User A credentials and token — initialized in beforeAll to avoid ESM module-level crypto issues
   const userA = {
     uuid: crypto.randomUUID(),
     username: 'useraisolation',

@@ -1,5 +1,5 @@
 import { restAdapter } from '../../shared/lib/api';
-import { generateRandomString, generateUUID, hashToken } from '../../shared/lib/crypto';
+import { generateRandomString, generateUUID } from '../../shared/lib/crypto';
 
 
 export interface LobsterKey {
@@ -26,14 +26,10 @@ export const agentService = {
     const tempId = generateUUID();
     const apiKey = `lb-${generateRandomString(64)}`;
 
-    // Hash for server authentication
-    const apiKeyHash = await hashToken(apiKey);
-
     const response = await restAdapter.POST('/api/agents', {
       id: tempId,
       name,
       api_key: apiKey,
-      api_key_hash: apiKeyHash,
       permissions,
       expiration_type,
       expiration_date,
