@@ -120,13 +120,23 @@ export function PotModal({ isOpen, onClose, pot, onSave, onDelete }: PotModalPro
                   style={{ backgroundColor: c }}
                 />
               ))}
-              <input
-                type="color"
-                value={color}
-                onChange={(e) => setColor(e.target.value)}
-                className="w-7 h-7 rounded-full cursor-pointer border-0 bg-transparent"
-                title="Custom color"
-              />
+              <div className="relative">
+                <input
+                  type="color"
+                  value={color}
+                  onChange={(e) => setColor(e.target.value)}
+                  className="w-7 h-7 rounded-full cursor-pointer border-0 bg-transparent opacity-0 absolute inset-0 z-10"
+                  title="Custom color"
+                />
+                <div
+                  className={`w-7 h-7 rounded-full border-2 border-dashed border-slate-300 dark:border-slate-600 flex items-center justify-center transition-all ${
+                    !PRESET_COLORS.includes(color) ? 'ring-2 ring-amber-500 ring-offset-2 dark:ring-offset-slate-900 scale-110' : 'hover:border-amber-400'
+                  }`}
+                  style={{ backgroundColor: !PRESET_COLORS.includes(color) ? color : 'transparent' }}
+                >
+                  {PRESET_COLORS.includes(color) && <span className="text-sm text-slate-400">+</span>}
+                </div>
+              </div>
             </div>
           </div>
 
