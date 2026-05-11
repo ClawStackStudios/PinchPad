@@ -8,7 +8,7 @@
  * Maintained by CrustAgent©™
  */
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Sidebar } from './Sidebar';
 import { AppHeader } from './AppHeader';
 import { AddPearlModal } from '../../../notes/components/AddPearlModal';
@@ -17,16 +17,8 @@ import { DashboardProvider, useDashboard } from '../../DashboardContext';
 import { ReefProvider, useReef } from '../../../notes/ReefContext';
 import { SettingsProvider, useSettings } from '../../../settings/SettingsContext';
 import { PotProvider } from '../../../pots/PotContext';
-import { Menu } from 'lucide-react';
 import { Note } from '../../../../services/notes';
 import { useLocation } from 'react-router-dom';
-import { clsx, type ClassValue } from 'clsx';
-import { twMerge } from 'tailwind-merge';
-
-function cn(...inputs: ClassValue[]) {
-  return twMerge(clsx(inputs));
-}
-
 
 interface DashboardLayoutProps {
   children: React.ReactNode;
@@ -39,6 +31,15 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
   const location = useLocation();
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
   const [isDatabaseOpen, setIsDatabaseOpen] = useState(false);
+
+  // Track window size for mobile-responsive layout logic
+  const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
+
+  useEffect(() => {
+    const handleResize = () => setIsMobile(window.innerWidth < 768);
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
 
   const isOnSettings = location.pathname === '/settings';
 
@@ -58,38 +59,39 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
 
   return (
     <>
-      <div className="min-h-screen bg-slate-50 dark:bg-[#0f1419]">
-        <div className="flex min-h-screen bg-slate-50 dark:bg-[#0f1419]">
+      {/* Mobile overlay - tap to close sidebar */}
+      {isSidebarOpen && (
+        <div
+          className="md:hidden fixed inset-0 bg-black/40 z-30"
+          onClick={handleSidebarClose}
+        />
+      )}
 
+      <div className="h-screen bg-slate-50 dark:bg-[#0f1419] overflow-hidden">
+        <Sidebar
+          isOpen={isSidebarOpen}
+          onClose={handleSidebarClose}
+          settingsMode={isOnSettings}
+          activeSettingsTab={activeTab}
+          onSettingsTabChange={setActiveTab}
+          onOpenDatabase={() => setIsDatabaseOpen(true)}
+        />
 
-
-          <Sidebar
-            isOpen={isSidebarOpen}
-            onClose={handleSidebarClose}
-            settingsMode={isOnSettings}
-            activeSettingsTab={activeTab}
-            onSettingsTabChange={setActiveTab}
-            onOpenDatabase={() => setIsDatabaseOpen(true)}
+        <main
+          className="h-full w-full flex flex-col min-h-0 bg-slate-50 dark:bg-[#0f1419] overflow-hidden relative transition-all duration-300 ease-in-out"
+          style={{
+            paddingLeft: isSidebarOpen && !isMobile ? '256px' : '0'
+          }}
+        >
+          <AppHeader
+            onAddPearl={isOnSettings ? undefined : openAddPearl}
+            onToggleSidebar={() => setIsSidebarOpen(!isSidebarOpen)}
+            isSettingsMode={isOnSettings}
           />
-
-          <main 
-            className={cn(
-              "flex-1 flex flex-col min-w-0 min-h-screen transition-all duration-300 ease-in-out",
-              isSidebarOpen ? "md:pl-64" : "pl-0"
-            )}
-          >
-            <AppHeader 
-              onAddPearl={isOnSettings ? undefined : openAddPearl} 
-              onOpenDatabase={() => setIsDatabaseOpen(true)}
-              sidebarOpen={isSidebarOpen}
-              onToggleSidebar={() => setIsSidebarOpen(!isSidebarOpen)}
-              isSettingsMode={isOnSettings}
-            />
-            <div className="flex-1 overflow-auto">
-              {children}
-            </div>
-          </main>
-        </div>
+          <div className="flex-1 overflow-auto">
+            {children}
+          </div>
+        </main>
       </div>
 
       <AddPearlModal

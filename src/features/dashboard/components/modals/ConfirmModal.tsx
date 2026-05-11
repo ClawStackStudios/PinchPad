@@ -7,7 +7,6 @@
  * Maintained by CrustAgent©™
  */
 
-import React from 'react';
 import { AlertTriangle, X } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
@@ -66,49 +65,46 @@ export function ConfirmModal({
             initial={{ opacity: 0, scale: 0.95, y: 20 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.95, y: 20 }}
-            className="relative w-full max-w-md bg-white dark:bg-slate-900 rounded-2xl shadow-2xl border border-slate-200 dark:border-slate-800 overflow-hidden"
+            className="relative w-full max-w-md bg-white dark:bg-slate-900 rounded-2xl shadow-2xl border border-slate-200 dark:border-slate-800 overflow-hidden flex flex-col max-h-[inherit]"
           >
-            {/* Close Button */}
-            <button
-              onClick={onClose}
-              className="absolute top-4 right-4 p-1 rounded-lg text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
-            >
-              <X className="w-5 h-5" />
-            </button>
-
-            <div className="p-6">
-              {/* Icon */}
-              <div className={`w-12 h-12 rounded-2xl ${iconColors[variant]} flex items-center justify-center mb-4 shadow-sm`}>
-                <AlertTriangle className="w-6 h-6" />
+            {/* Header — Fixed */}
+            <div className="p-5 md:p-6 border-b border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-900 shrink-0">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <div className={`p-2 rounded-xl ${iconColors[variant]}`}>
+                    <AlertTriangle className="w-5 h-5" />
+                  </div>
+                  <h2 className="text-lg md:text-xl font-bold text-slate-900 dark:text-slate-50 uppercase tracking-tight">{title}</h2>
+                </div>
+                <button
+                  onClick={(e) => { e.stopPropagation(); onClose(); }}
+                  className="h-9 w-9 p-0 text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-50 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors flex items-center justify-center"
+                >
+                  <X className="w-5 h-5" />
+                </button>
               </div>
-
-              {/* Text */}
-              <h3 className="text-xl font-bold text-slate-900 dark:text-slate-50 mb-2">
-                {title}
-              </h3>
-              <p className="text-slate-600 dark:text-slate-400">
-                {message}
-              </p>
             </div>
 
-            {/* Actions */}
-            <div className="bg-slate-50 dark:bg-slate-800/50 px-6 py-4 flex flex-col sm:flex-row justify-end gap-3 border-t border-slate-100 dark:border-slate-800">
+            {/* Body — Scrollable */}
+            <div className="p-5 md:p-6 flex-1 overflow-y-auto">
+              <p className="text-sm md:text-base text-slate-600 dark:text-slate-300 leading-relaxed font-medium">{message}</p>
+            </div>
+
+            {/* Footer — Fixed */}
+            <div className="flex gap-3 p-5 md:p-6 border-t border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-950/50 shrink-0">
               <button
-                onClick={onClose}
-                className="px-4 py-2 text-sm font-medium text-slate-700 dark:text-slate-300 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors order-2 sm:order-1"
+                onClick={(e) => { e.stopPropagation(); onClose(); }}
+                className="flex-1 h-12 md:h-10 rounded-xl text-sm font-bold uppercase tracking-widest text-xs text-slate-700 dark:text-slate-300 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors"
               >
                 {cancelText}
               </button>
               <button
-                onClick={() => {
-                  onConfirm();
-                  onClose();
-                }}
+                onClick={(e) => { e.stopPropagation(); onConfirm(); onClose(); }}
                 disabled={isLoading}
-                className={`px-6 py-2 text-sm font-bold rounded-xl shadow-lg transition-all active:scale-95 disabled:opacity-50 disabled:pointer-events-none order-1 sm:order-2 ${buttonColors[variant]}`}
+                className={`flex-1 h-12 md:h-10 rounded-xl text-sm font-bold uppercase tracking-widest text-xs shadow-lg transition-all active:scale-95 disabled:opacity-50 disabled:pointer-events-none ${buttonColors[variant]}`}
               >
                 {isLoading ? (
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center justify-center gap-2">
                     <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
                     Processing...
                   </div>

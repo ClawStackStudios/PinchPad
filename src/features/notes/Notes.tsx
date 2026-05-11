@@ -213,10 +213,10 @@ export function Notes() {
                     </button>
                     <button
                       onClick={() => openDeleteConfirm(pearl)}
-                      className="text-slate-400 hover:text-red-500 p-1 transition-colors opacity-0 group-hover:opacity-100"
+                      className="text-slate-400 hover:text-red-500 p-2 md:p-1 rounded-xl md:rounded transition-colors opacity-100 md:opacity-0 md:group-hover:opacity-100 h-10 w-10 md:h-auto md:w-auto flex items-center justify-center"
                       title="Discard pearl"
                     >
-                      <Trash2 className="w-4 h-4" />
+                      <Trash2 className="w-5 h-5 md:w-4 md:h-4" />
                     </button>
                   </div>
 
@@ -241,10 +241,10 @@ export function Notes() {
                       <button
                         onClick={() => handleToggleStar(pearl)}
                         title={pearl.starred ? 'Unstar' : 'Star'}
-                        className="p-1 rounded transition-colors hover:bg-amber-50 dark:hover:bg-amber-900/20"
+                        className="p-2 md:p-1 rounded-xl md:rounded transition-colors hover:bg-amber-50 dark:hover:bg-amber-900/20 h-10 w-10 md:h-auto md:w-auto flex items-center justify-center"
                       >
                         <Star
-                          className={`w-3.5 h-3.5 transition-colors ${
+                          className={`w-5 h-5 md:w-3.5 md:h-3.5 transition-colors ${
                             pearl.starred
                               ? 'fill-amber-500 text-amber-500'
                               : 'text-slate-300 dark:text-slate-600 hover:text-amber-400'
@@ -254,10 +254,10 @@ export function Notes() {
                       <button
                         onClick={() => handleTogglePin(pearl)}
                         title={pearl.pinned ? 'Unpin' : 'Pin'}
-                        className="p-1 rounded transition-colors hover:bg-sky-50 dark:hover:bg-sky-900/20"
+                        className="p-2 md:p-1 rounded-xl md:rounded transition-colors hover:bg-sky-50 dark:hover:bg-sky-900/20 h-10 w-10 md:h-auto md:w-auto flex items-center justify-center"
                       >
                         <Pin
-                          className={`w-3.5 h-3.5 transition-colors ${
+                          className={`w-5 h-5 md:w-3.5 md:h-3.5 transition-colors ${
                             pearl.pinned
                               ? 'fill-sky-500 text-sky-500'
                               : 'text-slate-300 dark:text-slate-600 hover:text-sky-400'

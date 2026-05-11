@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { X, Loader2, Star, Eye, Save } from 'lucide-react';
 import { noteService, Note, PearlPhoto } from '../../../services/notes';
 import { MarkdownToolbar } from './MarkdownToolbar';
@@ -159,14 +159,18 @@ export function AddPearlModal({ isOpen, onClose, onSuccess, onAutosave, editNote
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-      <div className="bg-white dark:bg-slate-900 border-2 border-amber-500/50 dark:border-amber-500/70 rounded-2xl shadow-2xl max-w-2xl w-full max-h-[90vh] flex flex-col overflow-hidden">
-        <div className="h-1.5 w-full bg-amber-500" />
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200" onClick={onClose}>
+      <div
+        className="bg-white dark:bg-slate-900 border-2 border-amber-500/50 dark:border-amber-500/70 rounded-2xl shadow-2xl max-w-2xl w-full max-h-[85vh] md:max-h-[90vh] flex flex-col overflow-hidden animate-in zoom-in-95 duration-300 ease-out"
+        onClick={(e) => e.stopPropagation()}
+      >
+        {/* Top accent bar */}
+        <div className="h-1.5 w-full bg-amber-500 shrink-0" />
 
-        {/* Header */}
-        <div className="p-5 border-b border-amber-500/20 flex items-center justify-between">
+        {/* Header — Fixed */}
+        <div className="p-4 md:p-5 border-b border-amber-500/20 flex items-center justify-between bg-white dark:bg-slate-900 shrink-0">
           <div className="flex items-center gap-3">
-            <h2 className="text-xl font-bold dark:text-white">
+            <h2 className="text-lg font-black text-slate-900 dark:text-slate-50 uppercase tracking-tight">
               {isEdit ? 'Polish Pearl' : 'Shell New Pearl'}
             </h2>
             {saveStatus === 'saved' && lastSaved && (
@@ -181,7 +185,7 @@ export function AddPearlModal({ isOpen, onClose, onSuccess, onAutosave, editNote
             )}
             {saveStatus === 'incomplete' && (
               <span className="text-[10px] bg-slate-500/10 text-slate-500 px-2 py-0.5 rounded-full font-bold uppercase tracking-wider">
-                Incomplete Pearl
+                Incomplete
               </span>
             )}
             {saveStatus === 'error' && (
@@ -193,24 +197,24 @@ export function AddPearlModal({ isOpen, onClose, onSuccess, onAutosave, editNote
           <div className="flex items-center gap-2">
             <button
               onClick={() => setIsPreviewOpen(true)}
-              className="p-2 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg text-slate-500 transition-colors"
+              className="p-2 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-xl text-slate-500 transition-colors"
               title="Preview Markdown"
             >
               <Eye className="w-5 h-5" />
             </button>
             <button
               onClick={onClose}
-              className="p-2 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg text-slate-500 transition-colors"
+              className="p-2 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-xl text-slate-500 transition-colors"
             >
               <X className="w-5 h-5" />
             </button>
           </div>
         </div>
 
-        {/* Body */}
-        <div className="p-6 flex-1 overflow-y-auto space-y-4">
+        {/* Body — Scrollable */}
+        <div className="p-4 md:p-6 flex-1 overflow-y-auto min-h-0 space-y-3.5">
           {error && (
-            <div className="p-3 bg-red-500/10 border border-red-500/50 rounded-lg text-red-500 text-sm font-medium">
+            <div className="p-3 bg-red-500/10 border border-red-500/50 rounded-xl text-red-500 text-sm font-medium">
               {error}
             </div>
           )}
@@ -219,7 +223,7 @@ export function AddPearlModal({ isOpen, onClose, onSuccess, onAutosave, editNote
             value={title}
             onChange={(e) => setTitle(e.target.value)}
             placeholder="Pearl Title..."
-            className="w-full text-2xl font-bold bg-transparent border-none focus:ring-0 dark:text-white placeholder-slate-300"
+            className="w-full text-2xl font-bold bg-transparent border-none focus:ring-0 dark:text-white placeholder-slate-300 h-10"
           />
 
           <div className="space-y-1">
@@ -230,7 +234,7 @@ export function AddPearlModal({ isOpen, onClose, onSuccess, onAutosave, editNote
               onChange={(e) => setContent(e.target.value)}
               placeholder="Spill your thoughts..."
               rows={10}
-              className="w-full bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-b-lg p-4 text-sm dark:text-slate-200 focus:ring-1 focus:ring-amber-500/30 outline-none transition-all resize-none font-mono"
+              className="w-full bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-xl p-4 text-sm dark:text-slate-200 focus:ring-1 focus:ring-amber-500/30 outline-none transition-all resize-none font-mono"
             />
           </div>
 
@@ -245,45 +249,52 @@ export function AddPearlModal({ isOpen, onClose, onSuccess, onAutosave, editNote
             disabled={isSubmitting}
           />
 
-          <div className="flex items-center gap-4 pt-2">
-            <label className="flex items-center gap-2 cursor-pointer text-sm dark:text-slate-300">
+          <div className="flex flex-wrap items-center gap-x-6 gap-y-3 pt-3 border-t border-slate-100 dark:border-slate-800/50">
+            <label className="flex items-center gap-2 cursor-pointer group">
               <input
                 type="checkbox"
                 checked={starred}
                 onChange={(e) => setStarred(e.target.checked)}
-                className="w-4 h-4 rounded accent-amber-500"
+                className="w-4 h-4 rounded-lg focus:ring-amber-500 bg-slate-100 dark:bg-slate-800 border-slate-300 dark:border-slate-700 accent-amber-500"
               />
-              <Star className={`w-4 h-4 ${starred ? 'fill-amber-500 text-amber-500' : ''}`} /> Starred
+              <div className="flex items-center gap-1.5 text-[10px] font-black text-slate-500 dark:text-slate-400 uppercase tracking-widest group-hover:text-amber-500 transition-colors">
+                <Star className={`w-3.5 h-3.5 ${starred ? 'fill-amber-500 text-amber-500' : ''}`} />
+                Star
+              </div>
             </label>
-            <label className="flex items-center gap-2 cursor-pointer text-sm dark:text-slate-300">
+            <label className="flex items-center gap-2 cursor-pointer group">
               <input
                 type="checkbox"
                 checked={pinned}
                 onChange={(e) => setPinned(e.target.checked)}
-                className="w-4 h-4 rounded accent-amber-500"
+                className="w-4 h-4 rounded-lg focus:ring-amber-500 bg-slate-100 dark:bg-slate-800 border-slate-300 dark:border-slate-700 accent-amber-500"
               />
-              📌 Pinned
+              <div className="flex items-center gap-1.5 text-[10px] font-black text-slate-500 dark:text-slate-400 uppercase tracking-widest group-hover:text-amber-500 transition-colors">
+                <span className={`text-xs ${pinned ? 'grayscale-0' : 'grayscale opacity-50'}`}>📌</span>
+                Pin
+              </div>
             </label>
           </div>
+        </div>
 
-          <div className="flex gap-3 pt-6 border-t border-slate-100 dark:border-slate-800">
-            <button
-              type="button"
-              onClick={onClose}
-              className="flex-1 px-4 py-2 text-sm font-bold border border-slate-200 dark:border-slate-700 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors dark:text-white"
-            >
-              Cancel
-            </button>
-            <button
-              type="button"
-              disabled={isSubmitting || !title.trim() || !content.trim()}
-              onClick={handleShellIt}
-              className="flex-[2] px-4 py-2 bg-amber-600 hover:bg-amber-700 text-white font-bold rounded-xl shadow-lg shadow-amber-600/20 transition-all flex items-center justify-center gap-2"
-            >
-              {isSubmitting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
-              {isEdit ? 'Save Pearl' : 'Shell It!'}
-            </button>
-          </div>
+        {/* Footer — Fixed */}
+        <div className="flex gap-3 p-4 md:p-6 border-t border-amber-500/20 bg-slate-50/50 dark:bg-slate-950/50 shrink-0">
+          <button
+            type="button"
+            onClick={onClose}
+            className="flex-1 h-11 md:h-10 px-4 text-sm font-bold border border-slate-200 dark:border-slate-700 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors dark:text-white uppercase tracking-widest text-xs"
+          >
+            Cancel
+          </button>
+          <button
+            type="button"
+            disabled={isSubmitting || !title.trim() || !content.trim()}
+            onClick={handleShellIt}
+            className="flex-[2] h-11 md:h-10 px-4 bg-amber-600 hover:bg-amber-700 text-white font-bold rounded-xl shadow-lg shadow-amber-600/20 transition-all flex items-center justify-center gap-2 uppercase tracking-widest text-xs active:scale-95 disabled:opacity-50 disabled:pointer-events-none"
+          >
+            {isSubmitting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
+            {isEdit ? 'Save Pearl' : 'Shell It!'}
+          </button>
         </div>
       </div>
 

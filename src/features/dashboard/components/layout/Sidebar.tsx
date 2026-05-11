@@ -109,7 +109,6 @@ export function Sidebar({
 
           {/* ── Navigation ────────────────────────────────────────────────── */}
           <SidebarNav
-            onClose={onClose}
             settingsMode={settingsMode}
             activeSettingsTab={activeSettingsTab}
             onSettingsTabChange={onSettingsTabChange}
