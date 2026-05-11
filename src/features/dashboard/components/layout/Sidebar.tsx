@@ -25,7 +25,6 @@ function cn(...inputs: any[]) {
 
 interface SidebarProps {
   isOpen: boolean;
-  onClose: () => void;
   settingsMode?: boolean;
   activeSettingsTab?: string;
   onSettingsTabChange?: (tab: any) => void;
@@ -34,7 +33,6 @@ interface SidebarProps {
 
 export function Sidebar({
   isOpen,
-  onClose,
   settingsMode = false,
   activeSettingsTab,
   onSettingsTabChange,
@@ -79,15 +77,6 @@ export function Sidebar({
 
   return (
     <>
-      {/* Mobile Overlay */}
-      <div
-        className={cn(
-          'fixed inset-0 bg-black/50 z-40 md:hidden transition-opacity duration-300',
-          isOpen ? 'opacity-100' : 'opacity-0 pointer-events-none'
-        )}
-        onClick={onClose}
-      />
-
       <aside
         className={cn(
           'fixed inset-y-0 left-0 z-40 w-64 bg-white dark:bg-slate-900 border-r border-slate-200 dark:border-slate-800 transform transition-transform duration-300 ease-in-out flex flex-col',

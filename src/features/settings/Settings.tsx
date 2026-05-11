@@ -101,7 +101,7 @@ export function Settings() {
 
   return (
     <div className="bg-slate-50 dark:bg-[#0f1419] text-slate-900 dark:text-slate-50 antialiased p-6 min-h-full">
-      <div className="max-w-7xl mx-auto">
+      <div>
         <header className="mb-8">
           <h1 className="text-3xl font-bold text-slate-900 dark:text-white">Settings</h1>
           <p className="text-slate-500 dark:text-slate-400 mt-1">Configure your PinchPad experience and manage your Lobster identity.</p>

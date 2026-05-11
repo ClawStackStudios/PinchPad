@@ -53,24 +53,19 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
     closeAddPearl();
   };
 
-  const handleSidebarClose = () => {
-    setIsSidebarOpen(false);
-  };
-
   return (
     <>
       {/* Mobile overlay - tap to close sidebar */}
       {isSidebarOpen && (
         <div
           className="md:hidden fixed inset-0 bg-black/40 z-30"
-          onClick={handleSidebarClose}
+          onClick={() => setIsSidebarOpen(false)}
         />
       )}
 
-      <div className="h-screen bg-slate-50 dark:bg-[#0f1419] overflow-hidden">
+      <div className="h-screen bg-slate-50 dark:bg-[#0f1419] overflow-hidden flex">
         <Sidebar
           isOpen={isSidebarOpen}
-          onClose={handleSidebarClose}
           settingsMode={isOnSettings}
           activeSettingsTab={activeTab}
           onSettingsTabChange={setActiveTab}
@@ -78,7 +73,7 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
         />
 
         <main
-          className="h-full w-full flex flex-col min-h-0 bg-slate-50 dark:bg-[#0f1419] overflow-hidden relative transition-all duration-300 ease-in-out"
+          className="flex-1 flex flex-col min-w-0 overflow-hidden h-full bg-slate-50 dark:bg-[#0f1419] relative transition-all duration-300 ease-in-out"
           style={{
             paddingLeft: isSidebarOpen && !isMobile ? '256px' : '0'
           }}

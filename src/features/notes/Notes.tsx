@@ -8,7 +8,7 @@
  * Maintained by CrustAgent©™
  */
 
-import React, { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Loader2, AlertCircle, Calendar, Star, Trash2, Pin } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useDashboard } from '../dashboard/DashboardContext';
@@ -139,7 +139,7 @@ export function Notes() {
   );
 
   return (
-    <div className="p-6 max-w-6xl mx-auto space-y-6">
+    <div className="p-6 space-y-6">
       {/* Page title + filter badge */}
       <div className="flex items-center gap-3">
         <h1 className="text-2xl font-bold text-slate-900 dark:text-slate-50">
