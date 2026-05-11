@@ -42,7 +42,6 @@ export function SidebarNav({
 
   const isOnNotes = location.pathname === '/notes';
   const isOnDashboard = location.pathname === '/dashboard';
-  const isOnSettings = location.pathname === '/settings';
 
   const handleFilterNav = (filter: FilterTab, path: string) => {
     setActiveFilter(filter);
@@ -189,12 +188,7 @@ export function SidebarNav({
       {/* Settings / Logout */}
       <button
         onClick={() => { navigate('/settings'); onClose?.(); }}
-        className={cn(
-          'w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors',
-          isOnSettings
-            ? 'bg-amber-100 text-amber-900 dark:bg-amber-900/30 dark:text-amber-300'
-            : 'text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800'
-        )}
+        className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-bold text-cyan-700 dark:text-cyan-400 hover:bg-cyan-50 dark:hover:bg-cyan-900/20 transition-colors"
       >
         <Settings className="w-4 h-4" />
         Settings
@@ -202,7 +196,7 @@ export function SidebarNav({
 
       <button
         onClick={() => { onOpenDatabase?.(); onClose?.(); }}
-        className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+        className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-bold text-amber-600 dark:text-amber-400 hover:bg-amber-50 dark:hover:bg-amber-900/20 transition-colors"
       >
         <Database className="w-4 h-4" />
         Database Stats

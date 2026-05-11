@@ -1,38 +1,18 @@
-import {
-  Search,
-  Database,
-  Settings,
-  LogOut,
-  Plus,
-  Menu
-} from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
+import { Plus, Menu } from 'lucide-react';
 import { useAuth } from '../../../auth/AuthContext';
-
-import { clsx, type ClassValue } from 'clsx';
-import { twMerge } from 'tailwind-merge';
-
-function cn(...inputs: ClassValue[]) {
-  return twMerge(clsx(inputs));
-}
 
 interface AppHeaderProps {
   onAddPearl?: (editNote?: any) => void;
-  onOpenDatabase?: () => void;
-  sidebarOpen?: boolean;
   onToggleSidebar?: () => void;
   isSettingsMode?: boolean;
 }
 
-export function AppHeader({ 
-  onAddPearl, 
-  onOpenDatabase, 
-  sidebarOpen, 
+export function AppHeader({
+  onAddPearl,
   onToggleSidebar,
   isSettingsMode = false
 }: AppHeaderProps) {
-  const { lobster, clawOut } = useAuth();
-  const navigate = useNavigate();
+  const { lobster } = useAuth();
 
   return (
     <header className="bg-white dark:bg-slate-900 border-b-2 border-amber-500 dark:border-red-500 px-4 md:px-6 py-2 md:py-3 flex-shrink-0">
@@ -55,6 +35,11 @@ export function AppHeader({
         </div>
 
         <div className="flex items-center gap-2">
+          {lobster && (
+            <span className="hidden sm:block text-xs font-bold uppercase tracking-widest text-slate-500 dark:text-slate-400 mr-2">
+              {lobster.username}
+            </span>
+          )}
           {!isSettingsMode && (
             <button
               onClick={() => onAddPearl?.()}

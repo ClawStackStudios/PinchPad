@@ -37,7 +37,7 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
   const { prependPearlToReef } = useReef();
   const { activeTab, setActiveTab } = useSettings();
   const location = useLocation();
-  const [isSidebarOpen, setIsSidebarOpen] = useState(window.innerWidth >= 768);
+  const [isSidebarOpen, setIsSidebarOpen] = useState(true);
   const [isDatabaseOpen, setIsDatabaseOpen] = useState(false);
 
   const isOnSettings = location.pathname === '/settings';

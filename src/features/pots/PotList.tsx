@@ -3,13 +3,13 @@
  *
  * Sidebar Pots section. Mirrors ClawChives FolderList with PinchPad amber accents.
  * Shows colored dot + name + pearl count badge + pencil-on-hover for edit.
- * Pod search appears when > 5 pots exist.
+ * Search bar always visible for filtering pot names.
  *
  * Maintained by CrustAgent©™
  */
 
-import React, { useState, useMemo } from 'react';
-import { Plus, Pencil } from 'lucide-react';
+import { useState, useMemo } from 'react';
+import { Plus, Pencil, Search, X } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { usePot } from './PotContext';
 import { Pot } from '../../services/pots';
@@ -46,18 +46,27 @@ export function PotList({ onOpenCreate, onOpenEdit }: PotListProps) {
         </button>
       </div>
 
-      {/* Pot search — only when > 5 pots */}
-      {pots.length > 5 && (
-        <div className="px-3 mb-2 shrink-0">
+      {/* Pot search — always visible */}
+      <div className="px-3 mb-2 shrink-0">
+        <div className="relative">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none" />
           <input
             type="text"
             placeholder="Search Pots..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="w-full px-3 py-1.5 text-xs bg-slate-100 dark:bg-slate-800 rounded-md outline-none focus:ring-1 focus:ring-amber-500 text-slate-700 dark:text-slate-300 placeholder:text-slate-500"
+            className="w-full pl-10 pr-8 py-1.5 text-xs bg-slate-100 dark:bg-slate-800 rounded-xl outline-none focus:ring-2 focus:ring-amber-500/50 text-slate-700 dark:text-slate-300 placeholder:text-slate-500"
           />
+          {search && (
+            <button
+              onClick={() => setSearch('')}
+              className="absolute right-3 top-1/2 -translate-y-1/2 p-1 hover:bg-slate-200 dark:hover:bg-slate-700 rounded-full"
+            >
+              <X className="w-4 h-4 text-slate-400" />
+            </button>
+          )}
         </div>
-      )}
+      </div>
 
       {/* Pot list */}
       <div className="flex-1 min-h-0 overflow-y-auto space-y-0.5 px-3">

@@ -8,7 +8,6 @@
  */
 
 import React, { useState } from 'react';
-import { X } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { InteractiveBrand } from '../../../../shared/branding/InteractiveBrand';
 import { SidebarNav } from './SidebarNav';
@@ -96,19 +95,13 @@ export function Sidebar({
         )}
       >
         {/* ── Brand / Logo ────────────────────────────────────────────────── */}
-        <div className="p-4 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between shrink-0">
+        <div className="p-4 border-b border-slate-200 dark:border-slate-800 shrink-0">
           <InteractiveBrand
             className="text-lg sm:text-xl"
             onClick={() => navigate('/dashboard')}
             showCopyright={true}
             showIcon={true}
           />
-          <button
-            onClick={onClose}
-            className="p-1 text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg"
-          >
-            <X className="w-5 h-5" />
-          </button>
         </div>
 
         {/* ── Scrollable Body ─────────────────────────────────────────────── */}
