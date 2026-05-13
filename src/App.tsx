@@ -23,7 +23,7 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
     );
   }
 
-  if (!isClawSigned) return <Navigate to="/login" />;
+  if (!isClawSigned) return <Navigate to="/" />;
 
   return <>{children}</>;
 }
@@ -49,7 +49,7 @@ function AppContent() {
     );
   }
 
-  const hideNavbar = ['/login', '/register', '/dashboard', '/settings', '/notes'].includes(location.pathname);
+  const hideNavbar = ['/', '/login', '/register', '/dashboard', '/settings', '/notes'].includes(location.pathname);
   const isDashboard = ['/dashboard', '/notes', '/settings'].includes(location.pathname);
 
   return (

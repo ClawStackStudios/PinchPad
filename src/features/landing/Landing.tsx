@@ -2,6 +2,9 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../auth/AuthContext';
 import { InteractiveBrand } from '../../shared/branding/InteractiveBrand';
+import { getApiBaseUrl } from '../../shared/lib/api';
+import { LandingSidebar } from './components/LandingSidebar';
+import { SmartHeader } from './components/SmartHeader';
 import {
   Zap,
   ArrowRight,
@@ -25,24 +28,25 @@ import {
 
 export function Landing() {
   const navigate = useNavigate();
-  const { isClawSigned, shellKey } = useAuth();
+  const { isClawSigned } = useAuth();
 
   // Set page title
   React.useEffect(() => {
     document.title = 'PinchPad — Sovereign Notes';
   }, []);
 
-  // Redirect if fully signed in (token + encryption key)
+  // Redirect if signed in
   React.useEffect(() => {
-    if (isClawSigned && shellKey) {
+    if (isClawSigned) {
       navigate('/notes');
     }
-  }, [isClawSigned, shellKey, navigate]);
+  }, [isClawSigned, navigate]);
 
   // ── States ────────────────────────────────────────────────────────────────
   const [keyInfoVisible, setKeyInfoVisible] = useState(false);
   const [gatewayMode, setGatewayMode] = useState<'human' | 'agent'>('human');
-  const [agentTab, setAgentTab] = useState<'botkit' | 'manual'>('botkit');
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const triggerRef = React.useRef<HTMLButtonElement>(null);
 
   // ── Render ────────────────────────────────────────────────────────────────
   return (
@@ -59,7 +63,21 @@ export function Landing() {
         }}
       />
 
-      <main className="relative">
+      <SmartHeader
+        onLogin={() => navigate('/login')}
+        onCreateAccount={() => navigate('/register')}
+        onOpenSidebar={() => setIsSidebarOpen(true)}
+        triggerRef={triggerRef}
+      />
+
+      <LandingSidebar
+        isOpen={isSidebarOpen}
+        onClose={() => setIsSidebarOpen(false)}
+        onLogin={() => navigate('/login')}
+        onCreateAccount={() => navigate('/register')}
+      />
+
+      <main className="relative pt-16">
 
         {/* ── Hero ─────────────────────────────────────────────────────────── */}
         <section className="pt-8 pb-32 px-4 sm:px-6 lg:px-8">
@@ -97,7 +115,8 @@ export function Landing() {
                   Hatch Your PinchPad
                   <ArrowRight className="w-5 h-5 ml-2" />
                 </button>
-                <button 
+                <button
+                  ref={triggerRef}
                   onClick={() => setKeyInfoVisible(!keyInfoVisible)}
                   className="inline-flex items-center justify-center gap-2 whitespace-nowrap font-medium transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring bg-white dark:bg-slate-900 shadow-sm hover:bg-slate-100 dark:hover:bg-slate-800 h-10 rounded-md text-lg px-8 py-6 border-2 border-slate-300 dark:border-slate-700 hover:border-amber-500 dark:text-white"
                 >
@@ -211,76 +230,40 @@ export function Landing() {
               {gatewayMode === 'agent' && (
                 <div key="agent-content" className="animate-in">
                   <h3 className="text-slate-900 dark:text-white font-bold mb-6 text-center text-xs uppercase tracking-widest leading-relaxed">
-                    Integrate your <br /> <span className="text-red-500">Lobsters</span> 🦞
+                    Integrate your <br /> <span className="text-amber-500">Lobsters</span> 🦞
                   </h3>
-                  
-                  <div className="flex mb-6 bg-slate-100 dark:bg-slate-950 rounded-xl p-1 border border-slate-200 dark:border-slate-800">
-                    <button 
-                      onClick={() => setAgentTab('botkit')}
-                      className={`flex-1 px-3 py-2 text-[10px] font-bold rounded-lg transition-all uppercase tracking-widest ${
-                        agentTab === 'botkit' ? 'bg-amber-500 text-white shadow-sm' : 'text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200'
-                      }`}
+
+                  <h4 className="text-slate-900 dark:text-white font-bold mb-4 text-center text-xs uppercase tracking-widest">
+                    Give This To Your<br /><span className="text-amber-500">Lobster</span>
+                  </h4>
+                  <div className="bg-slate-50 dark:bg-slate-950 rounded-2xl p-4 mb-6 border border-slate-200 dark:border-slate-800 shadow-inner flex items-center justify-between group relative overflow-hidden">
+                    <code className="text-amber-600 dark:text-amber-400 text-[10px] font-mono whitespace-nowrap overflow-hidden text-ellipsis flex-1 relative z-10 selection:bg-amber-200 dark:selection:bg-amber-900/50">
+                      GET /skill.md
+                    </code>
+                    <button
+                      onClick={() => {
+                        navigator.clipboard.writeText(`${getApiBaseUrl()}/skill.md`);
+                      }}
+                      className="ml-2 px-2 py-1 text-[9px] font-bold text-amber-600 dark:text-amber-400 hover:bg-amber-100 dark:hover:bg-amber-900/30 rounded transition-colors flex-shrink-0"
+                      title="Copy skill URL"
                     >
-                      BotKit
+                      COPY
                     </button>
-                    <button 
-                      onClick={() => setAgentTab('manual')}
-                      className={`flex-1 px-3 py-2 text-[10px] font-bold rounded-lg transition-all uppercase tracking-widest ${
-                        agentTab === 'manual' ? 'bg-amber-500 text-white shadow-sm' : 'text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200'
-                      }`}
-                    >
-                      Manual
-                    </button>
+                    <div className="absolute inset-0 bg-amber-50 dark:bg-amber-900/10 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none" />
                   </div>
+                  <div className="text-xs text-slate-500 dark:text-slate-400 space-y-3 px-1 mb-4">
+                    <p className="text-center italic">
+                      Give this URL to your Lobster to understand the PinchPad
+                    </p>
+                  </div>
+                  <button
+                    onClick={() => window.open(`${getApiBaseUrl()}/skill.md`, '_blank')}
+                    className="w-full px-3 py-2 text-xs font-bold rounded-lg bg-amber-100 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400 hover:bg-amber-200 dark:hover:bg-amber-900/50 transition-colors"
+                  >
+                    Preview Skill Document →
+                  </button>
 
-                  {/* BotKit Content */}
-                  {agentTab === 'botkit' && (
-                    <div key="botkit-subtab" className="animate-in">
-                      <div className="bg-slate-50 dark:bg-slate-950 rounded-2xl p-4 mb-6 border border-slate-200 dark:border-slate-800 shadow-inner flex items-center justify-center group relative overflow-hidden transition-colors">
-                        <code className="text-amber-600 dark:text-amber-400 text-xs font-mono break-all leading-relaxed text-center relative z-10 selection:bg-amber-200 dark:selection:bg-amber-900/50">
-                          npx pinchpad-botkit init
-                        </code>
-                        <div className="absolute inset-0 bg-amber-50 dark:bg-amber-900/10 opacity-0 group-hover:opacity-100 transition-opacity"></div>
-                      </div>
-                      <div className="text-xs text-slate-500 dark:text-slate-400 space-y-3 px-1">
-                        {[
-                          { n: 1, t: "Initialize the BotKit Toolkit in your project" },
-                          { n: 2, t: "Generate Key natively inside Settings" },
-                          { n: 3, t: "Assign granular permissions to limit blast radius" }
-                        ].map(s => (
-                          <p key={s.n} className="flex items-center">
-                            <span className="w-5 h-5 flex items-center justify-center bg-amber-100 dark:bg-amber-500/20 text-amber-600 dark:text-amber-400 rounded-md font-black mr-3 text-[10px] flex-shrink-0">{s.n}</span> 
-                            {s.t}
-                          </p>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-
-                  {/* Manual Content */}
-                  {agentTab === 'manual' && (
-                    <div key="manual-subtab" className="animate-in">
-                      <div className="bg-slate-50 dark:bg-slate-950 rounded-2xl p-4 mb-6 border border-slate-200 dark:border-slate-800 shadow-inner flex items-center justify-center transition-colors">
-                        <code className="text-amber-600 dark:text-amber-400 text-[10px] font-mono whitespace-pre text-left leading-relaxed">
-                          {`POST /api/auth/token\n{\n  "type": "agent",\n  "keyHash": "<SHA-256>"\n}`}
-                        </code>
-                      </div>
-                      <div className="text-xs text-slate-500 dark:text-slate-400 space-y-3 px-1">
-                        {[
-                          { n: 1, t: "Manually create a key via settings" },
-                          { n: 2, t: "Exchange hashed lb- key for API token" },
-                          { n: 3, t: "Pass Bearer token in Authorization header" }
-                        ].map(s => (
-                          <p key={s.n} className="flex items-center">
-                            <span className="w-5 h-5 flex items-center justify-center bg-amber-100 dark:bg-amber-500/20 text-amber-600 dark:text-amber-400 rounded-md font-black mr-3 text-[10px] flex-shrink-0">{s.n}</span> 
-                            {s.t}
-                          </p>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-
-                  <button 
+                  <button
                     onClick={() => navigate('/register')}
                     className="w-full mt-8 rounded-md text-sm font-medium h-9 px-4 py-2 bg-amber-500 hover:bg-amber-600 text-white shadow-lg shadow-amber-900/20 transition-all focus:outline-none focus:ring-2 focus:ring-amber-500 focus:ring-offset-2 dark:focus:ring-offset-slate-900 active:scale-95"
                   >
