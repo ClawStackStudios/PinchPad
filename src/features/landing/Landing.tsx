@@ -3,8 +3,8 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../auth/AuthContext';
 import { InteractiveBrand } from '../../shared/branding/InteractiveBrand';
 import { getApiBaseUrl } from '../../shared/lib/api';
-import { LandingNavBar } from './components/LandingNavBar';
 import { LandingSidebar } from './components/LandingSidebar';
+import { SmartHeader } from './components/SmartHeader';
 import {
   Zap,
   ArrowRight,
@@ -28,24 +28,25 @@ import {
 
 export function Landing() {
   const navigate = useNavigate();
-  const { isClawSigned, shellKey } = useAuth();
+  const { isClawSigned } = useAuth();
 
   // Set page title
   React.useEffect(() => {
     document.title = 'PinchPad — Sovereign Notes';
   }, []);
 
-  // Redirect if fully signed in (token + encryption key)
+  // Redirect if signed in
   React.useEffect(() => {
-    if (isClawSigned && shellKey) {
+    if (isClawSigned) {
       navigate('/notes');
     }
-  }, [isClawSigned, shellKey, navigate]);
+  }, [isClawSigned, navigate]);
 
   // ── States ────────────────────────────────────────────────────────────────
   const [keyInfoVisible, setKeyInfoVisible] = useState(false);
   const [gatewayMode, setGatewayMode] = useState<'human' | 'agent'>('human');
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const triggerRef = React.useRef<HTMLButtonElement>(null);
 
   // ── Render ────────────────────────────────────────────────────────────────
   return (
@@ -62,10 +63,11 @@ export function Landing() {
         }}
       />
 
-      <LandingNavBar
+      <SmartHeader
         onLogin={() => navigate('/login')}
         onCreateAccount={() => navigate('/register')}
         onOpenSidebar={() => setIsSidebarOpen(true)}
+        triggerRef={triggerRef}
       />
 
       <LandingSidebar
@@ -75,7 +77,7 @@ export function Landing() {
         onCreateAccount={() => navigate('/register')}
       />
 
-      <main className="relative">
+      <main className="relative pt-16">
 
         {/* ── Hero ─────────────────────────────────────────────────────────── */}
         <section className="pt-8 pb-32 px-4 sm:px-6 lg:px-8">
@@ -113,7 +115,8 @@ export function Landing() {
                   Hatch Your PinchPad
                   <ArrowRight className="w-5 h-5 ml-2" />
                 </button>
-                <button 
+                <button
+                  ref={triggerRef}
                   onClick={() => setKeyInfoVisible(!keyInfoVisible)}
                   className="inline-flex items-center justify-center gap-2 whitespace-nowrap font-medium transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring bg-white dark:bg-slate-900 shadow-sm hover:bg-slate-100 dark:hover:bg-slate-800 h-10 rounded-md text-lg px-8 py-6 border-2 border-slate-300 dark:border-slate-700 hover:border-amber-500 dark:text-white"
                 >
