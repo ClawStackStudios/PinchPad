@@ -3,6 +3,7 @@ import express from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
 import path from 'path';
+import { existsSync } from 'fs';
 
 import { getCorsConfig } from './src/shared/config/corsConfig';
 import { errorHandler } from './src/server/middleware/errorHandler';
@@ -81,6 +82,13 @@ app.get('/api/health', (req, res) => {
     service: 'PinchPad API',
     mode: 'sqlite'
   });
+});
+
+// ─── Skill Document (public, no auth) ──────────────────────────────────────────
+app.get(['/skill.md', '/SKILL.md'], (_req, res) => {
+  const skillPath = path.resolve(process.cwd(), 'skills/pinchpad/SKILL.md');
+  if (!existsSync(skillPath)) return res.status(404).send('Skill document not found.');
+  res.sendFile(skillPath);
 });
 
 // ─── Static Files (Production) ────────────────────────────────────────────────
