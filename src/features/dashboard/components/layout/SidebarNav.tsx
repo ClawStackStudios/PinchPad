@@ -8,7 +8,7 @@
  * Maintained by CrustAgent©™
  */
 
-import { LayoutDashboard, Gem, Star, Pin, Settings, LogOut, User, Palette, Shield, Database } from 'lucide-react';
+import { LayoutDashboard, Gem, Star, Pin, Settings, LogOut, User, Palette, Shield, Database, Tags } from 'lucide-react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useReef, FilterTab } from '../../../notes/ReefContext';
 import { useAuth } from '../../../auth/AuthContext';
@@ -141,6 +141,16 @@ export function SidebarNav({
       activeClass: 'bg-yellow-100 text-yellow-900 dark:bg-yellow-900/30 dark:text-yellow-300 shadow-sm',
       badge: counts.starred,
       activeBadge: cn(badgeBase, 'bg-yellow-200 text-yellow-900 dark:bg-yellow-800 dark:text-yellow-100'),
+    },
+    {
+      id: 'tags' as const,
+      label: 'Tags',
+      icon: Tags,
+      onClick: () => handleFilterNav('tags', '/notes'),
+      isActive: isOnNotes && activeFilter === 'tags',
+      activeClass: 'bg-cyan-100 text-cyan-900 dark:bg-cyan-900/30 dark:text-cyan-300 shadow-sm',
+      badge: counts.tags,
+      activeBadge: cn(badgeBase, 'bg-cyan-200 text-cyan-900 dark:bg-cyan-800 dark:text-cyan-100'),
     },
     {
       id: 'pinned' as const,

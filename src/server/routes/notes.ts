@@ -53,20 +53,21 @@ router.get('/', requireAuth, requirePermission('canRead'), (req: AuthRequest, re
 });
 
 router.post('/', requireAuth, requirePermission('canWrite'), validateBody(NoteSchemas.create), (req: AuthRequest, res: Response) => {
-  const { id, title, content, starred = 0, pinned = 0 } = req.body;
+  const { id, title, content, starred = 0, pinned = 0, tags = [] } = req.body;
   const now = new Date().toISOString();
   
   // HardShell Defense: Server-side ID generation fallback
   const pearlId = id || crypto.randomUUID();
 
   try {
-    db.prepare('INSERT INTO notes (id, user_uuid, title, content, starred, pinned, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)').run(
+    db.prepare('INSERT INTO notes (id, user_uuid, title, content, starred, pinned, tags, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)').run(
       pearlId,
       req.userUuid,
       title,
       content,
       starred ? 1 : 0,
       pinned ? 1 : 0,
+      JSON.stringify(tags),
       now,
       now
     );
@@ -95,15 +96,16 @@ router.post('/', requireAuth, requirePermission('canWrite'), validateBody(NoteSc
  * Molt update an existing pearl.
  */
 router.put('/:id', requireAuth, requirePermission('canEdit'), validateBody(NoteSchemas.update), (req: AuthRequest, res: Response) => {
-  const { title, content, starred, pinned } = req.body;
+  const { title, content, starred, pinned, tags } = req.body;
   const { id } = req.params;
 
   try {
-    const lockResult = db.prepare('UPDATE notes SET title = coalesce(?, title), content = coalesce(?, content), starred = coalesce(?, starred), pinned = coalesce(?, pinned), updated_at = ? WHERE id = ? AND user_uuid = ?').run(
+    const lockResult = db.prepare('UPDATE notes SET title = coalesce(?, title), content = coalesce(?, content), starred = coalesce(?, starred), pinned = coalesce(?, pinned), tags = coalesce(?, tags), updated_at = ? WHERE id = ? AND user_uuid = ?').run(
       title || null,
       content || null,
       starred !== undefined ? (starred ? 1 : 0) : null,
       pinned !== undefined ? (pinned ? 1 : 0) : null,
+      tags ? JSON.stringify(tags) : null,
       new Date().toISOString(),
       id,
       req.userUuid
@@ -249,11 +251,11 @@ router.post('/bulk', requireAuth, requirePermission('canWrite'), (req: AuthReque
         continue;
       }
 
-      const { id = crypto.randomUUID(), title, content, starred = 0, pinned = 0 } = isHardShell.data;
+      const { id = crypto.randomUUID(), title, content, starred = 0, pinned = 0, tags = [] } = isHardShell.data;
 
       db.prepare(`
-        INSERT INTO notes (id, user_uuid, title, content, starred, pinned, created_at, updated_at)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+        INSERT INTO notes (id, user_uuid, title, content, starred, pinned, tags, created_at, updated_at)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
       `).run(
         id,
         req.userUuid,
@@ -261,6 +263,7 @@ router.post('/bulk', requireAuth, requirePermission('canWrite'), (req: AuthReque
         content,
         starred ? 1 : 0,
         pinned ? 1 : 0,
+        JSON.stringify(tags),
         now,
         now
       );
@@ -318,6 +321,7 @@ router.post('/bulk', requireAuth, requirePermission('canWrite'), (req: AuthReque
  */
 router.get('/export', requireAuth, requirePermission('canRead'), async (req: AuthRequest, res: Response) => {
   const format = req.query.format || 'json';
+  const theme = req.query.theme || 'dark';
   const idsParam = req.query.ids as string | undefined;
   const ids = idsParam ? idsParam.split(',') : null;
 

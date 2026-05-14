@@ -26,6 +26,7 @@ export interface Note {
   starred: boolean;
   pinned: boolean;
   pot_id?: string | null;
+  tags?: string[];
   created_at: string;
   updated_at: string;
   photos?: PearlPhoto[];
@@ -37,10 +38,11 @@ export const noteService = {
     return response.data.map((note: any) => ({
       ...note,
       starred: !!note.starred,
-      pinned: !!note.pinned
+      pinned: !!note.pinned,
+      tags: note.tags ? JSON.parse(note.tags) : []
     }));
   },
-  async create(title: string, content: string, starred = false, pinned = false): Promise<Note> {
+  async create(title: string, content: string, starred = false, pinned = false, tags: string[] = []): Promise<Note> {
     const tempId = generateUUID();
     try {
       const response = await restAdapter.POST('/api/notes', {
@@ -48,13 +50,15 @@ export const noteService = {
         title,
         content,
         starred: starred ? 1 : 0,
-        pinned: pinned ? 1 : 0
+        pinned: pinned ? 1 : 0,
+        tags
       });
 
       return {
         ...response.data,
         starred: !!response.data.starred,
-        pinned: !!response.data.pinned
+        pinned: !!response.data.pinned,
+        tags: response.data.tags ? JSON.parse(response.data.tags) : []
       };
     } catch (err) {
       console.error('[NoteService] ❌ Create failed:', err);
@@ -62,18 +66,20 @@ export const noteService = {
     }
   },
 
-  async update(id: string, title: string, content: string, starred = false, pinned = false): Promise<Note> {
+  async update(id: string, title: string, content: string, starred = false, pinned = false, tags: string[] = []): Promise<Note> {
     const response = await restAdapter.PUT(`/api/notes/${id}`, {
       title,
       content,
       starred: starred ? 1 : 0,
-      pinned: pinned ? 1 : 0
+      pinned: pinned ? 1 : 0,
+      tags
     });
 
     return {
       ...response.data,
       starred: !!response.data.starred,
-      pinned: !!response.data.pinned
+      pinned: !!response.data.pinned,
+      tags: response.data.tags ? JSON.parse(response.data.tags) : []
     };
   },
 

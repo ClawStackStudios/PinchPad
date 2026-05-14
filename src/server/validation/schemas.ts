@@ -23,6 +23,7 @@ export const NoteSchemas = {
     starred: z.union([z.boolean(), z.number()]).optional(),
     pinned: z.union([z.boolean(), z.number()]).optional(),
     pot_id: z.string().optional().nullable(),
+    tags: z.array(z.string()).optional(),
   }),
   update: z.object({
     title: z.string().optional(),
@@ -30,6 +31,7 @@ export const NoteSchemas = {
     starred: z.union([z.boolean(), z.number()]).optional(),
     pinned: z.union([z.boolean(), z.number()]).optional(),
     pot_id: z.string().optional().nullable(),
+    tags: z.array(z.string()).optional(),
   }),
 };
 

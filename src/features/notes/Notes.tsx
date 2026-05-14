@@ -23,6 +23,7 @@ const FILTER_LABELS: Record<string, string> = {
   all: 'All Pearls',
   starred: 'Starred',
   pinned: 'Pinned',
+  tags: 'Tags',
 };
 
 export function Notes() {
@@ -52,6 +53,7 @@ export function Notes() {
     switch (activeFilter) {
       case 'starred': return reef.filter((n) => n.starred);
       case 'pinned':  return reef.filter((n) => n.pinned);
+      case 'tags':    return reef.filter((n) => n.tags && n.tags.length > 0);
       default:        return reef;
     }
   })();
