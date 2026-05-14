@@ -73,7 +73,7 @@ export function LandingNavBar({ onLogin, onCreateAccount, onOpenSidebar }: Landi
               onClick={onLogin}
               className="inline-flex items-center justify-center rounded-lg px-4 py-2 text-sm font-medium bg-amber-500 hover:bg-amber-600 text-slate-950 dark:text-white shadow-sm transition-colors"
             >
-              Login
+              Claw In
             </button>
             <button
               onClick={onCreateAccount}

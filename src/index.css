@@ -18,7 +18,7 @@
 }
 
 html, body {
-  background-color: theme('colors.slate.50');
+  background: linear-gradient(to bottom right, #ffffff 0%, #fffbeb 50%, #f8fafc 100%);
   color: theme('colors.slate.900');
 }
 
