@@ -4,7 +4,9 @@ import { noteService, Note, PearlPhoto } from '../../../services/notes';
 import { MarkdownToolbar } from './MarkdownToolbar';
 import { MarkdownPreviewModal } from './MarkdownPreviewModal';
 import { PearlPhotoGallery } from './PearlPhotoGallery';
-
+import { Tags as TagsIcon, Plus } from 'lucide-react';
+import { getRandomLobsterColor, getLobsterColorClasses } from '../../../shared/lib/lobsterColorRNG';
+import { TagModal } from './TagModal';
 
 interface AddPearlModalProps {
   isOpen: boolean;
@@ -19,6 +21,9 @@ export function AddPearlModal({ isOpen, onClose, onSuccess, onAutosave, editNote
   const [content, setContent] = useState('');
   const [starred, setStarred] = useState(false);
   const [pinned, setPinned] = useState(false);
+  const [tags, setTags] = useState<string[]>([]);
+  const [tagInput, setTagInput] = useState('');
+  const [isTagModalOpen, setIsTagModalOpen] = useState(false);
   const [photos, setPhotos] = useState<PearlPhoto[]>([]);
   const [error, setError] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -38,6 +43,7 @@ export function AddPearlModal({ isOpen, onClose, onSuccess, onAutosave, editNote
       setContent(editNote?.content || '');
       setStarred(editNote?.starred || false);
       setPinned(editNote?.pinned || false);
+      setTags(editNote?.tags || []);
       setPhotos(editNote?.photos || []);
       currentNoteId.current = editNote?.id || null;
       setLastSaved(null);
@@ -49,11 +55,26 @@ export function AddPearlModal({ isOpen, onClose, onSuccess, onAutosave, editNote
 
   const doSave = async () => {
     if (currentNoteId.current) {
-      return noteService.update(currentNoteId.current, title.trim(), content.trim(), starred, pinned);
+      return noteService.update(currentNoteId.current, title.trim(), content.trim(), starred, pinned, tags);
     }
-    const note = await noteService.create(title.trim(), content.trim(), starred, pinned);
+    const note = await noteService.create(title.trim(), content.trim(), starred, pinned, tags);
     currentNoteId.current = note.id;
     return note;
+  };
+
+  const handleAddTag = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      const newTag = tagInput.trim().toLowerCase();
+      if (newTag && !tags.includes(newTag)) {
+        setTags([...tags, newTag]);
+      }
+      setTagInput('');
+    }
+  };
+
+  const removeTag = (tagToRemove: string) => {
+    setTags(tags.filter(t => t !== tagToRemove));
   };
 
   // ── Manual save (Shell It! button) ────────────────────────────────────────
@@ -249,7 +270,42 @@ export function AddPearlModal({ isOpen, onClose, onSuccess, onAutosave, editNote
             disabled={isSubmitting}
           />
 
-          <div className="flex flex-wrap items-center gap-x-6 gap-y-3 pt-3 border-t border-slate-100 dark:border-slate-800/50">
+          <div className="flex flex-col gap-3 pt-3 border-t border-slate-100 dark:border-slate-800/50">
+            {/* Tags area */}
+            <div className="flex flex-wrap items-center gap-2">
+              <TagsIcon className="w-4 h-4 text-slate-400" />
+
+              {tags.length <= 2 ? (
+                tags.map(tag => (
+                  <span key={tag} className="flex items-center gap-1 text-[10px] font-bold uppercase tracking-widest bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 px-2 py-1 rounded-md">
+                    {tag}
+                    <button type="button" onClick={() => removeTag(tag)} className="hover:text-red-500">
+                      <X className="w-3 h-3" />
+                    </button>
+                  </span>
+                ))
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => setIsTagModalOpen(true)}
+                  className={`text-[10px] font-bold uppercase tracking-widest px-2 py-1 rounded-md transition-colors border ${getLobsterColorClasses(getRandomLobsterColor())}`}
+                >
+                  TAGS ({tags.length})
+                </button>
+              )}
+
+              <input
+                type="text"
+                value={tagInput}
+                onChange={e => setTagInput(e.target.value)}
+                onKeyDown={handleAddTag}
+                placeholder="Add tag..."
+                className="text-[10px] font-bold uppercase tracking-widest bg-transparent border-none focus:ring-0 placeholder-slate-400 dark:text-slate-200 min-w-[80px]"
+              />
+            </div>
+
+            {/* Checkboxes */}
+            <div className="flex flex-wrap items-center gap-x-6 gap-y-3">
             <label className="flex items-center gap-2 cursor-pointer group">
               <input
                 type="checkbox"
@@ -274,6 +330,7 @@ export function AddPearlModal({ isOpen, onClose, onSuccess, onAutosave, editNote
                 Pin
               </div>
             </label>
+            </div>
           </div>
         </div>
 
@@ -304,6 +361,13 @@ export function AddPearlModal({ isOpen, onClose, onSuccess, onAutosave, editNote
         title={title}
         content={content}
         photos={photos}
+      />
+
+      <TagModal
+        isOpen={isTagModalOpen}
+        onClose={() => setIsTagModalOpen(false)}
+        tags={tags}
+        onRemove={removeTag}
       />
     </div>
   );

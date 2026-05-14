@@ -53,7 +53,7 @@ function AppContent() {
   const isDashboard = ['/dashboard', '/notes', '/settings'].includes(location.pathname);
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-white via-amber-50/30 to-slate-50 dark:from-slate-950 dark:via-slate-900 dark:to-slate-950 text-slate-900 dark:text-[#faf8f6] font-sans transition-colors duration-500">
+    <div className="min-h-screen bg-white dark:bg-[#0f1419] text-slate-900 dark:text-[#faf8f6] font-sans transition-colors duration-500">
       {!hideNavbar && <Navbar />}
       
       <Routes>

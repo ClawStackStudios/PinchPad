@@ -18,12 +18,12 @@
 }
 
 html, body {
-  background: linear-gradient(to bottom right, #ffffff 0%, #fffbeb 50%, #f8fafc 100%);
+  background-color: theme('colors.slate.50');
   color: theme('colors.slate.900');
 }
 
 html.dark, html.dark body {
-  background: linear-gradient(to bottom right, #020617 0%, #0f172a 50%, #020617 100%);
+  background-color: #0f1419;
   color: #faf8f6;
 }
 
