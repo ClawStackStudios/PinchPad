@@ -23,7 +23,7 @@ html, body {
 }
 
 html.dark, html.dark body {
-  background-color: #0f1419;
+  background: linear-gradient(to bottom right, #020617 0%, #0f172a 50%, #020617 100%);
   color: #faf8f6;
 }
 

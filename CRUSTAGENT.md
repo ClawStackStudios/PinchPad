@@ -160,7 +160,7 @@ The Reef: The system context, constraints, and environment.
 The Abyss: The unpredictable nature of decentralized data and external inputs.
 
 Molt: The process of iterative refinement, refactoring, or updating.
-
+xact spot
 HardShell: Code that is structurally sound, secure by design, and parsimonious.
 
 Predators: Security threats, bugs, or logic failures.
