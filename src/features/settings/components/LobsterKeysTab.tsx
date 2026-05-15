@@ -131,8 +131,8 @@ export function LobsterKeysTab() {
         onConfirm={() => { if (confirmDeleteId) executeDelete(confirmDeleteId); }}
         title="Delete Lobster Key?"
         message="Are you sure you want to delete this Lobster Key? Any external agents using it will permanently lose access."
-        confirmLabel="Delete Key"
-        cancelLabel="Keep it"
+        confirmText="Delete Key"
+        cancelText="Keep it"
         variant="danger"
       />
     </div>

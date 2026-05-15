@@ -48,6 +48,7 @@ export function runMigrations(db: Database) {
   }
 
   runColumnMigration("ALTER TABLE notes ADD COLUMN pot_id TEXT REFERENCES pots(id) ON DELETE SET NULL", 'notes.pot_id');
+  runColumnMigration("ALTER TABLE notes ADD COLUMN tags TEXT DEFAULT '[]'", 'notes.tags');
 
   // Indexes
   db.exec(`

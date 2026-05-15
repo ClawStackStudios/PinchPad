@@ -16,12 +16,13 @@ import { useAuth } from '../auth/AuthContext';
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
-export type FilterTab = 'dashboard' | 'all' | 'starred' | 'pinned';
+export type FilterTab = 'dashboard' | 'all' | 'starred' | 'pinned' | 'tags';
 
 export interface PearlCounts {
   all: number;
   starred: number;
   pinned: number;
+  tags: number;
 }
 
 interface ReefContextType {
@@ -95,6 +96,7 @@ export function ReefProvider({ children }: { children: React.ReactNode }) {
     all: reef.length,
     starred: reef.filter((n) => n.starred).length,
     pinned: reef.filter((n) => n.pinned).length,
+    tags: new Set(reef.flatMap((n) => n.tags || [])).size,
   };
 
   return (

@@ -34,6 +34,7 @@ export function initializeSchema(db: Database) {
       starred     INTEGER DEFAULT 0,
       pinned      INTEGER DEFAULT 0,
       pot_id      TEXT,
+      tags        TEXT DEFAULT '[]',
       created_at  TEXT NOT NULL,
       updated_at  TEXT NOT NULL,
       FOREIGN KEY(user_uuid) REFERENCES users(uuid) ON DELETE CASCADE,
