@@ -43,10 +43,10 @@ export function AppHeader({
           {!isSettingsMode && (
             <button
               onClick={() => onAddPearl?.()}
-              className="hidden md:inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-xl text-xs font-bold uppercase tracking-widest transition-all focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-amber-500 shadow-lg shadow-amber-500/20 h-11 md:h-8 px-3 md:px-4 py-2 bg-amber-600 hover:bg-amber-700 text-white active:scale-95"
+              className="inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-xl text-xs font-bold uppercase tracking-widest transition-all focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-amber-500 shadow-lg shadow-amber-500/20 h-11 md:h-8 px-3 md:px-4 py-2 bg-amber-600 hover:bg-amber-700 text-white active:scale-95"
             >
               <Plus className="w-5 h-5 md:w-4 md:h-4" />
-              <span className="hidden md:inline">Add Pearl</span>
+              <span className="hidden sm:inline">Add Pearl</span>
             </button>
           )}
         </div>
