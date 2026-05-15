@@ -38,7 +38,9 @@ PinchPad/
 │   │   ├── routes/                  # API endpoint definitions
 │   │   │   ├── auth.ts              # /api/auth/* endpoints
 │   │   │   ├── notes.ts             # /api/notes/* endpoints (CRUD)
-│   │   │   └── agents.ts            # /api/agents/* endpoints (lb- management)
+│   │   │   ├── agents.ts            # /api/agents/* endpoints (lb- management)
+│   │   │   ├── shares.ts            # /api/shares/* endpoints (management)
+│   │   │   └── shellproxy.ts        # /shellproxy/* (Public Membrane)
 │   │   └── utils/                   # Helper functions
 │   │       ├── crypto.ts            # Token generation, SHA-256 hashing
 │   │       ├── tokenExpiry.ts       # Session management
@@ -65,8 +67,12 @@ PinchPad/
 │   │   │   ├── AgentList.tsx        # LobsterKey list + management
 │   │   │   └── AgentModal.tsx       # Create/edit lb- key with permissions
 │   │   ├── settings/
-│   │   │   ├── SettingsPanel.tsx    # Settings tabbed layout
-│   │   │   └── ProfileSettings.tsx  # Display name, theme, auth info
+│   │   │   ├── SettingsPanel.tsx        # Settings tabbed layout
+│   │   │   ├── ProfileSettings.tsx      # Display name, theme, auth info
+│   │   │   ├── ShellProxyTab.tsx        # Share management dashboard
+│   │   │   └── ShellProxyWizard.tsx     # Animated time-sync sharing wizard
+│   │   ├── public/
+│   │   │   └── ShellProxyView.tsx       # Unauthenticated public viewer
 │   │   ├── layout/
 │   │   │   └── MoltTheme.tsx        # View Transition dark mode toggle
 │   │   └── ui/                      # shadcn/ui base components
@@ -154,6 +160,11 @@ graph LR
         J[(SQLite<br/>WAL Mode)]
     end
 
+    subgraph Public ["🌍 Public Membrane"]
+        K[ShellProxy Route]
+        L[ShellProxyView]
+    end
+
     A --> B
     A --> C
     B --> F
@@ -163,6 +174,9 @@ graph LR
     G -->|fetch + Bearer| H
     H --> I
     I --> J
+    
+    K -->|read-only| J
+    L -->|fetch unauth| K
 ```
 
 ---
@@ -255,7 +269,6 @@ graph LR
          │
          └─ FK ──────────┐
                         │
-          ┌─────────────▼──────────┐
           │       notes            │
           ├────────────────────────┤
           │ id (TEXT, PK)          │
@@ -265,6 +278,18 @@ graph LR
           │ created_at (TEXT)      │
           │ updated_at (TEXT)      │
           └────────────────────────┘
+                   │
+                   └─ FK ──────────┐
+                                  │
+                    ┌─────────────▼──────────┐
+                    │     pearl_shares       │
+                    ├────────────────────────┤
+                    │ id (TEXT, PK)          │
+                    │ pearl_id (FK)          │
+                    │ share_hash (TEXT, UNQ) │
+                    │ expires_at (TEXT)      │
+                    │ created_at (TEXT)      │
+                    └────────────────────────┘
 
 
 ---

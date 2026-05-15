@@ -9,6 +9,7 @@ import { Login } from './features/auth/Login';
 import { Dashboard } from './features/dashboard/Dashboard';
 import { Notes } from './features/notes/Notes';
 import { Settings } from './features/settings/Settings';
+import { ShellProxyView } from './features/public/ShellProxyView';
 import { Loader2 } from 'lucide-react';
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
@@ -49,7 +50,7 @@ function AppContent() {
     );
   }
 
-  const hideNavbar = ['/', '/login', '/register', '/dashboard', '/settings', '/notes'].includes(location.pathname);
+  const hideNavbar = ['/', '/login', '/register', '/dashboard', '/settings', '/notes'].includes(location.pathname) || location.pathname.startsWith('/share/');
   const isDashboard = ['/dashboard', '/notes', '/settings'].includes(location.pathname);
 
   return (
@@ -78,6 +79,8 @@ function AppContent() {
             <DashboardLayout><Settings /></DashboardLayout>
           </ProtectedRoute>
         } />
+
+        <Route path="/share/:hash" element={<ShellProxyView />} />
       </Routes>
     </div>
   );

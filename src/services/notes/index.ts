@@ -9,7 +9,7 @@
 import { restAdapter, getApiBaseUrl } from '../../shared/lib/api';
 import { readSession } from '../auth';
 import { generateUUID } from '../../shared/lib/crypto';
-
+import { scuttleParse } from '../../shared/lib/safeJSON';
 
 export interface PearlPhoto {
   id: string;
@@ -39,7 +39,7 @@ export const noteService = {
       ...note,
       starred: !!note.starred,
       pinned: !!note.pinned,
-      tags: note.tags ? JSON.parse(note.tags) : []
+      tags: scuttleParse<string[]>(note.tags, [])
     }));
   },
   async create(title: string, content: string, starred = false, pinned = false, tags: string[] = []): Promise<Note> {
@@ -58,7 +58,7 @@ export const noteService = {
         ...response.data,
         starred: !!response.data.starred,
         pinned: !!response.data.pinned,
-        tags: response.data.tags ? JSON.parse(response.data.tags) : []
+        tags: scuttleParse<string[]>(response.data.tags, [])
       };
     } catch (err) {
       console.error('[NoteService] ❌ Create failed:', err);
@@ -79,7 +79,7 @@ export const noteService = {
       ...response.data,
       starred: !!response.data.starred,
       pinned: !!response.data.pinned,
-      tags: response.data.tags ? JSON.parse(response.data.tags) : []
+      tags: scuttleParse<string[]>(response.data.tags, [])
     };
   },
 

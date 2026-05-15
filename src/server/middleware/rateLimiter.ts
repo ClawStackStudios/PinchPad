@@ -36,6 +36,19 @@ export const apiLimiter = rateLimit({
 });
 
 /**
+ * ShellProxy Rate Limiter
+ * Restrictive limiter for the unauthenticated public membrane.
+ * Keyed by IP to prevent abuse of binary BLOB reads.
+ */
+export const shellProxyLimiter = rateLimit({
+  windowMs: 1 * 60 * 1000,
+  max: parseInt(process.env.SHELL_PROXY_RATE_LIMIT || '30', 10),
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { success: false, error: 'Rate limit exceeded.' },
+});
+
+/**
  * Lobster Key Rate Limiter
  * Refactored to avoid ERR_ERL_CREATED_IN_REQUEST_HANDLER by using a single
  * pre-initialized limiter with dynamic 'max' and 'keyGenerator' functions.

@@ -47,6 +47,24 @@ export function runMigrations(db: Database) {
     console.warn('[DB Migration] ⚠️  pots table migration warning:', e.message);
   }
 
+  // ── Pearl Shares (ShellProxy) ──────────────────────────────────────────────
+  try {
+    db.exec(`
+      CREATE TABLE IF NOT EXISTS pearl_shares (
+        id          TEXT PRIMARY KEY,
+        pearl_id    TEXT NOT NULL,
+        share_hash  TEXT NOT NULL UNIQUE,
+        is_active   INTEGER DEFAULT 1,
+        created_at  TEXT NOT NULL,
+        expires_at  TEXT,
+        FOREIGN KEY(pearl_id) REFERENCES notes(id) ON DELETE CASCADE
+      );
+    `);
+    console.log('[DB Migration] ✅ pearl_shares table ensured');
+  } catch (e: any) {
+    console.warn('[DB Migration] ⚠️  pearl_shares table migration warning:', e.message);
+  }
+
   runColumnMigration("ALTER TABLE notes ADD COLUMN pot_id TEXT REFERENCES pots(id) ON DELETE SET NULL", 'notes.pot_id');
   runColumnMigration("ALTER TABLE notes ADD COLUMN tags TEXT DEFAULT '[]'", 'notes.tags');
 
@@ -54,6 +72,7 @@ export function runMigrations(db: Database) {
   db.exec(`
     CREATE UNIQUE INDEX IF NOT EXISTS idx_users_key_hash ON users(key_hash);
     CREATE UNIQUE INDEX IF NOT EXISTS idx_settings_user_key ON settings(user_uuid, key);
+    CREATE UNIQUE INDEX IF NOT EXISTS idx_pearl_shares_hash ON pearl_shares(share_hash);
     CREATE INDEX IF NOT EXISTS idx_audit_timestamp ON audit_logs(timestamp);
     CREATE INDEX IF NOT EXISTS idx_audit_event_type ON audit_logs(event_type);
     CREATE INDEX IF NOT EXISTS idx_audit_actor ON audit_logs(actor);

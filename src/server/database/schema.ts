@@ -114,5 +114,15 @@ export function initializeSchema(db: Database) {
       error_count INTEGER DEFAULT 0,
       errors_json TEXT DEFAULT '[]'
     );
+
+    CREATE TABLE IF NOT EXISTS pearl_shares (
+      id          TEXT PRIMARY KEY,
+      pearl_id    TEXT NOT NULL,
+      share_hash  TEXT NOT NULL UNIQUE,
+      is_active   INTEGER DEFAULT 1,
+      created_at  TEXT NOT NULL,
+      expires_at  TEXT,
+      FOREIGN KEY(pearl_id) REFERENCES notes(id) ON DELETE CASCADE
+    );
   `);
 }

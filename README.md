@@ -60,6 +60,7 @@
 - 🗄️ **Secure Reef** — Persistent SQLite storage with multi-cipher encryption.
 - 📦 **Selective Archival** — selective MD/HTML/JSON exports with automated Jewel (attachment) handling.
 - 🌓 **MoltTheme** — View Transition-based theme engine. Watching the world shift colors.
+- 🛡️ **ShellProxy©™** — Secure, unauthenticated public read-only membrane for sharing Pearls and photos via unguessable hashes.
 
 ---
 
@@ -146,6 +147,8 @@ npm install
 PORT=8282                    # Server listen port (single container)
 NODE_ENV=production          # production or development
 CORS_ORIGIN=http://yourdomain.com  # restrict CORS origin, or leave unset for open LAN
+ENABLE_SHELL_PROXY=true          # Enable public read-only membrane
+SHELL_PROXY_RATE_LIMIT=30        # Rate limit (req/min per IP) for the membrane
 ```
 
 **Option A: Production (Pull from GHCR) ⚓**
@@ -189,6 +192,22 @@ PinchPad uses a **prefix-based identity token system** — no passwords, no user
 
 > [!CAUTION]
 > Your `hu-` key is the **only** way to access your PinchPad. Keep it safe. If you lose it, it cannot be recovered. Back it up somewhere secure.
+
+---
+
+## 🛡️ ShellProxy Service
+
+The **ShellProxy** is a secure, read-only membrane that allows you to share individual Pearls (and their photos) with the public without exposing your primary API or requiring authentication.
+
+### How it Works
+1. **Unguessable Hashes**: When you share a Pearl, PinchPad generates a 64-character cryptographically secure hash.
+2. **Stateless Access**: The ShellProxy route (`/share/:hash`) is strictly read-only and does not require a login.
+3. **Photo Protection**: Photos are only accessible through the proxy if they are attached to an active share.
+4. **Expiration**: You can set "Quick Share" durations (Minutes, Hours, Days, Months) or manual expiration dates. Once expired, the link silently returns a 404.
+
+### Configuration
+- `ENABLE_SHELL_PROXY=true`: Must be set to `true` to mount the public routes.
+- `SHELL_PROXY_RATE_LIMIT=30`: Protects the server from DDoS attacks on the binary photo endpoints.
 
 ---
 

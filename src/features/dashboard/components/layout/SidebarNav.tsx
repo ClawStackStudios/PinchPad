@@ -8,7 +8,7 @@
  * Maintained by CrustAgent©™
  */
 
-import { LayoutDashboard, Gem, Star, Pin, Settings, LogOut, User, Palette, Shield, Database, Tags } from 'lucide-react';
+import { LayoutDashboard, Gem, Star, Pin, Settings, LogOut, User, Palette, Shield, Database, Tags, Globe } from 'lucide-react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useReef, FilterTab } from '../../../notes/ReefContext';
 import { useAuth } from '../../../auth/AuthContext';
@@ -55,6 +55,7 @@ export function SidebarNav({
       { id: 'profile', label: 'Profile', icon: User },
       { id: 'appearance', label: 'Appearance', icon: Palette },
       { id: 'agents', label: 'Lobster Keys', icon: Shield },
+      { id: 'shellproxy', label: 'ShellProxy Shares', icon: Globe },
       { id: 'import-export', label: 'Import / Export', icon: Database },
     ];
 

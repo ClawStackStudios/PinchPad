@@ -12,7 +12,10 @@ services:
       - NODE_ENV=production
       - PORT=8282
       - DATA_DIR=/app/data
-      - DB_ENCRYPTION_KEY=
+      - CORS_ORIGIN=${CORS_ORIGIN:-}
+      - ENABLE_SHELL_PROXY=${ENABLE_SHELL_PROXY:-true}
+      - SHELL_PROXY_RATE_LIMIT=${SHELL_PROXY_RATE_LIMIT:-30}
+      - DB_ENCRYPTION_KEY=${DB_ENCRYPTION_KEY:-}
       - PUID=1000
       - PGID=1000
       # For detailed configuration, see README.md → Running with Docker section

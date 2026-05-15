@@ -19,7 +19,9 @@ import agentsRoutes from './src/server/routes/agents';
 import lobsterSessionRoutes from './src/server/routes/lobsterSession';
 import photosRoutes from './src/server/routes/photos';
 import potsRoutes from './src/server/routes/pots';
-import { apiLimiter } from './src/server/middleware/rateLimiter';
+import sharesRoutes from './src/server/routes/shares';
+import shellProxyRoutes from './src/server/routes/shellproxy';
+import { apiLimiter, shellProxyLimiter } from './src/server/middleware/rateLimiter';
 
 const PORT = parseInt(process.env.PORT ?? '8282', 10);
 const app = express();
@@ -72,7 +74,16 @@ app.use('/api/notes', notesRoutes);
 app.use('/api/pots', potsRoutes);
 app.use('/api/agents', agentsRoutes);
 app.use('/api/lobster-session', lobsterSessionRoutes);
+app.use('/api/shares', sharesRoutes);
 app.use('/api/photos', photosRoutes);
+
+// ─── ShellProxy Membrane ──────────────────────────────────────────────────────
+if (process.env.ENABLE_SHELL_PROXY === 'true') {
+  app.use('/shellproxy', shellProxyLimiter, shellProxyRoutes);
+  console.log('[ShellProxy] 🛡️  Public Membrane is ACTIVE (rate-limited: 30 req/min per IP).');
+} else {
+  console.log('[ShellProxy] 🔒 Public Membrane is DISABLED.');
+}
 
 // ─── Health ───────────────────────────────────────────────────────────────────
 app.get('/api/health', (req, res) => {

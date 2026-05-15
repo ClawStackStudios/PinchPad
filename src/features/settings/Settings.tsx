@@ -10,6 +10,7 @@ import { getApiBaseUrl } from '../../shared/lib/api';
 import { useViewTransitionTheme } from '../../shared/theme/ThemeToggle';
 import { useSettings } from './SettingsContext';
 import { LobsterKeysTab } from './components/LobsterKeysTab';
+import { ShellProxyTab } from './components/ShellProxyTab';
 import { LobsterImportModal } from './components/LobsterImportModal';
 import { ExportModal } from '../dashboard/components/modals/ExportModal';
 import { clsx, type ClassValue } from 'clsx';
@@ -334,6 +335,15 @@ export function Settings() {
             {activeTab === 'agents' && (
               <div className="bg-white dark:bg-slate-900 rounded-xl border-2 border-amber-500/30 dark:border-amber-500/50 shadow-sm transition-colors p-6">
                 <LobsterKeysTab />
+              </div>
+            )}
+
+            {/* ════════════════════════════════════════════════════════════ */}
+            {/* ── TAB: ShellProxy Shares ──────────────────────────────── */}
+            {/* ════════════════════════════════════════════════════════════ */}
+            {activeTab === 'shellproxy' && (
+              <div className="bg-white dark:bg-slate-900 rounded-xl border-2 border-amber-500/30 dark:border-amber-500/50 shadow-sm transition-colors p-6">
+                <ShellProxyTab />
               </div>
             )}
 

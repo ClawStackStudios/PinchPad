@@ -16,6 +16,7 @@ This document serves as the MAIN locus for high-level **CrustCode©™** pattern
 - **Jewel Marker Protocol**: Attachments must be referenced using the `[*pearl-jewel*](UUID)` syntax. Absolute API URLs in content are legacy and should be scuttled.
 - **Port Parity**: Maintain 8282 (UI) and 8383 (API) separation. Any change to these ports must be reflected in the Scuttle scripts and Vite proxy config.
 - **Security Mirror**: CORS and Helmet logic MUST remain synchronized with ClawChives.
+- **ShellProxy Membrane Lock**: The public membrane routes (`/shellproxy/*`) must remain strictly read-only and unauthenticated. Rate limiting is mandatory to prevent binary asset abuse.
 
 ## 🧠 Codebase Topology
 - `/src/components` - Shared, reusable aesthetic & layout elements.
