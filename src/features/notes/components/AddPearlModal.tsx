@@ -5,19 +5,8 @@ import { MarkdownToolbar } from './MarkdownToolbar';
 import { MarkdownPreviewModal } from './MarkdownPreviewModal';
 import { PearlPhotoGallery } from './PearlPhotoGallery';
 import { Tags as TagsIcon, Plus } from 'lucide-react';
-import { getRandomLobsterColor, getLobsterColorClasses, LobsterColor } from '../../../shared/lib/lobsterColorRNG';
+import { getLobsterColorClasses, getRandomLobsterColor, getTagColorClasses } from '../../../shared/lib/lobsterColorRNG';
 import { TagModal } from './TagModal';
-
-// ─── Color cache for individual tags (stable across re-renders) ─────────
-
-const tagColorCache = new Map<string, LobsterColor>();
-
-function getIndividualTagColor(tag: string): string {
-  if (!tagColorCache.has(tag)) {
-    tagColorCache.set(tag, getRandomLobsterColor());
-  }
-  return getLobsterColorClasses(tagColorCache.get(tag)!);
-}
 
 interface AddPearlModalProps {
   isOpen: boolean;
@@ -288,7 +277,7 @@ export function AddPearlModal({ isOpen, onClose, onSuccess, onAutosave, editNote
 
               {tags.length <= 2 ? (
                 tags.map(tag => (
-                  <span key={tag} className={`flex items-center gap-1 text-[10px] font-bold uppercase tracking-widest px-2 py-1 rounded-md border ${getIndividualTagColor(tag)}`}>
+                  <span key={tag} className={`flex items-center gap-1 text-[10px] font-bold uppercase tracking-widest px-2 py-1 rounded-md border ${getTagColorClasses(tag)}`}>
                     {tag}
                     <button type="button" onClick={() => removeTag(tag)} className="hover:text-red-500">
                       <X className="w-3 h-3" />
@@ -299,7 +288,7 @@ export function AddPearlModal({ isOpen, onClose, onSuccess, onAutosave, editNote
                 <button
                   type="button"
                   onClick={() => setIsTagModalOpen(true)}
-                  className={`text-[10px] font-bold uppercase tracking-widest px-2 py-1 rounded-md transition-colors border ${getLobsterColorClasses(getRandomLobsterColor())}`}
+                  className={`text-[10px] font-bold uppercase tracking-widest px-2 py-1 rounded-md transition-colors border ${getTagColorClasses(tags[0])}`}
                 >
                   TAGS ({tags.length})
                 </button>

@@ -12,6 +12,7 @@ import { motion } from 'framer-motion';
 import {
   getLobsterColorClasses,
   getRandomLobsterColor,
+  getTagColorClasses,
   LobsterColor,
 } from '../../../shared/lib/lobsterColorRNG';
 
@@ -22,17 +23,6 @@ interface TagModalProps {
   onClose: () => void;
   tags: string[];
   onRemove: (tag: string) => void;
-}
-
-// ─── Color cache (stable across renders) ──────────────────────────────────────
-
-const colorCache = new Map<string, LobsterColor>();
-
-function getStableColor(tag: string): string {
-  if (!colorCache.has(tag)) {
-    colorCache.set(tag, getRandomLobsterColor());
-  }
-  return getLobsterColorClasses(colorCache.get(tag)!);
 }
 
 // ─── Component ────────────────────────────────────────────────────────────────
@@ -76,7 +66,7 @@ export function TagModal({ isOpen, onClose, tags, onRemove }: TagModalProps) {
           {/* Tag Rows */}
           <div className="space-y-2 max-h-[40vh] overflow-y-auto custom-scrollbar pr-1">
             {tags.map((tag, index) => {
-              const colorClasses = getStableColor(tag);
+              const colorClasses = getTagColorClasses(tag);
               return (
                 <motion.div
                   key={tag}
