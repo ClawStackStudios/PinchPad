@@ -6,8 +6,9 @@ import crypto from 'crypto';
 process.env.NODE_ENV = 'test';
 process.env.AUTH_RATE_LIMIT = '1000';
 process.env.API_RATE_LIMIT = '1000';
+process.env.ADMIN_AUTH_LIMIT = '1000';
 
-import db from '../../src/server/database/index';
+import db, { auditDb } from '../../src/server/database/index';
 import authRoutes from '../../src/server/routes/auth';
 import notesRoutes from '../../src/server/routes/notes';
 import agentsRoutes from '../../src/server/routes/agents';
@@ -17,7 +18,7 @@ import lobsterSessionRoutes from '../../src/server/routes/lobsterSession';
 import { requireAuth } from '../../src/server/middleware/auth';
 import { createAgentKeyRateLimiter, apiLimiter } from '../../src/server/middleware/rateLimiter';
 
-export function createTestApp(): { app: Express; db: Database.Database } {
+export function createTestApp(): { app: Express; db: Database.Database; auditDb: Database.Database } {
   // Database schema is already initialized by ../../src/server/database/index.ts
   // because runMigrations and initializeSchema run automatically.
   // We just need to clear all tables to ensure a clean slate for tests.
@@ -31,8 +32,15 @@ export function createTestApp(): { app: Express; db: Database.Database } {
     DELETE FROM agent_keys;
     DELETE FROM api_tokens;
     DELETE FROM users;
-    DELETE FROM audit_logs;
+    DELETE FROM system_settings;
   `);
+
+  db.exec(`
+    INSERT INTO system_settings (key, value, updated_at) VALUES ('audit_retention_days', '90', datetime('now'));
+    INSERT INTO system_settings (key, value, updated_at) VALUES ('uptime_retention_days', '30', datetime('now'));
+  `);
+
+  auditDb.exec(`DELETE FROM audit_logs;`);
 
   const app = express();
   app.use(express.json());
@@ -45,7 +53,7 @@ export function createTestApp(): { app: Express; db: Database.Database } {
   app.use('/api/photos', photosRoutes);
   app.use('/api/lobster-session', lobsterSessionRoutes);
 
-  return { app, db };
+  return { app, db, auditDb };
 }
 
 export function createTestUser(db: Database.Database, username = 'testuser', keyHash?: string): string {

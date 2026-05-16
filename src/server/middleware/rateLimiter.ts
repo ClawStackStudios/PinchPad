@@ -65,9 +65,10 @@ export const createAgentKeyRateLimiter = () => agentKeyLimiter;
 
 export const adminAuthLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,  // 15 minutes
-  max: 5,                     // 5 attempts per window
+  max: parseInt(process.env.ADMIN_AUTH_LIMIT || '5', 10),                     // 5 attempts per window
   standardHeaders: true,
   legacyHeaders: false,
+  skip: () => process.env.NODE_ENV === 'test',
   message: {
     success: false,
     error: 'Too many admin login attempts. The reef is sealed.',

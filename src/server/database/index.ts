@@ -12,7 +12,8 @@ initializeSchema(mainDb);
 runMigrations(mainDb);
 
 // Initialize Audit DB (Separate file for segregation)
-const auditDb = createConnection('audit.sqlite', encryptionKey);
+const auditDbPath = process.env.NODE_ENV === 'test' ? ':memory:' : 'audit.sqlite';
+const auditDb = createConnection(auditDbPath, encryptionKey);
 initializeAuditSchema(auditDb);
 
 // Centralized Audit Logger Singleton

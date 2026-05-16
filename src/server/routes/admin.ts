@@ -28,7 +28,7 @@ router.post('/auth', adminAuthLimiter, (req, res) => {
   const adminToken = process.env.ADMIN_TOKEN;
 
   if (!adminToken) {
-    return res.status(500).json({ success: false, error: 'Admin panel is not configured.' });
+    return res.status(503).json({ success: false, error: 'Admin panel is not configured.' });
   }
 
   // Compare provided token (hashed client-side or raw) with env token
