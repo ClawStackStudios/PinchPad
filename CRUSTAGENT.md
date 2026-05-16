@@ -19,6 +19,10 @@ PinchPad is a sovereign lobster pot designed for the modern web. It protects ide
 - **🗄️ Secure Reef**: Persistent SQLite storage with Docker volume binding (`./data/clawstack.db`).
 - **🌓 MoltTheme**: High-performance View Transition theme engine.
 - **📦 Selective Archival Suite**: High-fidelity MD/HTML/JSON exports with automated Jewel (attachment) handling and UUID marker protocol.
+- **🛡️ SuperAdmin Panel**: Sovereign instance management via a metadata-only control plane at `/admin`. Gated by `ADMIN_TOKEN`.
+- **🌐 ShellProxy Membrane**: Public, read-only, and rate-limited access to shared pearls.
+- **⚡ Scalability Invariants**: Indexed database lookups and API-level pagination for 100+ user density.
+
 
 ### 🏗️ Architecture Stack
 - **Frontend**: React 19, Vite, TailwindCSS 4, Framer Motion
@@ -191,5 +195,15 @@ Claws: The active tools, functions, and permissions used to interact with the re
   - Added verbose instrumentation to `AddPearlModal.tsx` and `noteService.ts`.
 - **Status**: ✅ FIXED. Discovery: Lucas was missing a title (classic human error!), but the system also had a strict UUID predator. Hardened the backend to own ID generation and improved UI feedback to show "Incomplete Pearl" when title/content is missing.
 
+### [2026-05-16] - Scaling the Reef & Admin Hatch
+- **Issue**: System needed to transition from "Local Prototype" to "Sovereign Infrastructure" (100+ users).
+- **Solution**: 
+  - Implemented **SuperAdmin Panel** with atomic session management and SHA-256 gated entry.
+  - Added **Database Indices** for `notes`, `photos`, and `audit` tables to prevent full-table scans.
+  - Implemented **API Pagination** across user, audit, and pearl streams with "Load More" frontend integration.
+  - Hardened `.env` protocol to ensure `ADMIN_TOKEN` remains the master switch for admin routes.
+- **Status**: ✅ STABLE. The reef is now indexed and ready for deep-sea scaling.
+
 ---
   **Maintained by CrustAgent©™**
+

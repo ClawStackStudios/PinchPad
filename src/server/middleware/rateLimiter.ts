@@ -62,3 +62,27 @@ export const agentKeyLimiter = rateLimit({
 
 // Legacy wrapper to maintain compatibility with existing middleware chains
 export const createAgentKeyRateLimiter = () => agentKeyLimiter;
+
+export const adminAuthLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,  // 15 minutes
+  max: 5,                     // 5 attempts per window
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: {
+    success: false,
+    error: 'Too many admin login attempts. The reef is sealed.',
+  },
+});
+
+export const adminApiLimiter = rateLimit({
+  windowMs: 1 * 60 * 1000,   // 1 minute
+  max: 60,                    // 60 requests per minute
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: {
+    success: false,
+    error: 'Admin API rate limit exceeded. Slow down your claws.',
+  },
+});
+
+

@@ -30,6 +30,9 @@ This is the hardened path for **
 - [x] **Hatch Export Wizard**: Selective, high-fidelity archival (MD, Styled HTML, JSON) with binary bundling.
 - [x] **Amber Dropper UI**: Visual position markers for Jewels in the markdown preview.
 - [x] **CI/CD Scuttle**: Automated Vitest gates and Docker pushes to GHCR.
+- [x] **🛡️ SuperAdmin Hatch**: Metadata-only instance control plane (`/admin`) for sovereign maintenance.
+- [x] **⚡ Scaling Invariants**: API-level pagination and database indexing for high-density (100+ user) habitats.
+
 - [/] **CRUSTSECURITY.md**: Formalizing the security framework and threat model.
 - [/] **Coverage Expansion**: Pushing Vitest coverage from 56% to 80%+.
 - [ ] **Visual Sovereignty**: Comprehensive screenshot documentation and UI guides.
@@ -40,7 +43,8 @@ This is the hardened path for **
 - [ ] **The Live Reef**: WebSocket-driven real-time updates across clients.
 - [ ] **Pinch Extension**: One-click browser capture directly into your Burrow.
 - [ ] **Webhooks**: Outbound triggers for LobsterKey automation.
-- [ ] **The Glass Pearl**: Secure, read-only public sharing links.
+- [x] **The Glass Pearl**: Secure, read-only public sharing links (via ShellProxy membrane).
+
 
 ---
 

@@ -60,6 +60,8 @@
 - 🗄️ **Secure Reef** — Persistent SQLite storage with multi-cipher encryption.
 - 📦 **Selective Archival** — selective MD/HTML/JSON exports with automated Jewel (attachment) handling.
 - 🌓 **MoltTheme** — View Transition-based theme engine. Watching the world shift colors.
+- 🛡️ **SuperAdmin Panel** — Sovereign instance management via a metadata-only control plane at `/admin`.
+
 
 ---
 
@@ -146,7 +148,11 @@ npm install
 PORT=8282                    # Server listen port (single container)
 NODE_ENV=production          # production or development
 CORS_ORIGIN=http://yourdomain.com  # restrict CORS origin, or leave unset for open LAN
+ADMIN_TOKEN=your-secret-token     # Optional: Enable SuperAdmin panel at /admin
+ENABLE_SHELL_PROXY=true          # Optional: Enable public pearl sharing
+SHELL_PROXY_RATE_LIMIT=60        # Optional: Public request limit (default: 60/15min)
 ```
+
 
 **Option A: Production (Pull from GHCR) ⚓**
 Use this for a stable, sovereign deployment. It pulls the latest pre-built image from the GitHub Container Registry.
@@ -212,7 +218,13 @@ PinchPad uses a **prefix-based identity token system** — no passwords, no user
 | `GET` | `/api/agents` | Yes | human-only | List agent keys |
 | `POST` | `/api/agents` | Yes | human-only | Create agent key |
 | `PUT` | `/api/agents/:id/revoke` | Yes | human-only | Revoke agent key |
+| `POST` | `/api/admin/auth` | No | - | Admin login (requires `ADMIN_TOKEN`) |
+| `GET` | `/api/admin/users` | Yes | admin-only | List user metadata |
+| `DELETE` | `/api/admin/users/:id` | Yes | admin-only | Absolute user scuttle |
+| `GET` | `/api/admin/system` | Yes | admin-only | System stats & health |
+| `GET` | `/api/admin/audit` | Yes | admin-only | Query security audit logs |
 | `GET` | `/api/health` | No | - | Health check |
+
 
 </details>
 

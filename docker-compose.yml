@@ -12,9 +12,13 @@ services:
       - NODE_ENV=production
       - PORT=8282
       - DATA_DIR=/app/data
-      - DB_ENCRYPTION_KEY=
+      - DB_ENCRYPTION_KEY=${DB_ENCRYPTION_KEY:-}      # Optional: Enable Databade Encryption. Generategenerate a key with command openssl rand -base64 48
+      - ENABLE_SHELL_PROXY=${ENABLE_SHELL_PROXY:-false}
+      - SHELL_PROXY_RATE_LIMIT=${SHELL_PROXY_RATE_LIMIT:-60}
+      - ADMIN_TOKEN=${ADMIN_TOKEN:-}      # Optional: Enable SuperAdmin panel at /admin and generate a key with command openssl rand -base64 48
       - PUID=1000
       - PGID=1000
+
       # For detailed configuration, see README.md → Running with Docker section
     healthcheck:
       test: ["CMD", "wget", "-qO-", "http://localhost:8282/api/health"]
