@@ -52,6 +52,8 @@ PinchPad uses a **key-file identity system** — there are no passwords or accou
 - **`requireAuth`**: Extracts and validates the `api-` token from the Bearer header. Immediately injects `req.userId` and `req.permissions` for downstream handlers based on whether the token belongs to a human or an `lb-` agent key. Expired tokens are auto-deleted.
 - **`requirePermission(perm)`**: Enforces granular locks (e.g., `canRead`, `canWrite`, `canEdit`, `canDelete`) on all CRUD routes based on the permissions assigned to the underlying `lb-` key.
 - **`requireHuman`**: Restricts sensitive configuration routes (`/api/agents`) to human tokens only. Lobster keys cannot mutate system configuration.
+- **SuperAdmin Panel (`/admin`)**: A metadata-only control plane gated by a robust `ADMIN_TOKEN` environment variable. If the token is not provided, the routes are disabled (404). This isolates admin functionality from the standard `hu-` / `api-` token authentication flow.
+- **Audit Logging**: Comprehensive security tracking of auth events, agent usage, and server lifecycle (starts/stops) are written to an `audit_logs` table for administrative review.
 - **Key Uniqueness**: `key_hash` is strictly enforced as `UNIQUE` to support collision-free one-field lookups.
 - **SHA-256 Hashing**: Lobster keys are hashed using SHA-256 (not bcrypt, not MD5) for server-side verification. Hash comparison is query-based (constant-time).
 - **SQLite Data Integrity**: WAL journal mode enabled for durability. Foreign key constraints enforced with cascade deletes.

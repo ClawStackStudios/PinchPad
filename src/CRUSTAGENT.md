@@ -19,6 +19,8 @@ This document serves as the MAIN locus for high-level **CrustCode©™** pattern
 - **Admin Stability Lock**: SuperAdmin panel (`/admin`) MUST strictly enforce metadata-only access. Sessions are volatile (memory-only) and isolated from user auth.
 - **⚡ Performance Invariants**: All primary data streams (Notes, Audit, Users) MUST implement API-level pagination (`limit`/`offset`) and matching "Load More" UI.
 - **🗄️ Database Integrity**: Critical lookup columns (`user_uuid`, `updated_at`, `timestamp`) MUST be indexed to prevent full-table scan overhead.
+- **Server Lifecycle Logging**: All instances of startup and shutdown must be precisely logged in the audit table with `SESSION_ID` identifiers. `scuttle:stop` handles SIGTERM interception.
+- **Dynamic System Settings**: Retention policies are stored in the database (`system_settings`) and modified via the SuperAdmin UI rather than being hardcoded `.env` static states.
 
 
 

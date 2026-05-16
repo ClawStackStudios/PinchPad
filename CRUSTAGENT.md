@@ -204,6 +204,15 @@ Claws: The active tools, functions, and permissions used to interact with the re
   - Hardened `.env` protocol to ensure `ADMIN_TOKEN` remains the master switch for admin routes.
 - **Status**: ✅ STABLE. The reef is now indexed and ready for deep-sea scaling.
 
+### [2026-05-16] - Persistent Uptime & Dynamic Settings
+- **Issue**: Process-based uptime was volatile, and `.env` based retention policies required hard reboots to change.
+- **Solution**: 
+  - Overhauled server lifecycle tracking to use `SESSION_ID` and DB-backed `SYSTEM_START`/`SYSTEM_SHUTDOWN` audit logs.
+  - Implemented graceful shutdown hooks (`SIGTERM` / `SIGINT`) and merged stop scripts into a unified `npm run scuttle:stop`.
+  - Added a `system_settings` table and dynamic Retention Dropdown menu in the SuperAdmin UI for 30/60/90 day toggles with auto-save.
+  - Deployed an interactive Uptime History Slider displaying the lifespan of all historical sessions, explicitly logging ungraceful crashes as "Unclean Shutdowns".
+- **Status**: ✅ ROBUST. The server now permanently remembers its lifespans, and settings can be changed seamlessly on the fly.
+
 ---
   **Maintained by CrustAgent©™**
 
