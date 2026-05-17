@@ -328,6 +328,41 @@ describe('Auth Security — Attack Vector Testing', () => {
         expect(afterAuth.last_used).not.toBeNull();
       }
     });
+
+    it('allows active agent to authenticate using pre-hashed keyHash and receive api- token', async () => {
+      const user = createTestUser(db);
+      const key = createTestLobsterKey(db, user.uuid);
+      const agentKeyHash = crypto.createHash('sha256').update(key.apiKey).digest('hex');
+
+      const res = await request(app)
+        .post('/api/auth/token')
+        .send({ type: 'agent', keyHash: agentKeyHash });
+
+      expect(res.status).toBe(201);
+      expect(res.body.success).toBe(true);
+      expect(res.body.data.token).toBeDefined();
+      expect(res.body.data.token.startsWith('api-')).toBe(true);
+
+      // Verify the generated session token actually works and grants agent access
+      const validateRes = await request(app)
+        .get('/api/auth/verify')
+        .set('Authorization', `Bearer ${res.body.data.token}`);
+
+      expect(validateRes.status).toBe(200);
+      expect(validateRes.body.success).toBe(true);
+      expect(validateRes.body.valid).toBe(true);
+    });
+
+    it('rejects agent authentication with invalid keyHash (401)', async () => {
+      const invalidHash = 'f'.repeat(64);
+      const res = await request(app)
+        .post('/api/auth/token')
+        .send({ type: 'agent', keyHash: invalidHash });
+
+      expect(res.status).toBe(401);
+      expect(res.body.success).toBe(false);
+      expect(res.body.error).toContain('Invalid or revoked Lobster key');
+    });
   });
 
   describe('Audit Logging Security', () => {
