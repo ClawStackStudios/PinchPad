@@ -188,7 +188,7 @@ export function Landing() {
                 onClick={() => setGatewayMode('agent')}
                 className={`flex-1 px-4 py-2.5 text-xs font-bold rounded-full transition-all uppercase tracking-widest ${
                   gatewayMode === 'agent' 
-                    ? 'bg-amber-600 text-white shadow-lg shadow-amber-900/20' 
+                    ? 'bg-red-600 text-white shadow-lg shadow-red-900/20' 
                     : 'text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200'
                 }`}
               >
@@ -230,26 +230,26 @@ export function Landing() {
               {gatewayMode === 'agent' && (
                 <div key="agent-content" className="animate-in">
                   <h3 className="text-slate-900 dark:text-white font-bold mb-6 text-center text-xs uppercase tracking-widest leading-relaxed">
-                    Integrate your <br /> <span className="text-amber-500">Lobsters</span> 🦞
+                    Integrate your <br /> <span className="text-red-500">Lobsters</span> 🦞
                   </h3>
 
                   <h4 className="text-slate-900 dark:text-white font-bold mb-4 text-center text-xs uppercase tracking-widest">
-                    Give This To Your<br /><span className="text-amber-500">Lobster</span>
+                    Give This To Your<br /><span className="text-red-500">Lobster</span>
                   </h4>
                   <div className="bg-slate-50 dark:bg-slate-950 rounded-2xl p-4 mb-6 border border-slate-200 dark:border-slate-800 shadow-inner flex items-center justify-between group relative overflow-hidden">
-                    <code className="text-amber-600 dark:text-amber-400 text-[10px] font-mono whitespace-nowrap overflow-hidden text-ellipsis flex-1 relative z-10 selection:bg-amber-200 dark:selection:bg-amber-900/50">
+                    <code className="text-red-600 dark:text-red-400 text-[10px] font-mono whitespace-nowrap overflow-hidden text-ellipsis flex-1 relative z-10 selection:bg-red-200 dark:selection:bg-red-900/50">
                       GET /skill.md
                     </code>
                     <button
                       onClick={() => {
                         navigator.clipboard.writeText(`${getApiBaseUrl()}/skill.md`);
                       }}
-                      className="ml-2 px-2 py-1 text-[9px] font-bold text-amber-600 dark:text-amber-400 hover:bg-amber-100 dark:hover:bg-amber-900/30 rounded transition-colors flex-shrink-0"
+                      className="ml-2 px-2 py-1 text-[9px] font-bold text-red-600 dark:text-red-400 hover:bg-red-100 dark:hover:bg-red-900/30 rounded transition-colors flex-shrink-0"
                       title="Copy skill URL"
                     >
                       COPY
                     </button>
-                    <div className="absolute inset-0 bg-amber-50 dark:bg-amber-900/10 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none" />
+                    <div className="absolute inset-0 bg-red-50 dark:bg-red-900/10 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none" />
                   </div>
                   <div className="text-xs text-slate-500 dark:text-slate-400 space-y-3 px-1 mb-4">
                     <p className="text-center italic">
@@ -258,14 +258,14 @@ export function Landing() {
                   </div>
                   <button
                     onClick={() => window.open(`${getApiBaseUrl()}/skill.md`, '_blank')}
-                    className="w-full px-3 py-2 text-xs font-bold rounded-lg bg-amber-100 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400 hover:bg-amber-200 dark:hover:bg-amber-900/50 transition-colors"
+                    className="w-full px-3 py-2 text-xs font-bold rounded-lg bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400 hover:bg-red-200 dark:hover:bg-red-900/50 transition-colors"
                   >
                     Preview Skill Document →
                   </button>
 
                   <button
                     onClick={() => navigate('/register')}
-                    className="w-full mt-8 rounded-md text-sm font-medium h-9 px-4 py-2 bg-amber-500 hover:bg-amber-600 text-white shadow-lg shadow-amber-900/20 transition-all focus:outline-none focus:ring-2 focus:ring-amber-500 focus:ring-offset-2 dark:focus:ring-offset-slate-900 active:scale-95"
+                    className="w-full mt-8 rounded-md text-sm font-medium h-9 px-4 py-2 bg-red-600 hover:bg-red-700 text-white shadow-lg shadow-red-900/20 transition-all focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 dark:focus:ring-offset-slate-900 active:scale-95"
                   >
                     Secure Agent Identity
                   </button>
