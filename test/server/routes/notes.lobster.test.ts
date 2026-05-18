@@ -75,6 +75,94 @@ describe('Notes Routes', () => {
 
       expect(res.status).toBe(401);
     });
+
+    it('supports offset-based pagination with limit and page', async () => {
+      const notes = [
+        { id: crypto.randomUUID(), title: 'Note 1', content: 'C1' },
+        { id: crypto.randomUUID(), title: 'Note 2', content: 'C2' },
+        { id: crypto.randomUUID(), title: 'Note 3', content: 'C3' },
+      ];
+
+      for (const n of notes) {
+        await request(app)
+          .post('/api/notes')
+          .set('Authorization', `Bearer ${token}`)
+          .send(n);
+      }
+
+      // Query page 1 with limit 2
+      const resPage1 = await request(app)
+        .get('/api/notes')
+        .query({ limit: 2, page: 1 })
+        .set('Authorization', `Bearer ${token}`);
+
+      expect(resPage1.status).toBe(200);
+      expect(resPage1.body.data).toHaveLength(2);
+      expect(resPage1.body.pagination).toBeDefined();
+      expect(resPage1.body.pagination.page).toBe(1);
+      expect(resPage1.body.pagination.limit).toBe(2);
+      expect(resPage1.body.pagination.total).toBe(3);
+      expect(resPage1.body.pagination.pages).toBe(2);
+
+      // Query page 2 with limit 2
+      const resPage2 = await request(app)
+        .get('/api/notes')
+        .query({ limit: 2, page: 2 })
+        .set('Authorization', `Bearer ${token}`);
+
+      expect(resPage2.status).toBe(200);
+      expect(resPage2.body.data).toHaveLength(1);
+      expect(resPage2.body.pagination.page).toBe(2);
+      expect(resPage2.body.pagination.total).toBe(3);
+    });
+
+    it('supports offset-based pagination with limit and offset', async () => {
+      const notes = [
+        { id: crypto.randomUUID(), title: 'Note A', content: 'C1' },
+        { id: crypto.randomUUID(), title: 'Note B', content: 'C2' },
+        { id: crypto.randomUUID(), title: 'Note C', content: 'C3' },
+      ];
+
+      for (const n of notes) {
+        await request(app)
+          .post('/api/notes')
+          .set('Authorization', `Bearer ${token}`)
+          .send(n);
+      }
+
+      // Query with limit 2 and offset 2
+      const res = await request(app)
+        .get('/api/notes')
+        .query({ limit: 2, offset: 2 })
+        .set('Authorization', `Bearer ${token}`);
+
+      expect(res.status).toBe(200);
+      expect(res.body.data).toHaveLength(1);
+      expect(res.body.pagination.limit).toBe(2);
+      expect(res.body.pagination.offset).toBe(2);
+      expect(res.body.pagination.total).toBe(3);
+    });
+
+    it('enforces maximum allowed item limit of 10000', async () => {
+      const res = await request(app)
+        .get('/api/notes')
+        .query({ limit: 25000 })
+        .set('Authorization', `Bearer ${token}`);
+
+      expect(res.status).toBe(200);
+      expect(res.body.pagination.limit).toBe(10000);
+    });
+
+    it('coerces negative limit and page to standard positive bounds', async () => {
+      const res = await request(app)
+        .get('/api/notes')
+        .query({ limit: -10, page: -5 })
+        .set('Authorization', `Bearer ${token}`);
+
+      expect(res.status).toBe(200);
+      expect(res.body.pagination.limit).toBe(1);
+      expect(res.body.pagination.page).toBe(1);
+    });
   });
 
   describe('POST /api/notes', () => {

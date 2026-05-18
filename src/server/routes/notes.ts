@@ -17,7 +17,26 @@ const audit = createAuditLogger(db);
  */
 router.get('/', requireAuth, requirePermission('canRead'), (req: AuthRequest, res: Response) => {
   try {
-    const reef = db.prepare('SELECT * FROM notes WHERE user_uuid = ? ORDER BY updated_at DESC').all(req.userUuid) as any[];
+    const hasPagination = req.query.page !== undefined || req.query.limit !== undefined || req.query.offset !== undefined;
+    
+    let reef: any[];
+    let totalCount = 0;
+    
+    const limit = Math.min(Math.max(parseInt(req.query.limit as string) || 50, 1), 10000);
+    let offset = Math.max(parseInt(req.query.offset as string) || 0, 0);
+    const page = Math.max(parseInt(req.query.page as string) || 1, 1);
+    
+    if (req.query.page) {
+      offset = (page - 1) * limit;
+    }
+
+    if (hasPagination) {
+      const countRow = db.prepare('SELECT COUNT(*) as count FROM notes WHERE user_uuid = ?').get(req.userUuid) as { count: number };
+      totalCount = countRow ? countRow.count : 0;
+      reef = db.prepare('SELECT * FROM notes WHERE user_uuid = ? ORDER BY updated_at DESC LIMIT ? OFFSET ?').all(req.userUuid, limit, offset) as any[];
+    } else {
+      reef = db.prepare('SELECT * FROM notes WHERE user_uuid = ? ORDER BY updated_at DESC').all(req.userUuid) as any[];
+    }
 
     // Batch fetch all photos in one query instead of N+1 per-note queries
     const noteIds = reef.map(n => n.id);
@@ -45,7 +64,18 @@ router.get('/', requireAuth, requirePermission('canRead'), (req: AuthRequest, re
       };
     });
 
-    res.json({ data: reefWithPhotos });
+    const responsePayload: any = { data: reefWithPhotos };
+    if (hasPagination) {
+      responsePayload.pagination = {
+        page: req.query.page ? page : Math.floor(offset / limit) + 1,
+        limit,
+        offset,
+        total: totalCount,
+        pages: Math.ceil(totalCount / limit)
+      };
+    }
+
+    res.json(responsePayload);
   } catch (isCracked: any) {
     console.error('[Notes] ❌ Scuttle error:', isCracked.message);
     res.status(500).json({ error: 'Failed to fetch notes' });
