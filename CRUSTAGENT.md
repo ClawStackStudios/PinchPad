@@ -184,8 +184,6 @@ Claws: The active tools, functions, and permissions used to interact with the re
      '.__W__.'
 ```
 
-## 🐚 Diagnostic Log: The Pearl Failure
-
 ### [2026-04-28] - The missing jinaUrl Predator
 - **Issue**: Pearls failed to save ("Shell It!" clicked but no POST logged).
 - **Discovery**: `NoteSchemas.create` required a `jinaUrl` key in the object, but the frontend wasn't sending it. This caused a silent 400 Validation Error (or a hidden exception).
@@ -212,6 +210,15 @@ Claws: The active tools, functions, and permissions used to interact with the re
   - Added a `system_settings` table and dynamic Retention Dropdown menu in the SuperAdmin UI for 30/60/90 day toggles with auto-save.
   - Deployed an interactive Uptime History Slider displaying the lifespan of all historical sessions, explicitly logging ungraceful crashes as "Unclean Shutdowns".
 - **Status**: ✅ ROBUST. The server now permanently remembers its lifespans, and settings can be changed seamlessly on the fly.
+
+### [2026-05-17] - The High-Performance Pagination Update
+- **Issue**: Active agents (e.g. ClawChives) needed offset-based pagination to sync massive pearl libraries efficiently without memory exhaustion.
+- **Fix**:
+  - Extended `/api/notes` router in `notes.ts` to support `limit`, `page`, and `offset` query parameters.
+  - Constrained requested retrieval limits using safety bounds (`1 <= limit <= 10000`) to protect the Better-SQLite3 database.
+  - Preserved full, transparent backward compatibility to fetch all notes when parameters are omitted.
+  - Appended extensive test scenarios in `notes.lobster.test.ts` verifying page limits, raw offsets, negative parameter coercion, and response payload formatting.
+- **Status**: ✅ FIXED & VERIFIED (all 245 tests passing).
 
 ---
   **Maintained by CrustAgent©™**
