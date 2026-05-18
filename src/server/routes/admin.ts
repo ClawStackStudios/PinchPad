@@ -160,13 +160,18 @@ router.get('/system', requireAdmin, (req, res) => {
   if (existsSync(mainDbPath))  totalDbSize += statSync(mainDbPath).size;
   if (existsSync(auditDbPath)) totalDbSize += statSync(auditDbPath).size;
 
+  const userRow = db.prepare('SELECT COUNT(*) as count FROM users').get() as { count: number } | undefined;
+  const noteRow = db.prepare('SELECT COUNT(*) as count FROM notes').get() as { count: number } | undefined;
+  const photoRow = db.prepare('SELECT COUNT(*) as count FROM pearl_photos').get() as { count: number } | undefined;
+  const auditRow = auditDb.prepare('SELECT timestamp FROM audit_logs ORDER BY timestamp DESC LIMIT 1').get() as { timestamp: string } | undefined;
+
   const stats = {
-    totalUsers: db.prepare('SELECT COUNT(*) as count FROM users').get().count,
-    totalPearls: db.prepare('SELECT COUNT(*) as count FROM notes').get().count,
-    totalPhotos: db.prepare('SELECT COUNT(*) as count FROM pearl_photos').get().count,
+    totalUsers: userRow?.count || 0,
+    totalPearls: noteRow?.count || 0,
+    totalPhotos: photoRow?.count || 0,
     dbSize: totalDbSize,
     uptime: process.uptime(),
-    lastAudit: auditDb.prepare('SELECT timestamp FROM audit_logs ORDER BY timestamp DESC LIMIT 1').get()?.timestamp || null
+    lastAudit: auditRow?.timestamp || null
   };
 
   res.json({ success: true, data: stats });
