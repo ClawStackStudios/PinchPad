@@ -200,33 +200,60 @@ PinchPad uses a **prefix-based identity token system** — no passwords, no user
 
 ## 🔌 API Reference
 
-> All endpoints except `/api/health` and `/api/auth/register` require `Authorization: Bearer <api-token>`.
+> All endpoints except `/api/health`, `/api/auth/register`, `/api/auth/token`, `/api/admin/auth`, `/api/admin/verify`, `/api/admin/logout`, and `/api/photos/:id` require a valid `Authorization: Bearer <api-token>` header.
 
 <details>
 <summary>View full API endpoint table</summary>
 
 | Method | Endpoint | Auth | Permission | Description |
 |---|---|---|---|---|
+| **Authentication** | | | | |
 | `POST` | `/api/auth/register` | No | - | Create new identity key |
-| `POST` | `/api/auth/token` | No | - | Issue `api-` token from `hu-` or `lb-` key |
-| `GET` | `/api/auth/verify` | Yes | - | Verify current Bearer token |
-| `POST` | `/api/auth/logout` | Yes | - | Revoke current session token |
-| `GET` | `/api/notes` | Yes | canRead | List all notes |
-| `POST` | `/api/notes` | Yes | canWrite | Create note |
-| `PUT` | `/api/notes/:id` | Yes | canEdit | Update note |
-| `DELETE` | `/api/notes/:id` | Yes | canDelete | Delete note |
-| `GET` | `/api/agents` | Yes | human-only | List agent keys |
-| `POST` | `/api/agents` | Yes | human-only | Create agent key |
-| `PUT` | `/api/agents/:id/revoke` | Yes | human-only | Revoke agent key |
-| `POST` | `/api/admin/auth` | No | - | Admin login (requires `ADMIN_TOKEN`) |
-| `GET` | `/api/admin/users` | Yes | admin-only | List user metadata |
-| `DELETE` | `/api/admin/users/:id` | Yes | admin-only | Absolute user scuttle |
-| `GET` | `/api/admin/system` | Yes | admin-only | System stats & health |
-| `GET` | `/api/admin/audit` | Yes | admin-only | Query security audit logs |
-| `GET` | `/api/admin/uptime` | Yes | admin-only | Get session uptime history logs |
-| `GET` | `/api/admin/settings` | Yes | admin-only | Fetch system configuration and retention policy |
-| `PATCH` | `/api/admin/settings` | Yes | admin-only | Update system settings |
-| `GET` | `/api/health` | No | - | Health check |
+| `POST` | `/api/auth/token` | No | - | Issue `api-` token from `hu-` or `lb-` key (plaintext or SHA-256 keyHash) |
+| `GET` | `/api/auth/validate` | Yes | - | Fast bearer token validity check |
+| `GET` | `/api/auth/verify` | Yes | - | Fetch authenticated user configuration and metadata |
+| `POST` | `/api/auth/logout` | Yes | - | Revoke session and clear cookies |
+| **Pearls (Notes) CRUD** | | | | |
+| `GET` | `/api/notes` | Yes | canRead | List and filter all notes (supports limit/offset pagination) |
+| `POST` | `/api/notes` | Yes | canWrite | Create a new encrypted note |
+| `PUT` | `/api/notes/:id` | Yes | canEdit | Update an existing encrypted note |
+| `DELETE` | `/api/notes/:id` | Yes | canDelete | Delete a note and clean up associated assets |
+| `GET` | `/api/notes/counts` | Yes | - | Fetch dashboard count badges for notes, pots, and starred states |
+| `POST` | `/api/notes/bulk` | Yes | canWrite | Bulk sync/import multiple notes (rate-limit bypassed) |
+| `GET` | `/api/notes/export` | Yes | canRead | Generate a comprehensive ZIP archive of notes (MD/HTML/JSON) |
+| `PATCH` | `/api/notes/:id/starred` | Yes | canEdit | Toggle a note's starred status |
+| `PATCH` | `/api/notes/:id/pinned` | Yes | canEdit | Toggle a note's pinned status |
+| **Pots (Folders) CRUD** | | | | |
+| `GET` | `/api/pots` | Yes | canRead | List all pots (folders) |
+| `POST` | `/api/pots` | Yes | canWrite | Create a new pot (with title and color) |
+| `PATCH` | `/api/pots/:id` | Yes | canEdit | Update a pot's title or color |
+| `DELETE` | `/api/pots/:id` | Yes | canDelete | Cascade delete a pot and all notes inside it |
+| **Photos (Attachments)** | | | | |
+| `POST` | `/api/photos/upload` | Yes | canWrite | Upload a note photo attachment (multipart/form-data) |
+| `GET` | `/api/photos/:id` | No | - | Fetch raw photo binary (accessible to decoders) |
+| `DELETE` | `/api/photos/:id` | Yes | canDelete | Permanently delete a photo attachment from the server |
+| **Agent Key Management** | | | | |
+| `GET` | `/api/agents` | Yes | human-only | List all configured agent keys (`lb-`) |
+| `POST` | `/api/agents` | Yes | human-only | Create a new agent key (`lb-`) with granular permissions |
+| `PUT` | `/api/agents/:id/revoke` | Yes | human-only | Revoke an agent key (sets active = 0) |
+| `DELETE` | `/api/agents/:id` | Yes | human-only | Permanently delete an agent key from the database |
+| **Lobster Agent Sessions** | | | | |
+| `POST` | `/api/lobster-session/start` | Yes | human-only | Initiate an interactive agent session |
+| `POST` | `/api/lobster-session/:id/close` | Yes | human-only | Terminate an active agent session |
+| **SuperAdmin Panel** | | | | |
+| `POST` | `/api/admin/auth` | No | - | Admin login (gated by `ADMIN_TOKEN`, returns secure cookie) |
+| `GET` | `/api/admin/verify` | No | - | Verify admin session validity (via cookie or header) |
+| `POST` | `/api/admin/logout` | No | - | Logout admin session and clear credentials |
+| `GET` | `/api/admin/users` | Yes | admin-only | List user metadata, storage metrics, and login logs |
+| `DELETE` | `/api/admin/users/:uuid` | Yes | admin-only | Cascade scuttle a user and all their notes/photos/keys |
+| `GET` | `/api/admin/system` | Yes | admin-only | Get real-time system stats, database file size, and uptime |
+| `GET` | `/api/admin/audit` | Yes | admin-only | Query security and event audit logs (filtered & paginated) |
+| `GET` | `/api/admin/uptime` | Yes | admin-only | Fetch historical uptime session logs and crash metrics |
+| `GET` | `/api/admin/settings` | Yes | admin-only | Get dynamic global settings (retention days, etc.) |
+| `PATCH` | `/api/admin/settings` | Yes | admin-only | Update global system settings dynamically |
+| **System & Skills** | | | | |
+| `GET` | `/api/health` | No | - | API service health check |
+| `GET` | `/skill.md` | No | - | Fetch public agent instructions membrane (`SKILL.md`) |
 
 </details>
 

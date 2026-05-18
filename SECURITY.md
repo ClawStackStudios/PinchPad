@@ -53,7 +53,10 @@ PinchPad uses a **key-file identity system** — there are no passwords or accou
 - **`requirePermission(perm)`**: Enforces granular locks (e.g., `canRead`, `canWrite`, `canEdit`, `canDelete`) on all CRUD routes based on the permissions assigned to the underlying `lb-` key.
 - **`requireHuman`**: Restricts sensitive configuration routes (`/api/agents`) to human tokens only. Lobster keys cannot mutate system configuration.
 - **SuperAdmin Panel (`/admin`)**: A metadata-only control plane gated by a robust `ADMIN_TOKEN` environment variable. If the token is not provided, the routes are disabled (404). This isolates admin functionality from the standard `hu-` / `api-` token authentication flow.
-- **Audit Logging**: Comprehensive security tracking of auth events, agent usage, and server lifecycle (starts/stops) are written to an `audit_logs` table for administrative review.
+- **HTTPS Membrane (`httpsRedirect`)**: Express-level middleware intercepts all HTTP requests and strictly redirects them to HTTPS secure channels when `ENFORCE_HTTPS=true` is enabled, guaranteeing secure cookies and protecting session tokens in transit.
+- **Rate Limiting**: Multiple rate limiter membranes (`express-rate-limit`) protect sensitive endpoints from denial of service and brute force. Highly configurable settings handle standard API limits (`API_RATE_LIMIT`), login window locks (`AUTH_RATE_LIMIT`), and admin panel limits (`ADMIN_AUTH_LIMIT`).
+- **Timing-Safe Key Handshake**: Plaintext-to-hash verification processes implement timing-safe comparison logic inside authentication pathways, protecting agent and human login keys from timing attacks.
+- **Audit Logging**: Comprehensive security tracking of auth events, agent usage, and server lifecycle (starts/stops) are written to a segregated, encrypted `audit.sqlite` database for administrative review.
 - **Key Uniqueness**: `key_hash` is strictly enforced as `UNIQUE` to support collision-free one-field lookups.
 - **SHA-256 Hashing**: Lobster keys are hashed using SHA-256 (not bcrypt, not MD5) for server-side verification. Hash comparison is query-based (constant-time).
 - **SQLite Data Integrity**: WAL journal mode enabled for durability. Foreign key constraints enforced with cascade deletes.
@@ -62,13 +65,12 @@ PinchPad uses a **key-file identity system** — there are no passwords or accou
 </details>
 
 <details>
-<summary>Encryption (ShellCryption©™)</summary>
+<summary>Encryption (ShellCryption©™ & SQLCipher)</summary>
 
-- **Algorithm**: AES-256-GCM (Galois/Counter Mode)
-- **Key Derivation**: Keys are derived from `hu-` identity tokens (client-side)
-- **Note Content**: All note text is encrypted at rest in the SQLite database
-- **Authentication Tag**: GCM mode provides integrity verification
-- **IV/Nonce**: Unique per-encryption to prevent replay attacks
+- **Application-Level Encryption (ShellCryption©™)**: Uses AES-256-GCM (Galois/Counter Mode) client-side. Keys are derived from the `hu-` identity key and user passphrase. Encrypted ciphertexts and authentication tags are stored in SQLite, meaning the server has zero capability to decrypt notes.
+- **Database-Level Encryption (SQLCipher)**: PinchPad supports hardware-level database page encryption using **SQLCipher (AES-256-CBC)**. When a base64 `DB_ENCRYPTION_KEY` is provided, the main database (`db.sqlite`) and the audit log database (`audit.sqlite`) are fully encrypted at rest.
+- **Database Migration**: Unencrypted database stores are automatically migrated and encrypted on-the-fly when key configuration is enabled, ensuring zero data loss during hardening.
+- **File Permissions (Hard Carapace)**: Databases are created with restrictive file permissions (`0o600` owner-only read/write) to prevent host-level leakage.
 
 </details>
 
@@ -76,7 +78,7 @@ PinchPad uses a **key-file identity system** — there are no passwords or accou
 <summary>Docker Security</summary>
 
 - The application runs on **Node 22** — minimal attack surface.
-- SQLite data is in a Docker bind mount (`./data/clawstack.db`) — fully visible and controllable by the host operator.
+- SQLite data is in a Docker bind mount (`./data/db.sqlite`) — fully visible and controllable by the host operator.
 - API only exposes port `8282` (prod) or `8383` (dev). The frontend never directly exposes the database.
 - `NODE_ENV=production` disables development stack traces in API error responses.
 - No hardcoded API keys or secrets in the codebase — all sensitive values come from environment variables.
@@ -90,7 +92,6 @@ PinchPad uses a **key-file identity system** — there are no passwords or accou
 > These are accepted trade-offs for the current development phase.
 
 - **Single-user only** — no multi-user support per instance currently. Designed for individual sovereignty.
-- **No HTTPS enforcement** — use a reverse proxy (Nginx + Caddy with TLS) for public deployments.
 - **No refresh token rotation** — `api-` tokens persist until manually revoked via `/api/auth/logout`.
 - **Single-instance only** — no built-in multi-node clustering. Designed for self-hosted single-server deployments.
 

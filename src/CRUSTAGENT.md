@@ -34,3 +34,6 @@ This document serves as the MAIN locus for high-level **CrustCode©™** pattern
 
 ## 🚀 Knowledge Delegation
 For granular feature specifics, audits, skills, or operational workflows, please refer to the files located inside `.crustagent/` at the root of the project.
+
+---
+**Maintained by CrustAgent©™**

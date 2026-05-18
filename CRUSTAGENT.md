@@ -229,6 +229,14 @@ Claws: The active tools, functions, and permissions used to interact with the re
   - Built the `scripts/inspect-keys.ts` command-line utility to query and audit keys in the encrypted SQLite database.
 - **Status**: ✅ FIXED & VERIFIED (243/243 tests green).
 
+### [2026-05-18] - API Reference & Hardened Deployment Hatch
+- **Issue**: API routes reference, database at-rest encryption, HTTPS redirect membranes, rate limiting options, and test suite specs were outdated.
+- **Solution**:
+  - Overhauled `🔌 API Reference` in `README.md` to cleanly document all 17 previously hidden endpoints (pots CRUD, photos CRUD, lobster sessions, bulk sync).
+  - Updated `SECURITY.md` and Unraid templates to document **SQLCipher AES-256-CBC** at-rest database encryption, dynamic sqlite migration, `httpsRedirect` middleware, and fine-grained API/Auth rate limiting parameters.
+  - Aligned testing contribution requirements in `CONTRIBUTING.md` and `ARCHITECTURE.md` to reflect the active **265 tests across 17 files** (100% green).
+  - Hatched the premium `QUICKSTART.md` Rapid Onboarding guide containing copy-paste-ready compose stacks and pre-hashed timing-safe agent key exchange curls.
+- **Status**: ✅ COMPLETED & DEPLOYED.
+
 ---
   **Maintained by CrustAgent©™**
-
