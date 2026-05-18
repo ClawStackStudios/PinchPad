@@ -1,12 +1,11 @@
 import { Router, Response } from 'express';
 import multer from 'multer';
 import crypto from 'crypto';
-import db from '../database/index';
+import db, { audit } from '../database/index';
 import { requireAuth, requirePermission, type AuthRequest } from '../middleware/auth';
-import { createAuditLogger } from '../utils/auditLogger';
 
 const router = Router();
-const audit = createAuditLogger(db);
+
 
 const storage = multer.memoryStorage();
 const upload = multer({

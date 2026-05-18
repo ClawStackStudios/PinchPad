@@ -1,11 +1,10 @@
 import { Router } from 'express';
-import db from '../database/index';
+import db, { audit } from '../database/index';
 import { generateId, generateString } from '../utils/crypto';
 import { requireAuth, requireHuman, type AuthRequest } from '../middleware/auth';
-import { createAuditLogger } from '../utils/auditLogger';
 
 const router = Router();
-const audit = createAuditLogger(db);
+
 
 /**
  * POST /start

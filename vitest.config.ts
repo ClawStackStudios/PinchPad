@@ -6,6 +6,7 @@ export default defineConfig({
     environment: 'node',          // default
     setupFiles: ['./test/shared/setup.lobster.ts'],
     include: ['test/**/*.lobster.test.ts'],
+    fileParallelism: false,
     coverage: {
       provider: 'v8',
       reporter: ['text', 'html'],

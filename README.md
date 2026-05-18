@@ -60,6 +60,8 @@
 - 🗄️ **Secure Reef** — Persistent SQLite storage with multi-cipher encryption.
 - 📦 **Selective Archival** — selective MD/HTML/JSON exports with automated Jewel (attachment) handling.
 - 🌓 **MoltTheme** — View Transition-based theme engine. Watching the world shift colors.
+- 🛡️ **SuperAdmin Panel** — Sovereign instance management via a metadata-only control plane at `/admin`. Configure system settings, retention policies, and monitor system health.
+
 
 ---
 
@@ -112,14 +114,14 @@ npm install
 
 **Development Commands (The Coral Nursery):**
 - **Start Frontend + Backend**: `npm run scuttle:dev-start` (Frontend :8282, Backend :8383 w/ HMR)
-- **Stop All**: `npm run scuttle:dev-stop`
+- **Stop All**: `npm run scuttle:stop` (Graceful shutdown using SIGTERM)
 - **Reset DB**: `npm run scuttle:reset-dev` (Scuttles dev reef)
 
 ---
 
 **Production Commands (The Great Scuttle):**
 - **Build & Start**: `npm run scuttle:prod-start` (API + Frontend on :8282)
-- **Stop All**: `npm run scuttle:prod-stop`
+- **Stop All**: `npm run scuttle:stop` (Graceful shutdown using SIGTERM)
 - **Reset DB**: `npm run scuttle:reset` (DANGER: Deletes prod reef)
 
 ---
@@ -146,7 +148,11 @@ npm install
 PORT=8282                    # Server listen port (single container)
 NODE_ENV=production          # production or development
 CORS_ORIGIN=http://yourdomain.com  # restrict CORS origin, or leave unset for open LAN
+ADMIN_TOKEN=your-secret-token     # Optional: Enable SuperAdmin panel at /admin
+ENABLE_SHELL_PROXY=true          # Optional: Enable public pearl sharing
+SHELL_PROXY_RATE_LIMIT=60        # Optional: Public request limit (default: 60/15min)
 ```
+
 
 **Option A: Production (Pull from GHCR) ⚓**
 Use this for a stable, sovereign deployment. It pulls the latest pre-built image from the GitHub Container Registry.
@@ -212,9 +218,44 @@ PinchPad uses a **prefix-based identity token system** — no passwords, no user
 | `GET` | `/api/agents` | Yes | human-only | List agent keys |
 | `POST` | `/api/agents` | Yes | human-only | Create agent key |
 | `PUT` | `/api/agents/:id/revoke` | Yes | human-only | Revoke agent key |
+| `POST` | `/api/admin/auth` | No | - | Admin login (requires `ADMIN_TOKEN`) |
+| `GET` | `/api/admin/users` | Yes | admin-only | List user metadata |
+| `DELETE` | `/api/admin/users/:id` | Yes | admin-only | Absolute user scuttle |
+| `GET` | `/api/admin/system` | Yes | admin-only | System stats & health |
+| `GET` | `/api/admin/audit` | Yes | admin-only | Query security audit logs |
+| `GET` | `/api/admin/uptime` | Yes | admin-only | Get session uptime history logs |
+| `GET` | `/api/admin/settings` | Yes | admin-only | Fetch system configuration and retention policy |
+| `PATCH` | `/api/admin/settings` | Yes | admin-only | Update system settings |
 | `GET` | `/api/health` | No | - | Health check |
 
 </details>
+
+---
+
+## 🛡️ SuperAdmin Panel & System Settings
+
+PinchPad includes an opt-in **SuperAdmin Control Plane** mounted at `/admin`. This panel provides a "God-view" into the system topology without revealing sensitive decrypted pearl contents.
+
+### Features
+- **Health Monitoring:** Track total users, total pearls, db size, and exact Server Uptime (with session history metrics).
+- **User Management:** Scuttle malicious or orphaned identities permanently from the server.
+- **Audit Logs:** Monitor security anomalies, unauthorized access attempts, and authentication spikes.
+- **Retention Policies:** Dynamically configure database retention directly from the UI dropdown in the header:
+  - `Audit Logs`: 30, 60, or 90 days.
+  - `Uptime History`: 30, 60, or 90 days.
+
+### How to Enable
+
+1. Generate a secure token (e.g., `openssl rand -base64 48`).
+2. Add it to your `.env` or `docker-compose.yml`:
+   ```bash
+   ADMIN_TOKEN="your_secure_token_here"
+   ```
+3. Restart PinchPad.
+4. Navigate to `/admin`. You will be prompted to log in using the `ADMIN_TOKEN`.
+
+> [!NOTE]  
+> If `ADMIN_TOKEN` is unset or removed, the `/admin` UI and API routes are completely disabled and will return 404s.
 
 ---
 
@@ -264,9 +305,8 @@ PinchPad/
 | Script | Description |
 |---|---|
 | `npm run scuttle:dev-start` | 🦞 Start both Frontend + Backend concurrently (dev mode) |
-| `npm run scuttle:dev-stop` | Kill the frontend and backend dev servers |
+| `npm run scuttle:stop` | Gracefully kill all node services via SIGTERM |
 | `npm run scuttle:prod-start` | Build + start production server (:8282) |
-| `npm run scuttle:prod-stop` | Kill the production server |
 | `npm run scuttle:reset` | Scuttle the production database (DANGER) |
 | `npm run scuttle:reset-dev` | Scuttle the development database |
 | `npm run dev` | Vite frontend dev server (:8282 with HMR) |
@@ -289,7 +329,7 @@ PinchPad supports **full SQLite database encryption at rest** using SQLCipher (A
 **Generate a 256-bit encryption key:**
 ```bash
 openssl rand -base64 32
-# → K7fGh2mNpQrXvYzA1bCdEfJkLnOpStUw+Xy9012/3==
+Output: → K7fGh2mNpQrXvYzA1bCdEfJkLnOpStUw+Xy9012/3==
 ```
 
 **For npm development:**
@@ -309,7 +349,7 @@ docker compose up -d
 
 ### Important Notes
 
-- **Key is required in production.** If `DB_ENCRYPTION_KEY` is not set, the database is stored in plaintext. The app will log a warning on startup.
+- **Key is required in production.** If `DB_ENCRYPTION_KEY` is not set, the database is stored in plaintext. The app will log a warning on startup. While you can run without encryption for production. It is highly advised and much more secure to run with encryption enabled.
 - **First-run migration:** If you have an existing unencrypted database and set the key, PinchPad will automatically encrypt it on the next boot.
 - **Key rotation:** There is no built-in key rotation mechanism. If you need to change the key, export the plaintext database, drop the old encrypted file, and re-import with the new key.
 

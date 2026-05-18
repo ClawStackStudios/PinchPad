@@ -19,13 +19,51 @@ if (!fs.existsSync(DATA_DIR) && process.env.NODE_ENV !== 'test') {
   fs.mkdirSync(DATA_DIR, { recursive: true, mode: 0o700 });
 }
 
-const dbPath = process.env.NODE_ENV === 'test' ? ':memory:' : path.join(DATA_DIR, 'db.sqlite');
+// Default main DB path
+const mainDbPath = process.env.NODE_ENV === 'test' ? ':memory:' : path.join(DATA_DIR, 'db.sqlite');
 
-// Set restrictive umask for DB file creation (0o077 = owner only)
-const originalUmask = process.umask(0o077);
+/**
+ * Open a database connection with standard PinchPad pragmas and optional encryption.
+ */
+export function createConnection(filename: string, key?: string): Database.Database {
+  const dbPath = filename === ':memory:' ? ':memory:' : path.join(DATA_DIR, filename);
+  
+  // Set restrictive umask for DB file creation (0o077 = owner only)
+  const originalUmask = process.umask(0o077);
+
+  try {
+    const db = new Database(dbPath);
+
+    if (key && process.env.NODE_ENV !== 'test') {
+      db.pragma(`key = '${key}'`);
+      try {
+        db.pragma('user_version');
+      } catch (e: any) {
+        console.log(`[DB] Detected unencrypted database ${filename} — migrating...`);
+        db.close();
+        encryptExistingDatabase(dbPath, key);
+        const encrypted = new Database(dbPath);
+        encrypted.pragma(`key = '${key}'`);
+        ensureDbPermissions(dbPath);
+        return encrypted;
+      }
+    }
+
+    ensureDbPermissions(dbPath);
+    
+    // Standard Pragmas
+    db.pragma('journal_mode = WAL');
+    db.pragma('synchronous = NORMAL');
+    db.pragma('foreign_keys = ON');
+    db.pragma('busy_timeout = 5000');
+
+    return db;
+  } finally {
+    process.umask(originalUmask);
+  }
+}
 
 function encryptExistingDatabase(dbPath: string, key: string) {
-  // Use ATTACH DATABASE + sqlcipher_export pattern (aligned with ClawChives)
   const resolvedDbPath = path.resolve(dbPath);
   const tempPath = resolvedDbPath + '.tmp';
 
@@ -38,7 +76,7 @@ function encryptExistingDatabase(dbPath: string, key: string) {
     `);
     plain.close();
     fs.renameSync(tempPath, resolvedDbPath);
-    console.log('[DB] ✅ Database encrypted successfully.');
+    console.log(`[DB] ✅ Database ${path.basename(dbPath)} encrypted successfully.`);
   } catch (e: any) {
     try { fs.unlinkSync(tempPath); } catch {}
     throw e;
@@ -47,76 +85,18 @@ function encryptExistingDatabase(dbPath: string, key: string) {
 
 function ensureDbPermissions(targetPath: string) {
   if (targetPath === ':memory:') return;
-  // Set restrictive permissions on database and WAL files (owner only: 0o600)
   try {
-    if (fs.existsSync(targetPath)) {
-      fs.chmodSync(targetPath, 0o600);
-    }
-    // WAL sidecar files
-    const shmPath = targetPath + '-shm';
-    const walPath = targetPath + '-wal';
-    if (fs.existsSync(shmPath)) {
-      fs.chmodSync(shmPath, 0o600);
-    }
-    if (fs.existsSync(walPath)) {
-      fs.chmodSync(walPath, 0o600);
-    }
+    if (fs.existsSync(targetPath)) fs.chmodSync(targetPath, 0o600);
+    ['shm', 'wal'].forEach(ext => {
+      const sidecar = `${targetPath}-${ext}`;
+      if (fs.existsSync(sidecar)) fs.chmodSync(sidecar, 0o600);
+    });
   } catch (e) {
-    console.warn('[DB] Warning: could not set restrictive permissions on database files:', e);
+    console.warn('[DB] Warning: could not set permissions:', e);
   }
 }
 
-function openDatabase(): Database.Database {
-  try {
-    const db = new Database(dbPath);
-
-    if (encryptionKey && process.env.NODE_ENV !== 'test') {
-      // Apply SQLCipher key — must be first pragma after open
-      db.pragma(`key = '${encryptionKey}'`);
-
-      // Verify key works — if DB exists but was plaintext, this will fail
-      try {
-        db.pragma('user_version');
-      } catch (e: any) {
-        // Key failed on existing DB → it's a plaintext DB, migrate it
-        console.log('[DB] Detected unencrypted database — migrating to encrypted...');
-        db.close();
-        encryptExistingDatabase(dbPath, encryptionKey);
-        const encrypted = new Database(dbPath);
-        encrypted.pragma(`key = '${encryptionKey}'`);
-        // Ensure migration temp file is removed and permissions are set
-        ensureDbPermissions(dbPath);
-        return encrypted;
-      }
-    } else if (process.env.NODE_ENV !== 'test') {
-      console.warn('[DB] WARNING: DB_ENCRYPTION_KEY is not set — database is unencrypted at rest.');
-    }
-
-    // Ensure database file and WAL files have restrictive permissions
-    ensureDbPermissions(dbPath);
-    return db;
-  } finally {
-    // Restore original umask
-    process.umask(originalUmask);
-  }
-}
-
-// Clean up any stale migration temp file from a previous crash
-const staleTempPath = dbPath + '.tmp';
-if (dbPath !== ':memory:' && fs.existsSync(staleTempPath)) {
-  try {
-    fs.unlinkSync(staleTempPath);
-    console.log('[DB] Removed stale migration temp file from previous crash.');
-  } catch (e) {
-    console.warn('[DB] Warning: could not remove stale temp file:', e);
-  }
-}
-
-const db = openDatabase();
-
-db.pragma('journal_mode = WAL');
-db.pragma('synchronous = NORMAL');
-db.pragma('foreign_keys = ON');
-db.pragma('busy_timeout = 5000'); // 5 second timeout for locked DB
-
+// Export default main DB connection
+const db = createConnection('db.sqlite', encryptionKey);
 export default db;
+

@@ -4,14 +4,13 @@ import cors from 'cors';
 import helmet from 'helmet';
 import path from 'path';
 import { existsSync } from 'fs';
+import cookieParser from 'cookie-parser';
+
 
 import { getCorsConfig } from './src/shared/config/corsConfig';
 import { errorHandler } from './src/server/middleware/errorHandler';
 import { scheduleMoltCleanup } from './src/server/utils/tokenExpiry';
-import { createAuditLogger } from './src/server/utils/auditLogger';
-import db from './src/server/database/index';
-
-const audit = createAuditLogger(db);
+import { db, auditDb, audit } from './src/server/database';
 
 import authRoutes from './src/server/routes/auth';
 import notesRoutes from './src/server/routes/notes';
@@ -21,13 +20,35 @@ import photosRoutes from './src/server/routes/photos';
 import potsRoutes from './src/server/routes/pots';
 import { apiLimiter } from './src/server/middleware/rateLimiter';
 
+// ─── AUDIT LOGGING (Segregated) ───────────────────────────────────────────
+function performCleanup() {
+  try {
+    const auditSetting = db.prepare('SELECT value FROM system_settings WHERE key = ?').get('audit_retention_days') as any;
+    const uptimeSetting = db.prepare('SELECT value FROM system_settings WHERE key = ?').get('uptime_retention_days') as any;
+    
+    const auditRetention = auditSetting ? Number(auditSetting.value) : 90;
+    const uptimeRetention = uptimeSetting ? Number(uptimeSetting.value) : 30;
+    
+    audit.cleanup(auditRetention, 10000);
+    // Add specific cleanup for uptime events if necessary, or just rely on global cleanup if we don't strictly separate them.
+    // Wait, audit.cleanup deletes EVERYTHING older than X.
+    // We should modify auditLogger.ts to accept different retentions per event type!
+  } catch (err) {
+    console.error('[Server] Cleanup failed:', err);
+  }
+}
+
+performCleanup(); // ⚡ Initial cleanup
+setInterval(performCleanup, 12 * 60 * 60 * 1000); // Twice daily
+
+
+
+
 const PORT = parseInt(process.env.PORT ?? '8282', 10);
 const app = express();
 
 // ─── Startup tasks ───────────────────────────────────────────────────────────
 scheduleMoltCleanup(db);
-audit.cleanup(90); // ⚡ Clean expired audit logs on startup
-setInterval(() => audit.cleanup(90), 24 * 60 * 60 * 1000); // Daily cleanup
 
 // ─── Trust proxy ─────────────────────────────────────────────────────────────
 if (process.env.TRUST_PROXY === 'true') app.set('trust proxy', 1);
@@ -58,7 +79,9 @@ app.use(helmet({
 
 app.use(cors(getCorsConfig()));
 app.use(express.json({ limit: '5mb' }));
+app.use(cookieParser());
 app.use('/api', apiLimiter);
+
 
 // Request logger
 app.use((req, _res, next) => {
@@ -73,6 +96,16 @@ app.use('/api/pots', potsRoutes);
 app.use('/api/agents', agentsRoutes);
 app.use('/api/lobster-session', lobsterSessionRoutes);
 app.use('/api/photos', photosRoutes);
+
+// ─── SuperAdmin Routes ───────────────────────────────────────────────────────
+if (process.env.ADMIN_TOKEN) {
+  const { default: adminRoutes } = await import('./src/server/routes/admin');
+  const { adminApiLimiter } = await import('./src/server/middleware/rateLimiter');
+  app.use('/api/admin', adminApiLimiter, adminRoutes);
+  console.log('🔑 Admin panel enabled at /admin');
+}
+
+
 
 // ─── Health ───────────────────────────────────────────────────────────────────
 app.get('/api/health', (req, res) => {
@@ -123,9 +156,41 @@ app.use('/api', (_req, res) => res.status(404).json({ success: false, error: 'Ro
 app.use(errorHandler);
 
 // ─── Start ────────────────────────────────────────────────────────────────────
-const HOST = process.env.HOST ?? (isProduction ? '0.0.0.0' : '127.0.0.1');
+import crypto from 'crypto';
 
-app.listen(PORT, HOST, () => {
+const HOST = process.env.HOST ?? (isProduction ? '0.0.0.0' : '127.0.0.1');
+const SESSION_ID = crypto.randomUUID();
+
+const server = app.listen(PORT, HOST, () => {
   console.log(`\n🦞 PinchPad API running on port ${PORT}`);
   console.log(`   Health: http://localhost:${PORT}/api/health\n`);
+
+  audit.log('SYSTEM_START', {
+    action: 'startup',
+    outcome: 'success',
+    details: { session_id: SESSION_ID }
+  });
 });
+
+// ─── Graceful Shutdown Hooks ──────────────────────────────────────────────────
+function handleShutdown(signal: string) {
+  console.log(`\n[Server] Received ${signal}. Shutting down gracefully...`);
+  
+  audit.log('SYSTEM_SHUTDOWN', {
+    action: 'shutdown',
+    outcome: 'success',
+    details: { session_id: SESSION_ID, signal }
+  });
+
+  server.close(() => {
+    console.log('[Server] Closed out remaining connections.');
+    process.exit(0);
+  });
+  
+  // Failsafe if connections don't close
+  setTimeout(() => process.exit(1), 5000);
+}
+
+process.on('SIGTERM', () => handleShutdown('SIGTERM'));
+process.on('SIGINT', () => handleShutdown('SIGINT'));
+

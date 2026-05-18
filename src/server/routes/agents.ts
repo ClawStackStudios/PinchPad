@@ -1,12 +1,11 @@
 import { Router, Response } from 'express';
-import db from '../database/index';
-import { createAuditLogger } from '../utils/auditLogger';
+import db, { audit } from '../database/index';
 import { requireAuth, requireHuman } from '../middleware/auth';
 import { validateBody } from '../middleware/validate';
 import { AgentKeySchemas } from '../validation/schemas';
 
 const router = Router();
-const audit = createAuditLogger(db);
+
 
 
 router.get('/', requireAuth, requireHuman, (req: any, res: Response) => {

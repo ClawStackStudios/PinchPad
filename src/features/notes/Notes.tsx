@@ -28,7 +28,8 @@ const FILTER_LABELS: Record<string, string> = {
 
 export function Notes() {
   const { openAddPearl } = useDashboard();
-  const { reef, isLoading, activeFilter, removePearlFromReef, updatePearlInReef } = useReef();
+  const { reef, isLoading, isMoreLoading, totalCount, activeFilter, removePearlFromReef, updatePearlInReef, loadMore } = useReef();
+
   const { activePot, pots } = usePot();
 
   // Deletion state
@@ -274,7 +275,32 @@ export function Notes() {
           </AnimatePresence>
         </div>
       )}
+
+      {/* Load More */}
+      {reef.length < totalCount && (
+        <div className="flex justify-center pt-8 pb-12">
+          <button
+            onClick={loadMore}
+            disabled={isMoreLoading}
+            className="group relative px-8 py-3 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl font-bold text-sm transition-all hover:border-amber-500/50 hover:shadow-xl hover:shadow-amber-500/10 active:scale-95 disabled:opacity-50 flex items-center gap-3"
+          >
+            {isMoreLoading ? (
+              <Loader2 className="w-5 h-5 animate-spin text-amber-500" />
+            ) : (
+              <div className="w-5 h-5 rounded-full border-2 border-amber-500/30 group-hover:border-amber-500 border-t-amber-500 transition-colors" />
+            )}
+            <span className="text-slate-600 dark:text-slate-300 group-hover:text-amber-600 dark:group-hover:text-amber-400">
+              {isMoreLoading ? 'Scuttling deeper...' : 'Load More Pearls'}
+            </span>
+            <span className="ml-2 text-[10px] text-slate-400 dark:text-slate-600 font-mono">
+              ({reef.length} of {totalCount})
+            </span>
+          </button>
+        </div>
+      )}
+
       {/* Delete Confirmation Modal */}
+
       <ConfirmModal
         isOpen={deleteModalOpen}
         onClose={() => {

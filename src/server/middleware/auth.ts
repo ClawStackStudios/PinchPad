@@ -1,11 +1,10 @@
 import { Request, Response, NextFunction } from 'express';
-import db from '../database/index';
-import { createAuditLogger } from '../utils/auditLogger';
+import db, { audit } from '../database/index';
 import { checkMoltExpiry } from '../utils/tokenExpiry';
 import { createAgentKeyRateLimiter } from './rateLimiter';
 
-const audit = createAuditLogger(db);
 const agentRateLimiter = createAgentKeyRateLimiter();
+
 
 export interface AuthRequest extends Request {
   apiKey: string;

@@ -265,6 +265,25 @@ graph LR
           │ created_at (TEXT)      │
           │ updated_at (TEXT)      │
           └────────────────────────┘
+          
+          ┌─────────────▼──────────┐
+          │     audit_logs         │
+          ├────────────────────────┤
+          │ id (INTEGER, PK)       │
+          │ event_type (TEXT)      │
+          │ actor (TEXT)           │
+          │ action (TEXT)          │
+          │ details (JSON)         │
+          │ timestamp (TEXT)       │
+          └────────────────────────┘
+
+┌──────────────────────────────────────────┐
+│            system_settings               │
+├──────────────────────────────────────────┤
+│ key (TEXT, PK)                           │
+│ value (TEXT)                             │
+│ updated_at (TEXT)                        │
+└──────────────────────────────────────────┘
 
 
 ---

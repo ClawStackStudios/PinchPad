@@ -33,15 +33,25 @@ export interface Note {
 }
 
 export const noteService = {
-  async getAll(): Promise<Note[]> {
-    const response = await restAdapter.GET('/api/notes');
-    return response.data.map((note: any) => ({
+  async getAll(limit = 100, offset = 0): Promise<{ data: Note[], pagination: { total: number, limit: number, offset: number } }> {
+    const response = await restAdapter.GET(`/api/notes?limit=${limit}&offset=${offset}`);
+    const notes = response.data.map((note: any) => ({
       ...note,
       starred: !!note.starred,
       pinned: !!note.pinned,
       tags: note.tags ? JSON.parse(note.tags) : []
     }));
+    return {
+      data: notes,
+      pagination: response.pagination
+    };
   },
+
+  async getCounts(): Promise<{ all: number, starred: number, pinned: number, tags: number }> {
+    const response = await restAdapter.GET('/api/notes/counts');
+    return response.data;
+  },
+
   async create(title: string, content: string, starred = false, pinned = false, tags: string[] = []): Promise<Note> {
     const tempId = generateUUID();
     try {
