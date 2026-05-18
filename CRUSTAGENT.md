@@ -219,6 +219,15 @@ Claws: The active tools, functions, and permissions used to interact with the re
   - Preserved full, transparent backward compatibility to fetch all notes when parameters are omitted.
   - Appended extensive test scenarios in `notes.lobster.test.ts` verifying page limits, raw offsets, negative parameter coercion, and response payload formatting.
 - **Status**: ✅ FIXED & VERIFIED (all 245 tests passing).
+### [2026-05-17] - Secure Pre-Hashed Agent Key Handshake
+- **Issue**: Autonomous agent scripts using pre-hashed SHA-256 signatures in `keyHash` failed to authenticate. The endpoint strictly expected plaintext keys.
+- **Discovery**: Pre-hashed lookup required a timing-safe, non-early-terminating loop over all active keys to prevent side-channel timing analysis.
+- **Fix**: 
+  - Updated `/api/auth/token` inside `auth.ts` to support timing-safe on-the-fly candidate hashing for `keyHash` payload options.
+  - Ported existing backward-compatible plaintext compatibility.
+  - Created a robust security integration test suite inside `auth.security.lobster.test.ts`.
+  - Built the `scripts/inspect-keys.ts` command-line utility to query and audit keys in the encrypted SQLite database.
+- **Status**: ✅ FIXED & VERIFIED (243/243 tests green).
 
 ---
   **Maintained by CrustAgent©™**
