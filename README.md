@@ -61,6 +61,7 @@
 - 📦 **Selective Archival** — selective MD/HTML/JSON exports with automated Jewel (attachment) handling.
 - 🌓 **MoltTheme** — View Transition-based theme engine. Watching the world shift colors.
 - 🛡️ **ShellProxy©™** — Secure, unauthenticated public read-only membrane for sharing Pearls and photos via unguessable hashes.
+- 🔑 **SuperAdmin Panel** — Sovereign instance management via a metadata-only control plane at `/admin`. Configure system settings, retention policies, and monitor system health.
 
 ---
 
@@ -113,14 +114,14 @@ npm install
 
 **Development Commands (The Coral Nursery):**
 - **Start Frontend + Backend**: `npm run scuttle:dev-start` (Frontend :8282, Backend :8383 w/ HMR)
-- **Stop All**: `npm run scuttle:dev-stop`
+- **Stop All**: `npm run scuttle:stop` (Graceful shutdown using SIGTERM)
 - **Reset DB**: `npm run scuttle:reset-dev` (Scuttles dev reef)
 
 ---
 
 **Production Commands (The Great Scuttle):**
 - **Build & Start**: `npm run scuttle:prod-start` (API + Frontend on :8282)
-- **Stop All**: `npm run scuttle:prod-stop`
+- **Stop All**: `npm run scuttle:stop` (Graceful shutdown using SIGTERM)
 - **Reset DB**: `npm run scuttle:reset` (DANGER: Deletes prod reef)
 
 ---
@@ -147,9 +148,11 @@ npm install
 PORT=8282                    # Server listen port (single container)
 NODE_ENV=production          # production or development
 CORS_ORIGIN=http://yourdomain.com  # restrict CORS origin, or leave unset for open LAN
+ADMIN_TOKEN=your-secret-token     # Optional: Enable SuperAdmin panel at /admin
 ENABLE_SHELL_PROXY=true          # Enable public read-only membrane
 SHELL_PROXY_RATE_LIMIT=30        # Rate limit (req/min per IP) for the membrane
 ```
+
 
 **Option A: Production (Pull from GHCR) ⚓**
 Use this for a stable, sovereign deployment. It pulls the latest pre-built image from the GitHub Container Registry.
@@ -213,27 +216,89 @@ The **ShellProxy** is a secure, read-only membrane that allows you to share indi
 
 ## 🔌 API Reference
 
-> All endpoints except `/api/health` and `/api/auth/register` require `Authorization: Bearer <api-token>`.
+> All endpoints except `/api/health`, `/api/auth/register`, `/api/auth/token`, `/api/admin/auth`, `/api/admin/verify`, `/api/admin/logout`, and `/api/photos/:id` require a valid `Authorization: Bearer <api-token>` header.
 
 <details>
 <summary>View full API endpoint table</summary>
 
 | Method | Endpoint | Auth | Permission | Description |
 |---|---|---|---|---|
+| **Authentication** | | | | |
 | `POST` | `/api/auth/register` | No | - | Create new identity key |
-| `POST` | `/api/auth/token` | No | - | Issue `api-` token from `hu-` or `lb-` key |
-| `GET` | `/api/auth/verify` | Yes | - | Verify current Bearer token |
-| `POST` | `/api/auth/logout` | Yes | - | Revoke current session token |
-| `GET` | `/api/notes` | Yes | canRead | List all notes |
-| `POST` | `/api/notes` | Yes | canWrite | Create note |
-| `PUT` | `/api/notes/:id` | Yes | canEdit | Update note |
-| `DELETE` | `/api/notes/:id` | Yes | canDelete | Delete note |
-| `GET` | `/api/agents` | Yes | human-only | List agent keys |
-| `POST` | `/api/agents` | Yes | human-only | Create agent key |
-| `PUT` | `/api/agents/:id/revoke` | Yes | human-only | Revoke agent key |
-| `GET` | `/api/health` | No | - | Health check |
+| `POST` | `/api/auth/token` | No | - | Issue `api-` token from `hu-` or `lb-` key (plaintext or SHA-256 keyHash) |
+| `GET` | `/api/auth/validate` | Yes | - | Fast bearer token validity check |
+| `GET` | `/api/auth/verify` | Yes | - | Fetch authenticated user configuration and metadata |
+| `POST` | `/api/auth/logout` | Yes | - | Revoke session and clear cookies |
+| **Pearls (Notes) CRUD** | | | | |
+| `GET` | `/api/notes` | Yes | canRead | List and filter all notes (supports limit/offset pagination) |
+| `POST` | `/api/notes` | Yes | canWrite | Create a new encrypted note |
+| `PUT` | `/api/notes/:id` | Yes | canEdit | Update an existing encrypted note |
+| `DELETE` | `/api/notes/:id` | Yes | canDelete | Delete a note and clean up associated assets |
+| `GET` | `/api/notes/counts` | Yes | - | Fetch dashboard count badges for notes, pots, and starred states |
+| `POST` | `/api/notes/bulk` | Yes | canWrite | Bulk sync/import multiple notes (rate-limit bypassed) |
+| `GET` | `/api/notes/export` | Yes | canRead | Generate a comprehensive ZIP archive of notes (MD/HTML/JSON) |
+| `PATCH` | `/api/notes/:id/starred` | Yes | canEdit | Toggle a note's starred status |
+| `PATCH` | `/api/notes/:id/pinned` | Yes | canEdit | Toggle a note's pinned status |
+| **Pots (Folders) CRUD** | | | | |
+| `GET` | `/api/pots` | Yes | canRead | List all pots (folders) |
+| `POST` | `/api/pots` | Yes | canWrite | Create a new pot (with title and color) |
+| `PATCH` | `/api/pots/:id` | Yes | canEdit | Update a pot's title or color |
+| `DELETE` | `/api/pots/:id` | Yes | canDelete | Cascade delete a pot and all notes inside it |
+| **Photos (Attachments)** | | | | |
+| `POST` | `/api/photos/upload` | Yes | canWrite | Upload a note photo attachment (multipart/form-data) |
+| `GET` | `/api/photos/:id` | No | - | Fetch raw photo binary (accessible to decoders) |
+| `DELETE` | `/api/photos/:id` | Yes | canDelete | Permanently delete a photo attachment from the server |
+| **Agent Key Management** | | | | |
+| `GET` | `/api/agents` | Yes | human-only | List all configured agent keys (`lb-`) |
+| `POST` | `/api/agents` | Yes | human-only | Create a new agent key (`lb-`) with granular permissions |
+| `PUT` | `/api/agents/:id/revoke` | Yes | human-only | Revoke an agent key (sets active = 0) |
+| `DELETE` | `/api/agents/:id` | Yes | human-only | Permanently delete an agent key from the database |
+| **Lobster Agent Sessions** | | | | |
+| `POST` | `/api/lobster-session/start` | Yes | human-only | Initiate an interactive agent session |
+| `POST` | `/api/lobster-session/:id/close` | Yes | human-only | Terminate an active agent session |
+| **SuperAdmin Panel** | | | | |
+| `POST` | `/api/admin/auth` | No | - | Admin login (gated by `ADMIN_TOKEN`, returns secure cookie) |
+| `GET` | `/api/admin/verify` | No | - | Verify admin session validity (via cookie or header) |
+| `POST` | `/api/admin/logout` | No | - | Logout admin session and clear credentials |
+| `GET` | `/api/admin/users` | Yes | admin-only | List user metadata, storage metrics, and login logs |
+| `DELETE` | `/api/admin/users/:uuid` | Yes | admin-only | Cascade scuttle a user and all their notes/photos/keys |
+| `GET` | `/api/admin/system` | Yes | admin-only | Get real-time system stats, database file size, and uptime |
+| `GET` | `/api/admin/audit` | Yes | admin-only | Query security and event audit logs (filtered & paginated) |
+| `GET` | `/api/admin/uptime` | Yes | admin-only | Fetch historical uptime session logs and crash metrics |
+| `GET` | `/api/admin/settings` | Yes | admin-only | Get dynamic global settings (retention days, etc.) |
+| `PATCH` | `/api/admin/settings` | Yes | admin-only | Update global system settings dynamically |
+| **System & Skills** | | | | |
+| `GET` | `/api/health` | No | - | API service health check |
+| `GET` | `/skill.md` | No | - | Fetch public agent instructions membrane (`SKILL.md`) |
 
 </details>
+
+---
+
+## 🛡️ SuperAdmin Panel & System Settings
+
+PinchPad includes an opt-in **SuperAdmin Control Plane** mounted at `/admin`. This panel provides a "God-view" into the system topology without revealing sensitive decrypted pearl contents.
+
+### Features
+- **Health Monitoring:** Track total users, total pearls, db size, and exact Server Uptime (with session history metrics).
+- **User Management:** Scuttle malicious or orphaned identities permanently from the server.
+- **Audit Logs:** Monitor security anomalies, unauthorized access attempts, and authentication spikes.
+- **Retention Policies:** Dynamically configure database retention directly from the UI dropdown in the header:
+  - `Audit Logs`: 30, 60, or 90 days.
+  - `Uptime History`: 30, 60, or 90 days.
+
+### How to Enable
+
+1. Generate a secure token (e.g., `openssl rand -base64 48`).
+2. Add it to your `.env` or `docker-compose.yml`:
+   ```bash
+   ADMIN_TOKEN="your_secure_token_here"
+   ```
+3. Restart PinchPad.
+4. Navigate to `/admin`. You will be prompted to log in using the `ADMIN_TOKEN`.
+
+> [!NOTE]  
+> If `ADMIN_TOKEN` is unset or removed, the `/admin` UI and API routes are completely disabled and will return 404s.
 
 ---
 
@@ -283,9 +348,8 @@ PinchPad/
 | Script | Description |
 |---|---|
 | `npm run scuttle:dev-start` | 🦞 Start both Frontend + Backend concurrently (dev mode) |
-| `npm run scuttle:dev-stop` | Kill the frontend and backend dev servers |
+| `npm run scuttle:stop` | Gracefully kill all node services via SIGTERM |
 | `npm run scuttle:prod-start` | Build + start production server (:8282) |
-| `npm run scuttle:prod-stop` | Kill the production server |
 | `npm run scuttle:reset` | Scuttle the production database (DANGER) |
 | `npm run scuttle:reset-dev` | Scuttle the development database |
 | `npm run dev` | Vite frontend dev server (:8282 with HMR) |
@@ -308,7 +372,7 @@ PinchPad supports **full SQLite database encryption at rest** using SQLCipher (A
 **Generate a 256-bit encryption key:**
 ```bash
 openssl rand -base64 32
-# → K7fGh2mNpQrXvYzA1bCdEfJkLnOpStUw+Xy9012/3==
+Output: → K7fGh2mNpQrXvYzA1bCdEfJkLnOpStUw+Xy9012/3==
 ```
 
 **For npm development:**
@@ -328,7 +392,7 @@ docker compose up -d
 
 ### Important Notes
 
-- **Key is required in production.** If `DB_ENCRYPTION_KEY` is not set, the database is stored in plaintext. The app will log a warning on startup.
+- **Key is required in production.** If `DB_ENCRYPTION_KEY` is not set, the database is stored in plaintext. The app will log a warning on startup. While you can run without encryption for production. It is highly advised and much more secure to run with encryption enabled.
 - **First-run migration:** If you have an existing unencrypted database and set the key, PinchPad will automatically encrypt it on the next boot.
 - **Key rotation:** There is no built-in key rotation mechanism. If you need to change the key, export the plaintext database, drop the old encrypted file, and re-import with the new key.
 

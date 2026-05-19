@@ -91,6 +91,39 @@ export function initializeSchema(db: Database) {
       DELETE FROM api_tokens WHERE owner_key = OLD.api_key AND owner_type = 'agent';
     END;
 
+    CREATE TABLE IF NOT EXISTS import_sessions (
+      id          TEXT PRIMARY KEY,
+      user_uuid   TEXT NOT NULL,
+      key_id      TEXT NOT NULL,
+      started_at  TEXT NOT NULL,
+      closed_at   TEXT,
+      error_count INTEGER DEFAULT 0,
+      errors_json TEXT DEFAULT '[]'
+    );
+
+    -- ─── System Level Configuration ───────────────────────────────────────────
+    CREATE TABLE IF NOT EXISTS system_settings (
+      key TEXT PRIMARY KEY,
+      value TEXT NOT NULL,
+      updated_at TEXT NOT NULL
+    );
+
+    -- Seed default retention policies if they don't exist
+    INSERT OR IGNORE INTO system_settings (key, value, updated_at) VALUES ('audit_retention_days', '90', datetime('now'));
+    INSERT OR IGNORE INTO system_settings (key, value, updated_at) VALUES ('uptime_retention_days', '30', datetime('now'));
+
+
+    -- ─── Scalability Indexes ──────────────────────────────────────────────────
+    CREATE INDEX IF NOT EXISTS idx_notes_user_uuid ON notes(user_uuid);
+    CREATE INDEX IF NOT EXISTS idx_notes_updated_at ON notes(updated_at);
+    CREATE INDEX IF NOT EXISTS idx_photos_user_uuid ON pearl_photos(user_uuid);
+    CREATE INDEX IF NOT EXISTS idx_photos_pearl_id ON pearl_photos(pearl_id);
+    CREATE INDEX IF NOT EXISTS idx_api_tokens_owner ON api_tokens(owner_key);
+  `);
+}
+
+export function initializeAuditSchema(db: Database) {
+  db.exec(`
     CREATE TABLE IF NOT EXISTS audit_logs (
       id          INTEGER PRIMARY KEY AUTOINCREMENT,
       timestamp   TEXT NOT NULL,
@@ -124,5 +157,9 @@ export function initializeSchema(db: Database) {
       expires_at  TEXT,
       FOREIGN KEY(pearl_id) REFERENCES notes(id) ON DELETE CASCADE
     );
+
+    CREATE INDEX IF NOT EXISTS idx_audit_timestamp ON audit_logs(timestamp);
   `);
 }
+
+

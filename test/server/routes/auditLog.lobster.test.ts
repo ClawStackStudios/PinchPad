@@ -8,11 +8,13 @@ import crypto from 'crypto';
 describe('Audit Logging — Auth Events', () => {
   let app: Express;
   let db: Database.Database;
+  let auditDb: Database.Database;
 
   beforeEach(() => {
     const result = createTestApp();
     app = result.app;
     db = result.db;
+    auditDb = result.auditDb;
   });
 
   describe('AUTH_REGISTER — Successful registration', () => {
@@ -27,7 +29,7 @@ describe('Audit Logging — Auth Events', () => {
       expect(response.status).toBe(201);
       expect(response.body.success).toBe(true);
 
-      const auditLog = db.prepare('SELECT * FROM audit_logs WHERE event_type = ? AND actor = ?').get('AUTH_REGISTER', uuid) as any;
+      const auditLog = auditDb.prepare('SELECT * FROM audit_logs WHERE event_type = ? AND actor = ?').get('AUTH_REGISTER', uuid) as any;
       expect(auditLog).toBeDefined();
       expect(auditLog.event_type).toBe('AUTH_REGISTER');
       expect(auditLog.actor).toBe(uuid);
@@ -68,7 +70,7 @@ describe('Audit Logging — Auth Events', () => {
       expect(response.status).toBe(201);
       expect(response.body.data.token).toBeDefined();
 
-      const auditLog = db.prepare('SELECT * FROM audit_logs WHERE event_type = ? AND actor = ?').get('AUTH_SUCCESS', userUuid) as any;
+      const auditLog = auditDb.prepare('SELECT * FROM audit_logs WHERE event_type = ? AND actor = ?').get('AUTH_SUCCESS', userUuid) as any;
       expect(auditLog).toBeDefined();
       expect(auditLog.event_type).toBe('AUTH_SUCCESS');
       expect(auditLog.actor).toBe(userUuid);
@@ -89,7 +91,7 @@ describe('Audit Logging — Auth Events', () => {
       expect(response.status).toBe(201);
       expect(response.body.data.token).toBeDefined();
 
-      const auditLog = db.prepare('SELECT * FROM audit_logs WHERE event_type = ? AND actor = ?').get('AUTH_SUCCESS', keyId) as any;
+      const auditLog = auditDb.prepare('SELECT * FROM audit_logs WHERE event_type = ? AND actor = ?').get('AUTH_SUCCESS', keyId) as any;
       expect(auditLog).toBeDefined();
       expect(auditLog.event_type).toBe('AUTH_SUCCESS');
       expect(auditLog.actor_type).toBe('agent');
@@ -106,7 +108,7 @@ describe('Audit Logging — Auth Events', () => {
 
       expect(response.status).toBe(404);
 
-      const auditLog = db.prepare('SELECT * FROM audit_logs WHERE event_type = ?').get('AUTH_FAILURE') as any;
+      const auditLog = auditDb.prepare('SELECT * FROM audit_logs WHERE event_type = ?').get('AUTH_FAILURE') as any;
       expect(auditLog).toBeDefined();
     });
   });
@@ -125,7 +127,7 @@ describe('Audit Logging — Auth Events', () => {
 
       expect(response.status).toBe(401);
 
-      const auditLog = db.prepare('SELECT * FROM audit_logs WHERE event_type = ?').get('AUTH_FAILURE') as any;
+      const auditLog = auditDb.prepare('SELECT * FROM audit_logs WHERE event_type = ?').get('AUTH_FAILURE') as any;
       expect(auditLog).toBeDefined();
     });
   });
@@ -141,7 +143,7 @@ describe('Audit Logging — Auth Events', () => {
 
       expect(response.status).toBe(401);
 
-      const auditLog = db.prepare('SELECT * FROM audit_logs WHERE event_type = ?').get('AUTH_FAILURE') as any;
+      const auditLog = auditDb.prepare('SELECT * FROM audit_logs WHERE event_type = ?').get('AUTH_FAILURE') as any;
       expect(auditLog).toBeDefined();
     });
   });
@@ -156,7 +158,7 @@ describe('Audit Logging — Auth Events', () => {
 
       expect(response.status).toBe(200);
 
-      const auditLog = db.prepare('SELECT * FROM audit_logs WHERE event_type = ?').get('AUTH_LOGOUT') as any;
+      const auditLog = auditDb.prepare('SELECT * FROM audit_logs WHERE event_type = ?').get('AUTH_LOGOUT') as any;
       expect(auditLog).toBeDefined();
       expect(auditLog.event_type).toBe('AUTH_LOGOUT');
       expect(auditLog.actor).toBe(userUuid);
@@ -185,7 +187,7 @@ describe('Audit Logging — Auth Events', () => {
 
       expect(response.status).toBe(403);
 
-      const auditLog = db.prepare('SELECT * FROM audit_logs WHERE event_type = ?').get('PERMISSION_DENIED') as any;
+      const auditLog = auditDb.prepare('SELECT * FROM audit_logs WHERE event_type = ?').get('PERMISSION_DENIED') as any;
       expect(auditLog).toBeDefined();
       expect(auditLog.event_type).toBe('PERMISSION_DENIED');
       expect(auditLog.actor).toBe(userUuid);
@@ -217,7 +219,7 @@ describe('Audit Logging — Auth Events', () => {
       expect(response.status).toBe(401);
       expect(response.body.error).toContain('expired');
 
-      const auditLog = db.prepare('SELECT * FROM audit_logs WHERE event_type = ?').get('AUTH_TOKEN_EXPIRED') as any;
+      const auditLog = auditDb.prepare('SELECT * FROM audit_logs WHERE event_type = ?').get('AUTH_TOKEN_EXPIRED') as any;
       expect(auditLog).toBeDefined();
       expect(auditLog.event_type).toBe('AUTH_TOKEN_EXPIRED');
       expect(auditLog.actor).toBe(userUuid);
@@ -237,7 +239,7 @@ describe('Audit Logging — Auth Events', () => {
         });
       }
 
-      const auditLog = db.prepare('SELECT * FROM audit_logs WHERE event_type = ?').get('AUTH_REGISTER_RATE_LIMITED') as any;
+      const auditLog = auditDb.prepare('SELECT * FROM audit_logs WHERE event_type = ?').get('AUTH_REGISTER_RATE_LIMITED') as any;
       expect(auditLog).toBeDefined();
       expect(auditLog.event_type).toBe('AUTH_REGISTER_RATE_LIMITED');
     });
@@ -255,7 +257,7 @@ describe('Audit Logging — Auth Events', () => {
         });
       }
 
-      const auditLog = db.prepare('SELECT * FROM audit_logs WHERE event_type = ?').get('AUTH_LOGIN_RATE_LIMITED') as any;
+      const auditLog = auditDb.prepare('SELECT * FROM audit_logs WHERE event_type = ?').get('AUTH_LOGIN_RATE_LIMITED') as any;
       expect(auditLog).toBeDefined();
       expect(auditLog.event_type).toBe('AUTH_LOGIN_RATE_LIMITED');
     });

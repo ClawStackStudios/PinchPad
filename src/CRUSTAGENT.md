@@ -17,6 +17,11 @@ This document serves as the MAIN locus for high-level **CrustCode©™** pattern
 - **Port Parity**: Maintain 8282 (UI) and 8383 (API) separation. Any change to these ports must be reflected in the Scuttle scripts and Vite proxy config.
 - **Security Mirror**: CORS and Helmet logic MUST remain synchronized with ClawChives.
 - **ShellProxy Membrane Lock**: The public membrane routes (`/shellproxy/*`) must remain strictly read-only and unauthenticated. Rate limiting is mandatory to prevent binary asset abuse.
+- **Admin Stability Lock**: SuperAdmin panel (`/admin`) MUST strictly enforce metadata-only access. Sessions are volatile (memory-only) and isolated from user auth.
+- **⚡ Performance Invariants**: All primary data streams (Notes, Audit, Users) MUST implement API-level pagination (`limit`/`offset`) and matching "Load More" UI.
+- **🗄️ Database Integrity**: Critical lookup columns (`user_uuid`, `updated_at`, `timestamp`) MUST be indexed to prevent full-table scan overhead.
+- **Server Lifecycle Logging**: All instances of startup and shutdown must be precisely logged in the audit table with `SESSION_ID` identifiers. `scuttle:stop` handles SIGTERM interception.
+- **Dynamic System Settings**: Retention policies are stored in the database (`system_settings`) and modified via the SuperAdmin UI rather than being hardcoded `.env` static states.
 
 ## 🧠 Codebase Topology
 - `/src/components` - Shared, reusable aesthetic & layout elements.
@@ -28,3 +33,6 @@ This document serves as the MAIN locus for high-level **CrustCode©™** pattern
 
 ## 🚀 Knowledge Delegation
 For granular feature specifics, audits, skills, or operational workflows, please refer to the files located inside `.crustagent/` at the root of the project.
+
+---
+**Maintained by CrustAgent©™**

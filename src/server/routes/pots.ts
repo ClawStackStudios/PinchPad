@@ -10,14 +10,13 @@
 
 import { Router, Response } from 'express';
 import crypto from 'node:crypto';
-import db from '../database/index';
+import db, { audit } from '../database/index';
 import { requireAuth, requirePermission, type AuthRequest } from '../middleware/auth';
 import { validateBody } from '../middleware/validate';
 import { PotSchemas } from '../validation/schemas';
-import { createAuditLogger } from '../utils/auditLogger';
 
 const router = Router();
-const audit = createAuditLogger(db);
+
 
 // ── GET / ─────────────────────────────────────────────────────────────────────
 // Returns all pots for the current user with live pearl counts.

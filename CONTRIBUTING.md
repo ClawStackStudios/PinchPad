@@ -114,25 +114,25 @@ git checkout -b feat/my-new-feature
 
 ## 🧪 Testing Requirements
 
-All code changes **must** pass the test suite. PinchPad uses **Vitest 4.1.0** with 140 tests across 9 files.
+All code changes **must** pass the test suite. PinchPad uses **Vitest 4.1.0** with 265 tests across 17 files.
 
 <details>
 <summary>View testing discipline</summary>
 
 ### Test File Structure
-- All test files: `*.lobster.test.ts` (CrustCode™ brand)
+- All test files: `*.lobster.test.ts` (CrustCode™ brand) or `*.security.lobster.test.ts` for vulnerability checks
 - Path mirrors src: `test/[domain]/[file].lobster.test.ts`
 - Example: `src/lib/crypto.ts` → `test/lib/crypto.lobster.test.ts`
 
 ### Before Submitting a PR
 ```bash
-# Run all tests — all 140 must pass
+# Run all tests — all 265 must pass
 npm test
 
 # Check coverage — required minimums:
 # - Middleware: 100% statements
-# - Routes: >75% statements
-# - Overall: >56% statements
+# - Routes: >84% statements
+# - Overall: >68% statements
 npm run test:coverage
 ```
 
@@ -157,7 +157,7 @@ npm run test:coverage
 ## 📬 Submitting a Pull Request
 
 1. Run `npm run lint` — must show **zero TypeScript errors**.
-2. Run `npm test` — all 140 tests must pass.
+2. Run `npm test` — all 265 tests must pass.
 3. Run `npm run test:coverage` — all coverage minimums must be met.
 4. Update [BLUEPRINT.md](./BLUEPRINT.md) if you added or moved files.
 5. Update [ROADMAP.md](./ROADMAP.md) if your change completes or introduces a roadmap item.

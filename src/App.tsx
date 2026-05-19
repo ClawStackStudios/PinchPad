@@ -12,6 +12,13 @@ import { Settings } from './features/settings/Settings';
 import { ShellProxyView } from './features/public/ShellProxyView';
 import { Loader2 } from 'lucide-react';
 
+// SuperAdmin Imports
+import { AdminProvider, useAdmin } from './features/admin/AdminContext';
+import { AdminLogin } from './features/admin/AdminLogin';
+import { AdminDashboard } from './features/admin/AdminDashboard';
+import { AdminUserList } from './features/admin/AdminUserList';
+import { AdminAuditLog } from './features/admin/AdminAuditLog';
+
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const { isClawSigned, isMolting } = useAuth();
 
@@ -29,11 +36,32 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
   return <>{children}</>;
 }
 
+function AdminProtectedRoute({ children }: { children: React.ReactNode }) {
+  const { isAdmin, isChecking } = useAdmin();
+
+  if (isChecking) {
+    return (
+      <div className="min-h-screen flex flex-col items-center justify-center bg-[#0f1419] text-amber-500">
+        <Loader2 className="w-12 h-12 animate-spin mb-4" />
+        <p className="font-bold tracking-widest uppercase text-xs">Authenticating Admin...</p>
+      </div>
+    );
+  }
+
+  if (!isAdmin) return <Navigate to="/admin" />;
+
+  return <>{children}</>;
+}
+
 export default function App() {
   return (
-    <Router>
-      <AppContent />
-    </Router>
+    <AdminProvider>
+      <AuthProvider>
+        <Router>
+          <AppContent />
+        </Router>
+      </AuthProvider>
+    </AdminProvider>
   );
 }
 
@@ -50,8 +78,9 @@ function AppContent() {
     );
   }
 
-  const hideNavbar = ['/', '/login', '/register', '/dashboard', '/settings', '/notes'].includes(location.pathname) || location.pathname.startsWith('/share/');
+  const hideNavbar = ['/', '/login', '/register', '/dashboard', '/settings', '/notes', '/admin'].includes(location.pathname) || location.pathname.startsWith('/admin/') || location.pathname.startsWith('/share/');
   const isDashboard = ['/dashboard', '/notes', '/settings'].includes(location.pathname);
+
 
   return (
     <div className="min-h-screen bg-white dark:bg-[#0f1419] text-slate-900 dark:text-[#faf8f6] font-sans transition-colors duration-500">
@@ -81,7 +110,20 @@ function AppContent() {
         } />
 
         <Route path="/share/:hash" element={<ShellProxyView />} />
+
+        {/* SuperAdmin Routes */}
+        <Route path="/admin" element={<AdminLogin />} />
+        <Route path="/admin/dashboard" element={
+          <AdminProtectedRoute><AdminDashboard /></AdminProtectedRoute>
+        } />
+        <Route path="/admin/users" element={
+          <AdminProtectedRoute><AdminUserList /></AdminProtectedRoute>
+        } />
+        <Route path="/admin/audit" element={
+          <AdminProtectedRoute><AdminAuditLog /></AdminProtectedRoute>
+        } />
       </Routes>
+
     </div>
   );
 }

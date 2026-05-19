@@ -13,11 +13,13 @@ services:
       - PORT=8282
       - DATA_DIR=/app/data
       - CORS_ORIGIN=${CORS_ORIGIN:-}
-      - ENABLE_SHELL_PROXY=${ENABLE_SHELL_PROXY:-true}
-      - SHELL_PROXY_RATE_LIMIT=${SHELL_PROXY_RATE_LIMIT:-30}
-      - DB_ENCRYPTION_KEY=${DB_ENCRYPTION_KEY:-}
+      - DB_ENCRYPTION_KEY=${DB_ENCRYPTION_KEY:-}      # Optional: Enable Database Encryption. Generate a key with command: openssl rand -base64 48
+      - ENABLE_SHELL_PROXY=${ENABLE_SHELL_PROXY:-true} # Enable Public ShellProxy Membrane
+      - SHELL_PROXY_RATE_LIMIT=${SHELL_PROXY_RATE_LIMIT:-30} # ShellProxy requests per minute per IP
+      - ADMIN_TOKEN=${ADMIN_TOKEN:-}      # Optional: Enable SuperAdmin panel at /admin and generate a key with command: openssl rand -base64 48
       - PUID=1000
       - PGID=1000
+
       # For detailed configuration, see README.md → Running with Docker section
     healthcheck:
       test: ["CMD", "wget", "-qO-", "http://localhost:8282/api/health"]

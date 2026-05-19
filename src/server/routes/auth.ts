@@ -1,7 +1,6 @@
 import { Router, Response } from 'express';
 import crypto from 'crypto';
-import db from '../database/index';
-import { createAuditLogger } from '../utils/auditLogger';
+import db, { audit } from '../database/index';
 import { generateString } from '../utils/crypto';
 import { validateBody } from '../middleware/validate';
 import { AuthSchemas } from '../validation/schemas';
@@ -10,7 +9,8 @@ import { authLimiter } from '../middleware/rateLimiter';
 import { requireAuth, AuthRequest } from '../middleware/auth';
 
 const router = Router();
-const audit = createAuditLogger(db);
+
+
 
 function detectKeyType(key: string) {
   if (key?.startsWith('hu-'))  return 'human';
@@ -150,25 +150,42 @@ router.post('/token', authLimiter, validateBody(AuthSchemas.token), (req: any, r
       });
 
     } else if (type === 'agent' || (ownerKey && detectKeyType(ownerKey) === 'agent')) {
-      const agentKey = ownerKey;
-      console.log(`[Auth] 🤖 Processing agent login for key starting with: ${agentKey?.substring(0, 10)}...`);
-      
-      if (!agentKey?.startsWith('lb-')) {
-        console.log(`[Auth] ❌ Invalid agent key prefix`);
-        return res.status(400).json({ success: false, error: 'Invalid Lobster key' });
+      let agent: any = null;
+      let agentKey = ownerKey;
+
+      if (keyHash) {
+        console.log(`[Auth] 🔍 Hashed agent login pathway active with keyHash: ${keyHash}`);
+        // 🛡️ Sentinel: Safe search for an active agent key whose SHA-256 hash matches the provided keyHash
+        const activeAgents = db.prepare('SELECT * FROM agent_keys WHERE is_active = 1').all() as any[];
+        const providedKeyHash = Buffer.from(keyHash, 'hex');
+
+        for (const a of activeAgents) {
+          try {
+            const storedKeyHash = crypto.createHash('sha256').update(a.api_key).digest();
+            if (crypto.timingSafeEqual(storedKeyHash, providedKeyHash)) {
+              agent = a;
+              agentKey = a.api_key;
+            }
+          } catch {}
+        }
+      } else {
+        console.log(`[Auth] 🤖 Plaintext agent login pathway active with key starting with: ${agentKey?.substring(0, 10)}...`);
+        if (!agentKey?.startsWith('lb-')) {
+          console.log(`[Auth] ❌ Invalid agent key prefix`);
+          return res.status(400).json({ success: false, error: 'Invalid Lobster key' });
+        }
+        agent = db.prepare('SELECT * FROM agent_keys WHERE api_key = ? AND is_active = 1').get(agentKey) as any;
       }
 
-      // Sentinel: Fetch by key, then verify with timingSafeEqual to ensure constant-time response profiles
-      console.log(`[Auth] 🔍 Fetching agent from DB...`);
-      const agent = db.prepare('SELECT * FROM agent_keys WHERE api_key = ? AND is_active = 1').get(agentKey) as any;
-
-      // Sentinel Security Patch: Timing-safe comparison with pre-hashing
+      // 🛡️ Sentinel Security Patch: Timing-safe comparison with pre-hashing
       let keyMatch = false;
-      if (agent) {
-        console.log(`[Auth] 🔐 Performing hashed timing-safe comparison for agent...`);
+      if (agent && agentKey) {
+        console.log(`[Auth] 🔐 Performing timing-safe comparison for agent...`);
         try {
           const storedKeyHash = crypto.createHash('sha256').update(agent.api_key).digest();
-          const providedKeyHash = crypto.createHash('sha256').update(agentKey).digest();
+          const providedKeyHash = keyHash
+            ? Buffer.from(keyHash, 'hex')
+            : crypto.createHash('sha256').update(agentKey).digest();
           keyMatch = crypto.timingSafeEqual(storedKeyHash, providedKeyHash);
         } catch (err: any) {
           console.warn(`[Auth] ⚠️ Agent key comparison error: ${err.message}`);

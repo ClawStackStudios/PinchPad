@@ -1,15 +1,37 @@
 import { Router, Response } from 'express';
 import crypto from 'crypto';
 import { marked } from 'marked';
-import db from '../database/index';
+import db, { audit } from '../database/index';
 import JSZip from 'jszip';
 import { requireAuth, requirePermission, type AuthRequest } from '../middleware/auth';
 import { validateBody } from '../middleware/validate';
 import { NoteSchemas, StatusSchemas } from '../validation/schemas';
-import { createAuditLogger } from '../utils/auditLogger';
 
 const router = Router();
-const audit = createAuditLogger(db);
+
+
+/**
+ * GET /counts
+ * Returns the census of the lobster's habitat.
+ */
+router.get('/counts', requireAuth, (req: AuthRequest, res: Response) => {
+  try {
+    const counts = db.prepare(`
+      SELECT 
+        (SELECT COUNT(*) FROM notes WHERE user_uuid = ?) as "all",
+        (SELECT COUNT(*) FROM notes WHERE user_uuid = ? AND starred = 1) as starred,
+        (SELECT COUNT(*) FROM notes WHERE user_uuid = ? AND pinned = 1) as pinned,
+        (SELECT COUNT(*) FROM (SELECT DISTINCT value FROM (
+           SELECT json_each.value FROM notes, json_each(notes.tags) WHERE user_uuid = ?
+         ))) as tags
+    `).get(req.userUuid, req.userUuid, req.userUuid, req.userUuid) as any;
+
+    res.json({ data: counts });
+  } catch (err) {
+    res.status(500).json({ error: 'Failed to fetch counts' });
+  }
+});
+
 
 /**
  * GET /
@@ -17,7 +39,18 @@ const audit = createAuditLogger(db);
  */
 router.get('/', requireAuth, requirePermission('canRead'), (req: AuthRequest, res: Response) => {
   try {
-    const reef = db.prepare('SELECT * FROM notes WHERE user_uuid = ? ORDER BY updated_at DESC').all(req.userUuid) as any[];
+    const limit = Math.min(Math.max(parseInt(req.query.limit as string) || 100, 1), 10000);
+    let offset = Math.max(parseInt(req.query.offset as string) || 0, 0);
+    const page = Math.max(parseInt(req.query.page as string) || 1, 1);
+    
+    if (req.query.page) {
+      offset = (page - 1) * limit;
+    }
+
+    const countRow = db.prepare('SELECT COUNT(*) as count FROM notes WHERE user_uuid = ?').get(req.userUuid) as { count: number };
+    const totalCount = countRow ? countRow.count : 0;
+    
+    const reef = db.prepare('SELECT * FROM notes WHERE user_uuid = ? ORDER BY updated_at DESC LIMIT ? OFFSET ?').all(req.userUuid, limit, offset) as any[];
 
     // Batch fetch all photos in one query instead of N+1 per-note queries
     const noteIds = reef.map(n => n.id);
@@ -45,7 +78,16 @@ router.get('/', requireAuth, requirePermission('canRead'), (req: AuthRequest, re
       };
     });
 
-    res.json({ data: reefWithPhotos });
+    res.json({
+      data: reefWithPhotos,
+      pagination: {
+        page: req.query.page ? page : Math.floor(offset / limit) + 1,
+        limit,
+        offset,
+        total: totalCount,
+        pages: Math.ceil(totalCount / limit)
+      }
+    });
   } catch (isCracked: any) {
     console.error('[Notes] ❌ Scuttle error:', isCracked.message);
     res.status(500).json({ error: 'Failed to fetch notes' });

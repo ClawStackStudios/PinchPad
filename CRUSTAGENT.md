@@ -18,8 +18,10 @@ PinchPad is a sovereign lobster pot designed for the modern web. It protects ide
 - **🦞 LobsterKeys©™**: Granular, revocable API keys (`lb-`) for Agent access.
 - **🗄️ Secure Reef**: Persistent SQLite storage with Docker volume binding (`./data/clawstack.db`).
 - **🌓 MoltTheme**: High-performance View Transition theme engine.
-- 📦 **Selective Archival Suite**: High-fidelity MD/HTML/JSON exports with automated Jewel (attachment) handling and UUID marker protocol.
-- **🛡️ ShellProxy©™**: Secure, unauthenticated public read-only membrane for sharing Pearls via unguessable 64-character hashes. Supports "Quick Share" time-sync animations.
+- **📦 Selective Archival Suite**: High-fidelity MD/HTML/JSON exports with automated Jewel (attachment) handling and UUID marker protocol.
+- **🛡️ ShellProxy©™ / Public Membrane**: Secure, unauthenticated public read-only and rate-limited sharing of Pearls via unguessable 64-character hashes, supporting "Quick Share" time-sync animations.
+- **🔑 SuperAdmin Panel**: Sovereign instance management via a metadata-only control plane at `/admin`. Gated by `ADMIN_TOKEN`.
+- **⚡ Scalability Invariants**: Indexed database lookups and API-level pagination for 100+ user density.
 
 ### 🏗️ Architecture Stack
 - **Frontend**: React 19, Vite, TailwindCSS 4, Framer Motion
@@ -181,8 +183,6 @@ Claws: The active tools, functions, and permissions used to interact with the re
      '.__W__.'
 ```
 
-## 🐚 Diagnostic Log: The Pearl Failure
-
 ### [2026-04-28] - The missing jinaUrl Predator
 - **Issue**: Pearls failed to save ("Shell It!" clicked but no POST logged).
 - **Discovery**: `NoteSchemas.create` required a `jinaUrl` key in the object, but the frontend wasn't sending it. This caused a silent 400 Validation Error (or a hidden exception).
@@ -191,6 +191,51 @@ Claws: The active tools, functions, and permissions used to interact with the re
   - Enhanced `validateBody` middleware with detailed console logging for "Shell Check" failures.
   - Added verbose instrumentation to `AddPearlModal.tsx` and `noteService.ts`.
 - **Status**: ✅ FIXED. Discovery: Lucas was missing a title (classic human error!), but the system also had a strict UUID predator. Hardened the backend to own ID generation and improved UI feedback to show "Incomplete Pearl" when title/content is missing.
+
+### [2026-05-16] - Scaling the Reef & Admin Hatch
+- **Issue**: System needed to transition from "Local Prototype" to "Sovereign Infrastructure" (100+ users).
+- **Solution**: 
+  - Implemented **SuperAdmin Panel** with atomic session management and SHA-256 gated entry.
+  - Added **Database Indices** for `notes`, `photos`, and `audit` tables to prevent full-table scans.
+  - Implemented **API Pagination** across user, audit, and pearl streams with "Load More" frontend integration.
+  - Hardened `.env` protocol to ensure `ADMIN_TOKEN` remains the master switch for admin routes.
+- **Status**: ✅ STABLE. The reef is now indexed and ready for deep-sea scaling.
+
+### [2026-05-16] - Persistent Uptime & Dynamic Settings
+- **Issue**: Process-based uptime was volatile, and `.env` based retention policies required hard reboots to change.
+- **Solution**: 
+  - Overhauled server lifecycle tracking to use `SESSION_ID` and DB-backed `SYSTEM_START`/`SYSTEM_SHUTDOWN` audit logs.
+  - Implemented graceful shutdown hooks (`SIGTERM` / `SIGINT`) and merged stop scripts into a unified `npm run scuttle:stop`.
+  - Added a `system_settings` table and dynamic Retention Dropdown menu in the SuperAdmin UI for 30/60/90 day toggles with auto-save.
+  - Deployed an interactive Uptime History Slider displaying the lifespan of all historical sessions, explicitly logging ungraceful crashes as "Unclean Shutdowns".
+- **Status**: ✅ ROBUST. The server now permanently remembers its lifespans, and settings can be changed seamlessly on the fly.
+
+### [2026-05-17] - The High-Performance Pagination Update
+- **Issue**: Active agents (e.g. ClawChives) needed offset-based pagination to sync massive pearl libraries efficiently without memory exhaustion.
+- **Fix**:
+  - Extended `/api/notes` router in `notes.ts` to support `limit`, `page`, and `offset` query parameters.
+  - Constrained requested retrieval limits using safety bounds (`1 <= limit <= 10000`) to protect the Better-SQLite3 database.
+  - Preserved full, transparent backward compatibility to fetch all notes when parameters are omitted.
+  - Appended extensive test scenarios in `notes.lobster.test.ts` verifying page limits, raw offsets, negative parameter coercion, and response payload formatting.
+- **Status**: ✅ FIXED & VERIFIED (all 245 tests passing).
+### [2026-05-17] - Secure Pre-Hashed Agent Key Handshake
+- **Issue**: Autonomous agent scripts using pre-hashed SHA-256 signatures in `keyHash` failed to authenticate. The endpoint strictly expected plaintext keys.
+- **Discovery**: Pre-hashed lookup required a timing-safe, non-early-terminating loop over all active keys to prevent side-channel timing analysis.
+- **Fix**: 
+  - Updated `/api/auth/token` inside `auth.ts` to support timing-safe on-the-fly candidate hashing for `keyHash` payload options.
+  - Ported existing backward-compatible plaintext compatibility.
+  - Created a robust security integration test suite inside `auth.security.lobster.test.ts`.
+  - Built the `scripts/inspect-keys.ts` command-line utility to query and audit keys in the encrypted SQLite database.
+- **Status**: ✅ FIXED & VERIFIED (243/243 tests green).
+
+### [2026-05-18] - API Reference & Hardened Deployment Hatch
+- **Issue**: API routes reference, database at-rest encryption, HTTPS redirect membranes, rate limiting options, and test suite specs were outdated.
+- **Solution**:
+  - Overhauled `🔌 API Reference` in `README.md` to cleanly document all 17 previously hidden endpoints (pots CRUD, photos CRUD, lobster sessions, bulk sync).
+  - Updated `SECURITY.md` and Unraid templates to document **SQLCipher AES-256-CBC** at-rest database encryption, dynamic sqlite migration, `httpsRedirect` middleware, and fine-grained API/Auth rate limiting parameters.
+  - Aligned testing contribution requirements in `CONTRIBUTING.md` and `ARCHITECTURE.md` to reflect the active **265 tests across 17 files** (100% green).
+  - Hatched the premium `QUICKSTART.md` Rapid Onboarding guide containing copy-paste-ready compose stacks and pre-hashed timing-safe agent key exchange curls.
+- **Status**: ✅ COMPLETED & DEPLOYED.
 
 ---
   **Maintained by CrustAgent©™**

@@ -16,31 +16,37 @@ PinchPad/
 ├── 📄 package.json                  # NPM dependencies & scripts
 ├── 📄 vite.config.ts                # Vite bundler config
 ├── 📄 tsconfig.json                 # TypeScript strict rules
-├── 📄 tailwind.config.js            # Design token system
 ├── 📄 postcss.config.js             # CSS processor pipeline
 ├── 📄 .env.example                  # Environment variable reference
 │
 ├── 🐳 Dockerfile                    # Single-container image (Node 22 slim)
 ├── 🐳 docker-compose.yml            # Prod: pull from GHCR
 ├── 🐳 docker-compose.dev.yml        # Dev: build locally
+├── 📄 pinchpad-unraid-template.xml  # Unraid XML App Template
 │
 ├── 🌐 server.ts                     # TypeScript entry point (Express REST API)
 │                                     Wiring: routes, middleware, healthcheck
 │
 ├── src/
 │   ├── server/                      # ◀ Backend Source (Express + SQLite)
-│   │   ├── db.ts                    # Schema definition, migrations, singleton
-│   │   ├── middleware/              # Auth gates, error handling
+│   │   ├── db.ts                    # Schema definition, SQLCipher setup, migrations
+│   │   ├── middleware/              # Auth gates, security membranes
 │   │   │   ├── requireAuth.ts       # Bearer token validation
 │   │   │   ├── requirePermission.ts # Permission enforcement
 │   │   │   ├── requireHuman.ts      # Human-only gate (blocks lb- keys)
+│   │   │   ├── httpsRedirect.ts     # Strict HTTPS membrane
+│   │   │   ├── rateLimiter.ts       # Rate limiting rules
 │   │   │   └── errorHandler.ts      # Standardized error responses
 │   │   ├── routes/                  # API endpoint definitions
-│   │   │   ├── auth.ts              # /api/auth/* endpoints
-│   │   │   ├── notes.ts             # /api/notes/* endpoints (CRUD)
+│   │   │   ├── admin.ts             # /api/admin/* SuperAdmin endpoints
 │   │   │   ├── agents.ts            # /api/agents/* endpoints (lb- management)
-│   │   │   ├── shares.ts            # /api/shares/* endpoints (management)
-│   │   │   └── shellproxy.ts        # /shellproxy/* (Public Membrane)
+│   │   │   ├── auth.ts              # /api/auth/* authentication endpoints
+│   │   │   ├── lobsterSession.ts    # /api/lobster-session/* agent sessions
+│   │   │   ├── notes.ts             # /api/notes/* endpoints (encrypted pearls)
+│   │   │   ├── photos.ts            # /api/photos/* note attachment endpoints
+│   │   │   ├── pots.ts              # /api/pots/* folder endpoints
+│   │   │   ├── shares.ts            # /api/shares/* sharing configurations
+│   │   │   └── shellproxy.ts        # /shellproxy/* public unauthenticated sharing membrane
 │   │   └── utils/                   # Helper functions
 │   │       ├── crypto.ts            # Token generation, SHA-256 hashing
 │   │       ├── tokenExpiry.ts       # Session management
@@ -48,86 +54,53 @@ PinchPad/
 │   │
 │   ├── 📄 main.tsx                  # React mount point
 │   ├── 📄 App.tsx                   # Root view controller + session state
-│   │                                  sessionStorage: pp_authenticated, pp_user
 │   ├── 📄 index.css                 # Global styles + Tailwind CSS directives
 │   │
-│   ├── components/                  # Feature-scoped UI (React)
-│   │   ├── auth/
-│   │   │   ├── LoginForm.tsx        # Identity file upload + key validation
-│   │   │   └── SetupWizard.tsx      # First-run: username, UUID, key generation
-│   │   ├── dashboard/
-│   │   │   ├── DashboardLayout.tsx  # Main layout: header, sidebar, content
-│   │   │   ├── NoteGrid.tsx         # Responsive note card grid
-│   │   │   ├── NoteModal.tsx        # Add/Edit note form
-│   │   │   └── Sidebar.tsx          # Navigation + filter sidebar
-│   │   ├── notes/
-│   │   │   ├── NoteEditor.tsx       # Rich note editing
-│   │   │   └── NoteViewer.tsx       # Read-only view with decryption
-│   │   ├── agents/
-│   │   │   ├── AgentList.tsx        # LobsterKey list + management
-│   │   │   └── AgentModal.tsx       # Create/edit lb- key with permissions
-│   │   ├── settings/
-│   │   │   ├── SettingsPanel.tsx        # Settings tabbed layout
-│   │   │   ├── ProfileSettings.tsx      # Display name, theme, auth info
-│   │   │   ├── ShellProxyTab.tsx        # Share management dashboard
-│   │   │   └── ShellProxyWizard.tsx     # Animated time-sync sharing wizard
-│   │   ├── public/
-│   │   │   └── ShellProxyView.tsx       # Unauthenticated public viewer
-│   │   ├── layout/
-│   │   │   └── MoltTheme.tsx        # View Transition dark mode toggle
-│   │   └── ui/                      # shadcn/ui base components
-│   │       ├── button.tsx
-│   │       ├── card.tsx
-│   │       ├── input.tsx
-│   │       └── modal.tsx
+│   ├── features/                    # Feature-scoped UI (React)
+│   │   ├── admin/                   # SuperAdmin control panel (/admin)
+│   │   ├── auth/                    # Setup wizard and login form
+│   │   ├── dashboard/               # Full Sidebar + Main grid dashboard layout
+│   │   ├── landing/                 # Welcome portal and initialization
+│   │   ├── notes/                   # Encrypted note editor, viewer, and exporters
+│   │   ├── pots/                    # Pot (folder) management UI components
+│   │   ├── public/                  # ShellProxy public unauthenticated sharing viewer
+│   │   └── settings/                # Profile setting, keys list, and theme config
 │   │
 │   ├── context/                     # React Context providers
 │   │   ├── AuthContext.tsx          # Current user + auth state
 │   │   └── DashboardContext.tsx     # Notes, UI state, data operations
 │   │
-│   ├── services/                    # Business logic & API calls
-│   │   ├── authService.ts           # Key generation, verification, login
-│   │   ├── noteService.ts           # Note CRUD via REST API
-│   │   ├── agentService.ts          # LobsterKey CRUD via REST API
-│   │   └── types/                   # Shared TypeScript interfaces
+│   ├── services/                    # Business logic & API adapters
+│   │   ├── agents/                  # LobsterKey API adapters
+│   │   ├── auth/                    # Key validation & authentication API
+│   │   ├── notes/                   # Note CRUD & exporter services
+│   │   ├── pots/                    # Pot CRUD services
+│   │   └── settings/                # Profile settings api
 │   │
-│   ├── lib/                         # Utilities
-│   │   ├── crypto.ts                # SHA-256, AES-256-GCM, UUID generation
-│   │   └── utils.ts                 # Helpers
+│   ├── shared/                      # App-wide shared assets
+│   │   ├── branding/                # Logos, maritime badges, copyright tokens
+│   │   ├── config/                  # API endpoints and client parameters
+│   │   ├── theme/                   # Theme context and CSS tokens
+│   │   └── ui/                      # Base buttons, input boxes, modal overlays
 │   │
-│   └── types/                       # App-wide TypeScript types
-│       └── index.ts                 # Shared type definitions
+│   └── types/                       # App-wide TypeScript definitions
 │
-├── test/                            # Test suite (140 tests, Vitest 4.1.0)
-│   ├── server/
-│   │   ├── routes/
-│   │   │   ├── auth.lobster.test.ts
-│   │   │   ├── notes.lobster.test.ts
-│   │   │   └── agents.lobster.test.ts
-│   │   └── middleware/
-│   │       └── requireAuth.lobster.test.ts
-│   ├── services/
-│   │   ├── authService.lobster.test.ts
-│   │   ├── noteService.lobster.test.ts
-│   │   └── agentService.lobster.test.ts
-│   ├── lib/
-│   │   └── crypto.lobster.test.ts
-│   └── shared/
-│       ├── setup.lobster.ts         # Vitest setup + fixtures
-│       └── app.ts                   # createTestApp() factory (in-memory SQLite)
+├── test/                            # Comprehensive Test Suite (Vitest)
+│   ├── server/                      # Integration and routing suites
+│   │   ├── routes/                  # Endpoint routers integration
+│   │   └── middleware/              # Authentication & rate limits middleware
+│   ├── security/                    # Security vulnerability validations
+│   ├── integration/                 # Token lifecycle and cross-user isolation
+│   ├── unit/                        # Performance and crypto unit tests
+│   ├── errors/                      # Error handling & boundary validations
+│   ├── lib/                         # Utility helpers validations
+│   └── shared/                      # Test setups & memory SQLite app factories
 │
 ├── data/                            # SQLite database persistence (Docker volume)
-│   └── clawstack.db                 # Encrypted notes, tokens, agent keys
+│   ├── db.sqlite                    # SQLCipher encrypted main database
+│   └── audit.sqlite                 # Segregated security audit log database
 │
 └── .crustagent/                     # CrustAgent™ project knowledge & skills
-    ├── vibecheck/truthpack/         # Project truth validation
-    │   ├── blueprint.json
-    │   ├── routes.json
-    │   ├── security.json
-    │   ├── test-suite.json
-    │   └── env.json
-    └── knowledge/                   # Project documentation
-        └── ClawChives-Docs-Reference/  # Reference template structure
 ```
 
 ---
@@ -279,17 +252,38 @@ graph LR
           │ updated_at (TEXT)      │
           └────────────────────────┘
                    │
-                   └─ FK ──────────┐
-                                  │
-                    ┌─────────────▼──────────┐
-                    │     pearl_shares       │
-                    ├────────────────────────┤
-                    │ id (TEXT, PK)          │
-                    │ pearl_id (FK)          │
-                    │ share_hash (TEXT, UNQ) │
-                    │ expires_at (TEXT)      │
-                    │ created_at (TEXT)      │
-                    └────────────────────────┘
+                   ├─ FK ──────────┐
+                   │              │
+                   │┌─────────────▼──────────┐
+                   ││     pearl_shares       │
+                   │├────────────────────────┤
+                   ││ id (TEXT, PK)          │
+                   ││ pearl_id (FK)          │
+                   ││ share_hash (TEXT, UNQ) │
+                   ││ expires_at (TEXT)      │
+                   ││ created_at (TEXT)      │
+                   │└────────────────────────┘
+                   │
+                   └────────────┐
+                                │
+                  ┌─────────────▼──────────┐
+                  │     audit_logs         │
+                  ├────────────────────────┤
+                  │ id (INTEGER, PK)       │
+                  │ event_type (TEXT)      │
+                  │ actor (TEXT)           │
+                  │ action (TEXT)          │
+                  │ details (JSON)         │
+                  │ timestamp (TEXT)       │
+                  └────────────────────────┘
+
+┌──────────────────────────────────────────┐
+│            system_settings               │
+├──────────────────────────────────────────┤
+│ key (TEXT, PK)                           │
+│ value (TEXT)                             │
+│ updated_at (TEXT)                        │
+└──────────────────────────────────────────┘
 
 
 ---
@@ -371,37 +365,52 @@ sequenceDiagram
 
 ## Test Architecture
 
-```
+```text
 test/
-├── server/                          # Backend integration tests
+├── server/                          # Backend integration and routing tests
 │   ├── routes/
-│   │   ├── auth.lobster.test.ts     # Auth endpoints (register, token, verify, logout)
-│   │   ├── notes.lobster.test.ts    # Note CRUD endpoints (GET, POST, PUT, DELETE)
-│   │   └── agents.lobster.test.ts   # Agent key endpoints (GET, POST, PUT /revoke)
+│   │   ├── admin.lobster.test.ts    # SuperAdmin endpoints (user cascade, system, retention policy)
+│   │   ├── agents.lobster.test.ts   # LobsterKey endpoints (create, revoke, delete)
+│   │   ├── auditLog.lobster.test.ts # Segregated audit DB events recording
+│   │   ├── auth.lobster.test.ts     # User identity & authentication sessions
+│   │   ├── notes.lobster.test.ts    # Notes CRUD & exports integration
+│   │   ├── photos.lobster.test.ts   # Attachments CRUD & fetch verification
+│   │   └── pots.lobster.test.ts     # Folder management cascades & listing
 │   └── middleware/
-│       └── requireAuth.lobster.test.ts  # Auth middleware validation
+│       ├── auth.lobster.test.ts     # RequireAuth session & permissions gates
+│       └── rateLimiter.lobster.test.ts # Rate limiters limits verification
 │
-├── services/                        # Service unit tests
-│   ├── authService.lobster.test.ts  # Key generation, hashing
-│   ├── noteService.lobster.test.ts  # Note operations
-│   └── agentService.lobster.test.ts # Agent key operations
+├── security/
+│   └── auth.security.lobster.test.ts # Timing-safe credentials analysis
+│
+├── integration/
+│   ├── cross-user-isolation.lobster.test.ts # Cross-tenant UUID enforcement
+│   ├── lobster-key-permissions.lobster.test.ts # Granular API permission gates
+│   └── token-lifecycle.lobster.test.ts # Bearer token issuance & invalidation loops
+│
+├── unit/
+│   └── performance.lobster.test.ts  # Speed & cryptographic latency thresholds
+│
+├── errors/
+│   └── auth.errors.lobster.test.ts  # Volatile and invalid tokens handling
 │
 ├── lib/
-│   └── crypto.lobster.test.ts       # Crypto utilities (SHA-256, AES-256-GCM, UUID)
+│   └── crypto.lobster.test.ts       # Raw hashes & AES-256-GCM functions
 │
 └── shared/
-    ├── setup.lobster.ts             # Vitest configuration, fixtures, helpers
-    └── app.ts                       # createTestApp() factory function
-                                      Returns: { app: Express, db: Database }
-                                      DB: :memory: SQLite (zero pollution)
-
-Test Statistics:
-- 140 tests total
-- 9 files
-- Vitest 4.1.0
-- Coverage: Middleware 100%, Routes avg 79%, Overall 56.84%
-- Running: npm test (non-watch), npm run test:watch, npm run test:coverage
+    ├── setup.lobster.ts             # Vitest config, mock data, lifecycles
+    └── app.ts                       # Isolation sandbox test database factory
 ```
+
+### Test Statistics
+- **265 passed tests** (277 total tests)
+- **17 test files**
+- **Vitest 4.1.0**
+- **Coverage**: Middleware 100% statements, Routes avg 84%, Overall 68.5%
+- **Execution Commands**:
+  - `npm test` (Run all tests sequentially once)
+  - `npm run test:watch` (Run tests in live file watcher mode)
+  - `npm run test:coverage` (Generate Vitest statement/branch coverage reports)
 
 ---
 
