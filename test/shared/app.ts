@@ -15,6 +15,8 @@ import agentsRoutes from '../../src/server/routes/agents';
 import potsRoutes from '../../src/server/routes/pots';
 import photosRoutes from '../../src/server/routes/photos';
 import lobsterSessionRoutes from '../../src/server/routes/lobsterSession';
+import sharesRoutes from '../../src/server/routes/shares';
+import shellProxyRoutes from '../../src/server/routes/shellproxy';
 import { requireAuth } from '../../src/server/middleware/auth';
 import { createAgentKeyRateLimiter, apiLimiter } from '../../src/server/middleware/rateLimiter';
 
@@ -26,6 +28,7 @@ export function createTestApp(): { app: Express; db: Database.Database; auditDb:
   // Clear tables
   db.exec(`
     DELETE FROM import_sessions;
+    DELETE FROM pearl_shares;
     DELETE FROM pearl_photos;
     DELETE FROM pots;
     DELETE FROM notes;
@@ -52,6 +55,8 @@ export function createTestApp(): { app: Express; db: Database.Database; auditDb:
   app.use('/api/pots', potsRoutes);
   app.use('/api/photos', photosRoutes);
   app.use('/api/lobster-session', lobsterSessionRoutes);
+  app.use('/api/shares', sharesRoutes);
+  app.use('/shellproxy', shellProxyRoutes);
 
   return { app, db, auditDb };
 }
