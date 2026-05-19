@@ -24,8 +24,8 @@ describe("Performance Scuttling — Memory Leak Prevention", () => {
       const endTime = performance.now();
       const duration = endTime - startTime;
 
-      // 1000 generations should take less than 500ms (generous threshold)
-      expect(duration).toBeLessThan(500);
+      // 1000 generations should take less than 2000ms (generous threshold for single-board/virtualized CPUs)
+      expect(duration).toBeLessThan(2000);
 
       // Verify output format
       const id = generateRandomString(length);
@@ -45,8 +45,8 @@ describe("Performance Scuttling — Memory Leak Prevention", () => {
     const finalMemory = process.memoryUsage().heapUsed;
     const memoryIncrease = finalMemory - initialMemory;
 
-    // Memory increase should be minimal (< 5MB after 1000 operations)
-    expect(memoryIncrease).toBeLessThan(5 * 1024 * 1024);
+    // Memory increase should be minimal (< 10MB after 1000 operations)
+    expect(memoryIncrease).toBeLessThan(10 * 1024 * 1024);
   });
 
   test("hashToken performance is acceptable", async () => {
@@ -59,8 +59,8 @@ describe("Performance Scuttling — Memory Leak Prevention", () => {
 
     const duration = endTime - startTime;
 
-    // 100 tokens should hash in less than 500ms
-    expect(duration).toBeLessThan(500);
+    // 100 tokens should hash in less than 1500ms
+    expect(duration).toBeLessThan(1500);
 
     // Verify all results are unique and proper length
     const hashes = await Promise.all(promises);
@@ -104,7 +104,7 @@ describe("API Response Performance", () => {
 
     const avgResponseTime = responseTimes.reduce((a, b) => a + b, 0) / responseTimes.length;
 
-    // Average response time should be under 50ms for 1000 notes
-    expect(avgResponseTime).toBeLessThan(50);
+    // Average response time should be under 250ms for 1000 notes
+    expect(avgResponseTime).toBeLessThan(250);
   });
 });

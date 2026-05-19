@@ -232,10 +232,19 @@ Claws: The active tools, functions, and permissions used to interact with the re
 - **Issue**: API routes reference, database at-rest encryption, HTTPS redirect membranes, rate limiting options, and test suite specs were outdated.
 - **Solution**:
   - Overhauled `🔌 API Reference` in `README.md` to cleanly document all 17 previously hidden endpoints (pots CRUD, photos CRUD, lobster sessions, bulk sync).
-  - Updated `SECURITY.md` and Unraid templates to document **SQLCipher AES-256-CBC** at-rest database encryption, dynamic sqlite migration, `httpsRedirect` middleware, and fine-grained API/Auth rate limiting parameters.
+  - Updated `SECURITY.md` and Unraid templates to document **SQLCipher AES-256-CBC** at-rest database encryption, dynamic sqlite migration, `httpsRedirect` membrane, and fine-grained API/Auth rate limiting parameters.
   - Aligned testing contribution requirements in `CONTRIBUTING.md` and `ARCHITECTURE.md` to reflect the active **265 tests across 17 files** (100% green).
   - Hatched the premium `QUICKSTART.md` Rapid Onboarding guide containing copy-paste-ready compose stacks and pre-hashed timing-safe agent key exchange curls.
 - **Status**: ✅ COMPLETED & DEPLOYED.
+
+### [2026-05-19] - The ShellProxy Membrane & Public Sharing (v3.3)
+- **Issue**: Unauthenticated public share links were required for secure Pearl sharing with absolute metadata scrubbing, image validation, and expiration control.
+- **Solution**:
+  - Engineered the `/shellproxy/share/:share_hash` unauthenticated membrane gated by `shellProxyGuard` and strict single-quoted SQLite query time checks.
+  - Implemented complete JSON sanitization (completely stripping `user_uuid`, `pearl_id`, `pot_id`, `starred`, `pinned`) from public payloads.
+  - Hardened image attachment retrieval, restricting parameters to strict UUID v4 formats to block traversal attacks, whitelisting MIME types, and serving defensive sniffing/disposition headers.
+  - Formulated a comprehensive integration security test suite (`test/security/shellproxy.security.lobster.test.ts`) bringing the validation grid to **274 passing tests**.
+- **Status**: ✅ RELEASED v3.3 (Stable & Hardened).
 
 ---
   **Maintained by CrustAgent©™**
